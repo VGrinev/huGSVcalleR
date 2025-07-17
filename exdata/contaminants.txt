@@ -1,0 +1,3 @@
+foreign_id	foreign_name	foreign_sequence
+fs00001	stuffer sequence 1	GCGCGATATAGCGCTAGACG
+fs00002	stuffer sequence 2	AAAACTCTCCGGGACACGCC
