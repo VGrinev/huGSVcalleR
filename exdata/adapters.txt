@@ -1,1 +1,12 @@
-
+adapter_id	adapter_name	adapter_sequence
+ad00001	Illumina DNA PCR-free Prep tagmentation adapter 1	ATGTGTATAAGAGACA
+ad00002	Illumina DNA PCR-free Prep tagmentation adapter 2	CTGTCTCTTATACACATCT
+ad00003	Illumina small RNA adapter	ATGGAATTCTCG
+ad00004	Illumina stranded total RNA and mRNA adapter	ACTGTCTCTTATACACATCT
+ad00005	Illumina universal adapter	AGATCGGAAGAG
+ad00006	Nextera mate pair adapter 1	CTGTCTCTTATACACATCT
+ad00007	Nextera mate pair adapter 2	AGATGTGTATAAGAGACAG
+ad00008	Nextera transposase adapter 1	CTGTCTCTTATA
+ad00009	Nextera transposase adapter 2	TCGTCGGCAGCGTCAGATGTGTATAAGAGACAG
+ad00010	Nextera transposase adapter 3	GTCTCGTGGGCTCGGAGATGTGTATAAGAGACAG
+ad00011	SOLID small RNA adapter	CGCCTTGGCCGT
