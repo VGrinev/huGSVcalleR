@@ -14,7 +14,7 @@
 #'     i) foreign_id         - foreign sequence ID;
 #'     ii) foreign_name      - foreign sequence name;
 #'     iii) foreign_sequence - foreign sequence itself.
-#' @param workDir character string specifying the path to and name of work
+#' @param workDir character string specifying the path to and name of working
 #'     directory. NULL by default that mean the current working directory.
 #' @return object of class data frame with binned (by nucleotide positions)
 #'     frequency data on the presence of foreign sequences in short reads.
@@ -38,7 +38,7 @@ findForeignSeqs <- function(fastqDir=NULL,
     #   and GenomicRanges v.1.56.1.
     suppressMessages(expr=library(package=Biostrings))
     suppressMessages(expr=library(package=GenomicRanges))
-    ### Setting the work directory.
+    ### Setting the working directory.
     if (is.null(x=workDir)){
         workDir <- getwd()
     }
