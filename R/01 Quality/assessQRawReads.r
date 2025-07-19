@@ -21,7 +21,7 @@
 #'     i) foreign_id         - foreign sequence ID;
 #'     ii) foreign_name      - foreign sequence name;
 #'     iii) foreign_sequence - foreign sequence itself.
-#' @param workDir character string specifying the path to and name of work
+#' @param workDir character string specifying the path to and name of working
 #'     directory. NULL by default that mean the current working directory.
 #' @return object of class list containing all main quality scores for short
 #'     reads.
@@ -49,7 +49,7 @@ assessQRawReads <- function(fastqDir=NULL,
     suppressMessages(expr=library(package=data.table))
     suppressMessages(expr=library(package=matrixStats))
     suppressMessages(expr=library(package=ShortRead))
-    ### Setting the work directory.
+    ### Setting the working directory.
     if (is.null(x=workDir)){
         workDir <- getwd()
     }
@@ -208,4 +208,3 @@ assessQRawReads <- function(fastqDir=NULL,
                 FSs=FSs)
            )
 }
-
