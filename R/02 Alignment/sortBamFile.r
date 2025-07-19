@@ -5,7 +5,7 @@
 #'     with BAM file(s).
 #' @param bamFile character vector giving the name(-s) of BAM file(-s) to be
 #'     sorted and indexed.
-#' @param workDir character string giving the path to and name of work
+#' @param workDir character string giving the path to and name of working
 #'     directory. NULL by default that mean the current working directory.
 #' @return sorted and indexed BAM file(-s).
 #' @author Vasily V. Grinev
