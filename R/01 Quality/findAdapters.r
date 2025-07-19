@@ -14,7 +14,7 @@
 #'     i) adapter_id         - adapter ID;
 #'     ii) adapter_name      - adapter name;
 #'     iii) adapter_sequence - adapter sequence.
-#' @param workDir character string specifying the path to and name of work
+#' @param workDir character string specifying the path to and name of working
 #'     directory. NULL by default that mean the current working directory.
 #' @return object of class data frame with binned (by nucleotide positions)
 #'     frequency data on the presence of adapter sequences in short reads.
@@ -38,7 +38,7 @@ findAdapters <- function(fastqDir=NULL,
     #   and GenomicRanges v.1.56.1.
     suppressMessages(expr=library(package=Biostrings))
     suppressMessages(expr=library(package=GenomicRanges))
-    ### Setting the work directory.
+    ### Setting the working directory.
     if (is.null(x=workDir)){
         workDir <- getwd()
     }
@@ -98,3 +98,4 @@ findAdapters <- function(fastqDir=NULL,
     ### Returning the final object.
     return(hits)
 }
+
