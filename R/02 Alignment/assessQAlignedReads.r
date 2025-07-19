@@ -1,10 +1,11 @@
 #' Evaluate alignment quality metrics
 #' @description Evaluation of the alignment quality metrics for aligned DAN-Seq
 #'     and/or RNA-Seq short reads.
-#' @param bamDir character vector giving the path to and name of directory
-#'     with BAM file(s).
+#' @param bamDir character string giving the name (or path to and name) of
+#'     directory with BAM file(s). NULL by default, which means the current
+#'     working directory will be used instead of the specified BAM directory.
 #' @param bamFile character vector giving the name of BAM file to be evaluated.
-#' @param workDir character string giving the path to and name of work
+#' @param workDir character string giving the path to and name of working
 #'     directory. NULL by default that mean the current working directory.
 #' @return object of class list containing all main quality metrics for aligned
 #'     short reads.
@@ -16,17 +17,19 @@
 #' @export
 #' Last updated: July 18, 2025.
 
-assessQAlignedReads <- function(bamDir, bamFile, workDir=NULL){
+assessQAlignedReads <- function(bamDir=NULL,
+                                bamFile,
+                                workDir=NULL){
     ### Loading the required package.
     #   This code was successfully tested with the package Rsamtools v.2.20.0.
     suppressMessages(expr=library(package=Rsamtools))
-    ### Setting the work directory.
+    ### Setting the working directory.
     if (is.null(x=workDir)){
         workDir <- getwd()
     }
     ### Full path to the BAM file.
     if (is.null(x=bamDir)){
-        path <- paste(workDir, bamDir, sep="")
+        path <- workDir
     }else{
         path <- paste(workDir, bamDir, sep="/")
     }
