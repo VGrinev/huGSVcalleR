@@ -7,7 +7,7 @@
 #'     containing short reads. Allowed formats are "fastq" or "fastq.gz".
 #' @param n integer value giving the number of reads loaded into the computer's
 #'     RAM. The default value is NULL, at which all reads are loaded into RAM.
-#' @param workDir character string specifying the path to and name of work
+#' @param workDir character string specifying the path to and name of working
 #'     directory. NULL by default that mean the current working directory.
 #' @return object of class list containing DNAStringSet object of read
 #'     sequences and PhredQuality object of read quality scores.
@@ -27,7 +27,7 @@ readFASTQ <- function(fastqDir=NULL,
     ### Loading the required package.
     #   This code was successfully tested with the package Biostrings v.2.72.1.
     suppressMessages(expr=library(package=Biostrings))
-    ### Setting the work directory.
+    ### Setting the working directory.
     if (is.null(x=workDir)){
         workDir <- getwd()
     }
