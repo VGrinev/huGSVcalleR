@@ -7,7 +7,7 @@
 #' @param output a character string that specifying a postfix for naming all
 #'     output report files. The default value is NULL, at which the name of
 #'     sample will be used for naming all output files.
-#' @param workDir character string specifying the path to and name of work
+#' @param workDir character string specifying the path to and name of working
 #'     directory. NULL by default that mean the current working directory.
 #' @return a series of text and graphic files.
 #' @author Vasily V. Grinev
@@ -26,11 +26,6 @@ reportQAlResults <- function(x,
     #   gridExtra v.2.3.
     suppressMessages(expr=library(package=grid))
     suppressMessages(expr=library(package=gridExtra))
-
-    suppressMessages(expr=library(package=Biostrings))
-    suppressMessages(expr=library(package=pheatmap))
-    suppressMessages(expr=library(package=pwalign))
-    suppressMessages(expr=library(package=vioplot))
     ### Textual report.
     ##  Template of textual table.
     tab <- data.frame(Parameter=c("Sample name",
