@@ -7,7 +7,7 @@
 #' @param output a character string that specifying a postfix for naming all
 #'     output report files. The default value is NULL, at which the name of
 #'     sample will be used for naming all output files.
-#' @param workDir character string specifying the path to and name of work
+#' @param workDir character string specifying the path to and name of working
 #'     directory. NULL by default that mean the current working directory.
 #' @return a series of text and graphic files.
 #' @author Vasily V. Grinev
