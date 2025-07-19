@@ -7,16 +7,16 @@
 #' @param ref_fasta character string giving the name of folder for storing
 #'     of reference sequences.
 #' @param index character string giving the basename of created index files.
-#' @param fa charater string giving the name of the file containing all the
-#'     refernece sequences.
+#' @param fa charater string giving the name of the FASTA file containing all
+#'     the reference sequences.
 #' @param memory a numeric value specifying the amount of memory (in megabytes)
 #'     used for storing the index during read mapping. Default value is 8000 MB.
-#' @param workDir character string giving the path to and name of work
+#' @param workDir character string giving the path to and name of working
 #'     directory. NULL by default that mean the current working directory.
 #' @return no value is produced but index files are written to the respective
 #'     directory.
 #' @author Vasily V. Grinev
-#' @example
+#' @examples
 #' hash <- buildIndexSubread(ref_genome="Reference_Genomes",
 #'                           ref_fasta="Files_FASTA",
 #'                           index="GRCh38",
@@ -35,7 +35,7 @@ buildIndexSubread <- function(ref_genome,
     ### Loading the required auxiliary package.
     #   This code was successfully tested with package Rsubread v.2.32.2.
     suppressMessages(expr=library(package=Rsubread))
-    ### Setting the work directory.
+    ### Setting the working directory.
     if (is.null(x=workDir)){
         workDir <- getwd()
     }
