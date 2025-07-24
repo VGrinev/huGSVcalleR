@@ -403,7 +403,7 @@ reportQAResults <- function(x,
          labels=round(x=c(0.0, max(x=x$DSs$density[, 2])/4 * 1:4), digits=2),
          las=1, lwd=0.8)
     title(main="Low-complexity of reads", cex.main=1.5)
-    title(xlab=expression("Complexity, -log"[10] * " (dusty scores)"),
+    title(xlab=expression("Complexity, log"[10] * " (dusty scores)"),
           line=2.75, cex.lab=1.2)
     title(ylab="Density", line=3, cex.lab=1.2)
     legend(x=3.3, y=max(x=x$DSs$density[, 2]),
