@@ -5,18 +5,21 @@
 #'     with BAM file(s).
 #' @param bamFile character vector giving the name(-s) of BAM file(-s) to be
 #'     sorted and indexed.
+#' @param byQname logical. It indicats whether the sorted destination file
+#'     should be sorted by query-name (TRUE) or by mapping position (FALSE).
 #' @param workDir character string giving the path to and name of working
 #'     directory. NULL by default that means the current working directory.
 #' @return sorted and indexed BAM file(-s).
 #' @author Vasily V. Grinev
 #' @examples
 #' sortBamFile(bamDir="Files_BAM",
-#'             bamFile=c("example_seq.bam"),
-#'             workDir="/mnt/data/grinev")
+#'             bamFile="SRR21721515.bam",
+#'             byQname=TRUE,
+#'             workDir="D:/Vasily Grinev")
 #' @export
 #' Last updated: July 23, 2025.
 
-sortBamFile <- function(bamDir, bamFile, workDir=NULL){
+sortBamFile <- function(bamDir, bamFile, byQname, workDir=NULL){
     ### Loading the required packages.
     #   This code was successfully tested with the packages parallel and
     #   Rsamtools v.2.20.0.
@@ -34,8 +37,7 @@ sortBamFile <- function(bamDir, bamFile, workDir=NULL){
                                                        sep="/"),
                                                  bamFile[i],
                                                  sep="/")),
-                         byQname=FALSE,
-                         maxMemory=40000,
+                         byQname=byQname,
                          nThreads=detectCores(logical=TRUE) - 1)
     suppressMessages(expr=indexBam(files=sortedBam))
     }
