@@ -84,4 +84,3 @@ alignDNASubread <- function(genome,
                    unique=TRUE,
                    detectSV=SV)
 }
-
