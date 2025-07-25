@@ -1,9 +1,9 @@
 #' Read records from FASTQ-formatted file
 #' @description Reading the records from FASTQ-formatted file.
-#' @param fastqDir a character string specifying the name of the directory
+#' @param fastqDir character string specifying the name of the directory
 #'     containing the FASTQ file(s). NULL by default that mean the current
 #'     working directory.
-#' @param fastq a character string specifying the name of the FASTQ file
+#' @param fastq character string specifying the name of the FASTQ file
 #'     containing short reads. Allowed formats are "fastq" or "fastq.gz".
 #' @param n integer value giving the number of reads loaded into the computer's
 #'     RAM. The default value is NULL, at which all reads are loaded into RAM.
@@ -14,7 +14,7 @@
 #' @author Vasily V. Grinev
 #' @examples
 #' fq <- readFASTQ(fastqDir="Files_FASTQ",
-#'                 fastq="2-Galkina-A_S2_L001_R1_001.fastq.gz",
+#'                 fastq="example_seq.read1.fastq.gz",
 #'                 n=1e5,
 #'                 workDir="D:/Vasily Grinev")
 #' @export

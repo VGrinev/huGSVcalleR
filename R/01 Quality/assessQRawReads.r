@@ -1,20 +1,20 @@
 #' Calculate quality scores for short reads
 #' @description Calculation of the quality scores for short reads.
-#' @param fastqDir a character string specifying the name of the directory
-#'     containing the FASTQ file(s). NULL by default that mean the current
+#' @param fastqDir character string specifying the name of the directory
+#'     containing the FASTQ file(-s). NULL by default that mean the current
 #'     working directory.
-#' @param fastq a character string specifying the name of the FASTQ file
+#' @param fastq character string specifying the name of the FASTQ file
 #'     containing short reads. Allowed formats are "fastq" or "fastq.gz".
 #' @param n integer value giving the number of reads loaded into the computer's
 #'     RAM. The default value is NULL, at which all reads are loaded into RAM.
-#' @param adapters a character string specifying the name of the tab-delimited
+#' @param adapters character string specifying the name of the tab-delimited
 #'     TXT file containing adapter sequences. The default value is NULL, at
 #'     which the search for adaptor sequences in short reads is not carried out.
 #'     If so, this file must contain the following three fields:
 #'     i) adapter_id         - adapter ID;
 #'     ii) adapter_name      - adapter name;
 #'     iii) adapter_sequence - adapter sequence.
-#' @param contaminants a character string specifying the name of the
+#' @param contaminants character string specifying the name of the
 #'     tab-delimited TXT file containing foreign sequences. The default value
 #'     is NULL, at which the search for foreign sequences in short reads is not
 #'     carried out. If so, this file must contain the following three fields:
@@ -208,4 +208,3 @@ assessQRawReads <- function(fastqDir=NULL,
                 FSs=FSs)
            )
 }
-

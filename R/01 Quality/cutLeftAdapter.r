@@ -1,99 +1,121 @@
-# This function is completely identical to the internal function cutLseq
-# from FastqCleaner package. It is based on trimLRpattern method from Biostrings.
-# 
+#' Cut out adapter sequence(-s) from DNA- and/or RNA-Seq short reads
+#' @description Generic function for trimming of adapter sequence(-s) from
+#'     DNA- and/or RNA-Seq short reads. This function is based on low-level
+#'     functions cutLseq() of R/Bioconductor package FastqCleaner and
+#'     trimLRpattern() of R/Bioconductor package Biostrings.
+#' @param fastqDir character string giving the name (or path to and name) of
+#'     directory with FASTQ file(-s). NULL by default, which means the current
+#'     working directory will be used instead of the specified FASTQ directory.
+#' @param fastq character string giving the name of FASTQ file containing short
+#'     reads of interest. Alternatively, fastq can be an internal R object with
+#'     preloaded FASTQ data.
+#' @param adapters character string specifying the name of the tab-delimited
+#'     TXT file containing adapter sequences. This file must contain the
+#'     following three fields:
+#'     i) adapter_id         - adapter ID;
+#'     ii) adapter_name      - adapter name;
+#'     iii) adapter_sequence - adapter sequence.
+#' @param error numeric value in [0, 1] specifying error rate. The error rate
+#'     is the proportion of mismatches allowed between the adapter and the
+#'     aligned portion of the read. For a given adapter A, the number of
+#'     allowed mismatches between each subsequence s of A and the read is
+#'     computed as: error * L_s, where L_s is the length of the subsequence s.
+#'     Default value is 0.2.
+#' @param min_match_flank integer value giving the number of nucleotides.
+#'     Do not trim in flanks of the read if a match has min_match_flank of less
+#'     length. Default value is 3L (trim only with >=4 coincidences in a
+#'     flanking match).
+#' @param anchored logical, TRUE by default. Can the adapter or partial adapter
+#'     be within (anchored=FALSE) or only in the terminal region(-s)
+#'     (anchored=TRUE) of the read?
+#' @param indels logical, FALSE by default. If TRUE, indels are allowed in the
+#'     alignments of the suffixes of adapter with the read, at its beginning.
+#' @param workDir character string specifying the path to and name of working
+#'     directory. NULL by default that means the current working directory.
+#' @return internal R object containing short reads with trimmed adapter
+#'     sequence(-s).
+#' @author Ilia M. Ilyushonak, Vasily V. Grinev.
+#' @examples
+#' trimL <- cutLeftAdapter(fastqDir="Files_FASTQ",
+#'                         fastq="example_seq.read1.fastq",
+#'                         adapters="adapters.txt",
+#'                         error=0.2,
+#'                         min_match_flank=3L,
+#'                         anchored=TRUE,
+#'                         indels=FALSE, 
+#'                         workDir="D:/Vasily Grinev")
+#' @export
+#' Last updated: July 25, 2025.
 
-# Arguments:
-
-# subject - DNAString or DNAStringSet object;
-# Lpattern - 3’ pattern, DNAString object;
-# with.indels -  Allow indels?;
-# fixed - Parameter passed to trimLRPatterns Default ’subject’, 
-#         ambiguities in the pattern only are interpreted as wildcard. 
-#         See the argument fixed in trimLRPatterns;
-# error_rate - Error rate (value in [0, 1]). The error rate is the proportion of
-#         mismatches allowed between the adapter and the aligned portion of the 
-#         subject. For a given adapter A, the number of allowed mismatches between 
-#         each subsequence s of A and the subject is computed as: error_rate * L_s, 
-#         where L_s is the length of the subsequence s;
-# anchored - Can the adapter or partial adapter be within the sequence? 
-#         (anchored = FALSE) or only in the terminal regions of the sequence? 
-#         (anchored = TRUE). Default TRUE (trim only flanking regions);
-# checks - Perform internal checks? Default TRUE;
-# min_match_flank - Do not trim in flanks of the subject, if a match has 
-#                   min_match_flank of less length. Default 1L 
-#                   (only trim with >=2 coincidences in a flank match)
-
-
-
-cutLeftAdapter <- function(subject, Lpattern,
-                           with.indels = FALSE, 
-                           fixed = "subject", 
-                           error_rate = 0.2, 
-                           anchored = TRUE, 
-                           ranges = FALSE, 
-                           min_match_flank = 3L, 
-                           checks = TRUE, ...) {
-  
-  
-  Lpattern <- DNAString(Lpattern)
-  
-  if (checks) {
-    if (!is(Lpattern, "DNAString")) {
-      stop("Rpattern must be a character string or a DNAString object")
+cutLeftAdapter <- function(fastqDir=NULL,
+                           fastq,
+                           adapters,
+                           error=0.2,
+                           min_match_flank=3L,
+                           anchored=TRUE,
+                           indels=FALSE, 
+                           workDir=NULL){
+    ### Loading the required package.
+    #   This code was successfully tested with the package ShortRead v.1.67.0.
+    suppressMessages(expr=library(package=ShortRead))
+    ### Setting the working directory.
+    if (is.null(x=workDir)){
+        workDir <- getwd()
     }
-    
-    csub <- class(subject)
-    if (csub != "DNAStringSet") {
-      stop("subject must be a DNAStringSet object")
+    ### Retrieving of the FASTQ data.
+    if (is.object(x=fastq)){
+        FQ=fastq
+    }else{
+        ### Full path to the FASTQ file.
+        if (is.null(x=fastqDir)){
+            path <- paste(workDir, fastqDir, sep="")
+        }else{
+            path <- paste(workDir, fastqDir, sep="/")
+        }
+        ### Retrieving and validation of the FASTQ file extension.
+        frt <- tools::file_ext(x=fastq)
+        if (!frt %in% c("fastq", "gz")){
+            stop("Invalid format of FASTQ file")
+        }
+        FQ <- readFastq(dirPath=path, pattern=fastq, withIds=TRUE)
     }
-    
-    if (csub == "DNAString") {
-      subject <- as(subject[[1]], "DNAStringSet")
+    ### Loading of the adapter sequence(-s).
+    ADs <- read.table(file=paste(workDir, adapters, sep="/"),
+                      sep="\t",
+                      header=TRUE,
+                      quote="\"",
+                      as.is=TRUE)
+    ### Left-end trimming of adapter sequence(-s).
+    for (i in 1:nrow(x=ADs)){
+        seq_l <- ADs[i, 3]
+        if (error > 0){
+            flank_seq <- as.integer(x=seq_len(length.out=nchar(x=seq_l)) *
+                                              error)
+        }else{
+            flank_seq <- rep(x=0,
+                             times=length(x=seq_len(length.out=nchar(x=seq_l))))
+        }
+        if (min_match_flank >= 1L){
+            if (nchar(x=seq_l) > min_match_flank){
+                flank_seq[seq_len(length.out=min_match_flank)] <- -1
+            }else{
+                return(FQ)
+            }
+        }
+        if (!anchored){
+            maxlen <-  max(width(x=FQ)) - nchar(x=seq_l)
+            if (maxlen > 0){
+                seq_l <- paste0(paste(rep(x="N", times=maxlen),
+                                      collapse=""),
+                                seq_l)
+            }
+            flank_seq <- c(flank_seq, rep(x=0, times=maxlen))
+        }
+        FQ <- trimLRPatterns(Lpattern=seq_l,
+                             subject=FQ,
+                             max.Lmismatch=flank_seq,
+                             with.Lindels=indels)
     }
-  }
-  
-  p <- length(Lpattern)
-  s_width <- width(subject)
-  s <- max(width(subject))
-  
-  
-  if(error_rate > 0) {
-    flank_seq <- as.integer(seq_len(p) * error_rate)
-  } else {
-    flank_seq <- rep(0, length(seq_len(p)))
-  }
-  
-  
-  if (min_match_flank >= 1L) {
-    if (p > min_match_flank) {
-      flank_seq[seq_len(min_match_flank)] <- -1
-    } else {
-      return(subject)
-    }
-  }
-  
-  
-  if(!anchored) {
-    Lpattern <- as.character(Lpattern)
-    maxlen <-  max(width(subject)) - nchar(Lpattern)
-    if(maxlen > 0) {
-      Lpattern <- paste0(paste(rep("N",maxlen), collapse = ""), Lpattern)
-    }
-    Lpattern <- DNAString(Lpattern)
-    flank_seq <- c(flank_seq, rep(0,maxlen))
-  }
-  
-  
-  out <- trimLRPatterns(Lpattern = Lpattern,
-                        subject = subject, 
-                        max.Lmismatch = flank_seq, 
-                        with.Lindels = with.indels, 
-                        Lfixed = fixed, 
-                        ...)
-  
-  if (ranges) {
-    out <- IRanges::IRanges(start = rep(1, length(out)), end = width(out))
-  } 
-  
-  out
+    ### Returning the final object.
+    return(FQ)
 }

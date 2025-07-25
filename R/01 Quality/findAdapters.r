@@ -8,9 +8,8 @@
 #' @param n integer value giving the number of reads loaded into the computer's
 #'     RAM. The default value is NULL, at which all reads are loaded into RAM.
 #' @param adapters character string specifying the name of the tab-delimited
-#'     TXT file containing adapter sequences. The default value is NULL, at
-#'     which the search for adaptor sequences in short reads is not carried out.
-#'     If so, this file must contain the following three fields:
+#'     TXT file containing adapter sequences. This file must contain the
+#'     following three fields:
 #'     i) adapter_id         - adapter ID;
 #'     ii) adapter_name      - adapter name;
 #'     iii) adapter_sequence - adapter sequence.
