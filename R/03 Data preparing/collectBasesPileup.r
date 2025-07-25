@@ -275,4 +275,3 @@ collectBasesPileup <- function(bamDir=NULL,
     temp_df <- temp_df[!duplicated(x=temp_df), ]
     fwrite(x=temp_df, file=csv_file)
 }
-
