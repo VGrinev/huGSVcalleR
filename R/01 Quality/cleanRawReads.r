@@ -135,7 +135,7 @@ cleanRawReads <- function(fastqDir=NULL,
     }
     ### Full path to the FASTQ file(-s).
     if (is.null(x=fastqDir)){
-        path <- paste(workDir, fastqDir, sep="")
+        path <- workDir
     }else{
         path <- paste(workDir, fastqDir, sep="/")
     }
