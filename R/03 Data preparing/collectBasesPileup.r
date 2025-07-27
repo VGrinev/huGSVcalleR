@@ -12,7 +12,7 @@
 #'     directly from the BAM file and pileup statistics will be collected for
 #'     the entire genome. Alternatively, the user can specify the genomic
 #'     locations of interest by applying to the argument a name of the
-#'     tab-delimited TXT file containing genomic coordinates. This file mus
+#'     tab-delimited TXT file containing genomic coordinates. This file must
 #'     contains the following four fields:
 #'     i) seqnames - the name of chromosome or scaffold with prefix "chr";
 #'     ii) start   - start coordinate of genomic interval of interest;
