@@ -28,7 +28,7 @@
 #' genes <- "Ensembl release 114, GRCh38.p14, annotations of genes.txt"
 #' annoSNVs <- annotateVariants(vcfDir="Files_VCF",
 #'                              vcfFile="example_seq.vcf",
-#'                              ref_genes=,
+#'                              ref_genes,
 #'                              output="example_seq, annotated SNVs",
 #'                              workDir="D:/Vasily Grinev")
 #' @export
@@ -39,9 +39,9 @@ annotateVariants <- function(vcfDir=NULL,
                              ref_genes,
                              output=NULL,
                              workDir=NULL){
-    ### Loading the required package.
-    #   This code was successfully tested with the package
-    #   VariantAnnotation v.1.55.0.
+    ### Loading the required packages.
+    #   This code was successfully tested with the packages data.table v.1.15.4
+    #   and VariantAnnotation v.1.55.0.
     suppressMessages(expr=library(package=data.table))
     suppressMessages(expr=library(package=VariantAnnotation))
     ### Setting the working directory.
