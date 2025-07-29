@@ -80,7 +80,9 @@ fisherCalleR <- function(bamDir=NULL,
     ### Setting the FASTA file.
     fa <- paste(path2, faFile, sep="/")
     ### Setting the output VCF file.
-    vcf <- gsub(pattern=".bam", replacement=", SNVs.vcf", x=bam)
+    vcf <- gsub(pattern=".bam",
+                replacement=", fisherCalleR, SNVs.vcf",
+                x=bam)
     ### Detection of SNVs.
     SNVs <- exactSNP(readFile=bam,
                      isBAM=TRUE,
