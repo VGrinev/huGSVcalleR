@@ -1,0 +1,26 @@
+Package: huGSVcalleR
+Title: huGSVcalleR Toolkit
+Version: 0.1.0
+Authors@R: 
+    c(
+        person("Vasiliy V.", "Grinev", role = c("aut"), email = "Grinev_vv@bsu.by"),
+        person("Mikalai M.", "Yatskou", role = c("aut"), email = "Yatskou@bsu.by"),
+        person("Dzianis D.", "Sarnatski", role = c("aut", "cre"), email = "denisiussarnatski@gmail.com")
+    )
+Description: A package to call polymorphic sites in the human genom.
+License: MIT
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+Imports: 
+    Biostrings (>= 2.72.1),
+    tools,
+    data.table (>= 1.15.4),
+    matrixStats (>= 1.3.0),
+    ShortRead (>= 1.67.0),
+    methods,
+    stats,
+    utils,
+LinkingTo: 
+    Rcpp,
+    RcppParallel
