@@ -16,21 +16,16 @@
 #'                           output=NULL,
 #'                           workDir="D:/Vasily Grinev")
 #' @export
-#' Last updated: July 17, 2025.
-
+#' @importFrom Biostrings DNAStringSet writeXStringSet
+#' @importFrom grid grid.draw textGrob gpar gTree gList
+#' @importFrom gridExtra tableGrob ttheme_minimal
+#' @importFrom vioplot vioplot
+#' @importFrom graphics plot axis title rect legend mtext text barplot
+#' @importFrom stats ks.test density
+#' @importFrom grDevices pdf dev.off
 reportQAResults <- function(x,
                             output=NULL,
                             workDir=NULL){
-    ### Loading the required packages.
-    #   This code was successfully tested with packages Biostrings v.2.72.1,
-    #   grid, gridExtra v.2.3, pheatmap v.1.0.12, pwalign v.1.4.0
-    #   and vioplot v.0.5.0.
-    suppressMessages(expr=library(package=Biostrings))
-    suppressMessages(expr=library(package=grid))
-    suppressMessages(expr=library(package=gridExtra))
-    suppressMessages(expr=library(package=pheatmap))
-    suppressMessages(expr=library(package=pwalign))
-    suppressMessages(expr=library(package=vioplot))
     ### Textual reports.
     ##  Template of textual table.
     tab <- data.frame(Parameter=c("Sample name",
@@ -82,7 +77,7 @@ reportQAResults <- function(x,
                                   "Low-complexity of reads, median",
                                   "Low-complexity of reads, 3rd quartile",
                                   "Low-complexity of reads, max"),
-                      Value=0) 
+                      Value=0)
     ##  Values of textual table.
     tab[1, 2] <- x$SN
     tab[2, 2] <- x$FN
@@ -440,7 +435,7 @@ reportQAResults <- function(x,
                    "#AA4499", "#44AA99", "#999933", "#882255", "#661100",
                    "#6699CC", "#888888")
         matplot(x$ASs[, -1],
-                ann=FALSE, 
+                ann=FALSE,
                 axes=FALSE,
                 ylim=c(0, 0.35),
                 type="l", lty=1, lwd=1,
@@ -473,7 +468,7 @@ reportQAResults <- function(x,
                    "#AA4499", "#44AA99", "#999933", "#882255", "#661100",
                    "#6699CC", "#888888")
         matplot(x$FSs[, -1],
-                ann=FALSE, 
+                ann=FALSE,
                 axes=FALSE,
                 ylim=c(0, 0.35),
                 type="l", lty=1, lwd=1,

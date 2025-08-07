@@ -42,22 +42,21 @@
 #'                         error=0.2,
 #'                         min_match_flank=3L,
 #'                         anchored=TRUE,
-#'                         indels=FALSE, 
+#'                         indels=FALSE,
 #'                         workDir="D:/Vasily Grinev")
 #' @export
-#' Last updated: July 25, 2025.
-
+#' @importFrom ShortRead readFastq
+#' @importFrom Biostrings trimLRPatterns width
+#' @importFrom utils read.table
+#' @importFrom methods is
 cutLeftAdapter <- function(fastqDir=NULL,
                            fastq,
                            adapters,
                            error=0.2,
                            min_match_flank=3L,
                            anchored=TRUE,
-                           indels=FALSE, 
+                           indels=FALSE,
                            workDir=NULL){
-    ### Loading the required package.
-    #   This code was successfully tested with the package ShortRead v.1.67.0.
-    suppressMessages(expr=library(package=ShortRead))
     ### Setting the working directory.
     if (is.null(x=workDir)){
         workDir <- getwd()

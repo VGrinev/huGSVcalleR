@@ -70,7 +70,7 @@ trimL <- cutRigthAdapter(fastqDir="Files_FASTQ",
                          error=0.2,
                          min_match_flank=3L,
                          anchored=TRUE,
-                         indels=FALSE, 
+                         indels=FALSE,
                          workDir="D:/Vasily Grinev")
 }
 \author{

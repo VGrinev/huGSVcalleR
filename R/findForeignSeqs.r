@@ -26,24 +26,20 @@
 #'                          contaminants="contaminants.txt",
 #'                          workDir="D:/Vasily Grinev")
 #' @export
-#' Last updated: July 13, 2025.
-
+#' @importFrom Biostrings vmatchPattern width
+#' @importFrom GenomicRanges GRanges intersect
+#' @importFrom utils read.table
+#' @importFrom methods is
+#' @importFrom tools file_ext
 findForeignSeqs <- function(fastqDir=NULL,
                             fastq,
                             n=NULL,
                             contaminants,
                             workDir=NULL){
-    ### Loading the required packages.
-    #   This code was successfully tested with the packages Biostrings v.2.72.1
-    #   and GenomicRanges v.1.56.1.
-    suppressMessages(expr=library(package=Biostrings))
-    suppressMessages(expr=library(package=GenomicRanges))
     ### Setting the working directory.
     if (is.null(x=workDir)){
         workDir <- getwd()
     }
-    ### Loading the required auxiliary function.
-    source(file=paste(workDir, "readFASTQ.r", sep="/"))
     ### Full path to the FASTQ file(-s).
     if (is.null(x=fastqDir)){
         path <- paste(workDir, fastqDir, sep="")
@@ -85,7 +81,7 @@ findForeignSeqs <- function(fastqDir=NULL,
     if (max(width(x=reads)) %% 5 == 0){
         positions <- paste(seq(from=1, to=max(width(x=reads)), by=5),
                            seq(from=5, to=max(width(x=reads)), by=5),
-                           sep="-")   
+                           sep="-")
     }else{
         positions <- paste(seq(from=1, to=max(width(x=reads)), by=5),
                            c(seq(from=5, to=max(width(x=reads)), by=5),
@@ -93,7 +89,7 @@ findForeignSeqs <- function(fastqDir=NULL,
                            sep="-")
     }
     hits <- data.frame(cbind(positions, do.call(what=cbind, args=hits)))
-    colnames(x=hits) <- c("positions", FSs$foreign_name) 
+    colnames(x=hits) <- c("positions", FSs$foreign_name)
     hits[, -1] <- apply(X=hits[, -1], MARGIN=2, FUN=as.numeric)
     ### Returning the final object.
     return(hits)

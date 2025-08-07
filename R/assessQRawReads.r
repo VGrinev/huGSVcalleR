@@ -37,10 +37,10 @@
 #' @importFrom Biostrings DNAStringSet PhredQuality width letterFrequency
 #' @importFrom ShortRead countFastq qa dustyScore
 #' @importFrom data.table data.table rbindlist
-#' @importFrom matrixStats rowSums
+#' @importFrom IRanges IntegerList
 #' @importFrom stats density quantile
-#' @importFrom methods as
-#' @importFrom utils read.delim
+#' @importFrom methods as is
+#' @importFrom stats density quantile
 assessQRawReads <- function(fastqDir=NULL,
                             fastq,
                             n=NULL,
@@ -51,10 +51,6 @@ assessQRawReads <- function(fastqDir=NULL,
     if (is.null(x=workDir)){
         workDir <- getwd()
     }
-    ### Loading the required auxiliary functions.
-    source(file=paste(workDir, "readFASTQ.r", sep="/"))
-    source(file=paste(workDir, "findAdapters.r", sep="/"))
-    source(file=paste(workDir, "findForeignSeqs.r", sep="/"))
     ### Full path to the FASTQ file(-s).
     if (is.null(x=fastqDir)){
         path <- paste(workDir, fastqDir, sep="")
@@ -80,7 +76,10 @@ assessQRawReads <- function(fastqDir=NULL,
     reads <- readFASTQ(fastqDir=fastqDir, fastq=fastq, n=n, workDir=workDir)
     RLs <- as.numeric(x=summary(object=width(x=reads$reads)))
     ##  Per entire reads quality.
-    PERQs <- mean(x=as(object=reads$QScores, Class="IntegerList"))
+    readsIntList=as(object=reads$QScores, Class="IntegerList")
+    print(typeof(readsIntList))
+    print(readsIntList)
+    PERQs <- mean(x=readsIntList)
     names(x=PERQs) <- NULL
     PERQs <- list(means=PERQs,
                   density=do.call(what=cbind, args=density(x=PERQs)[1:2]),

@@ -104,7 +104,6 @@
 #' @importFrom Biostrings width
 #' @importFrom methods as
 #' @importFrom utils read.table
-#' @importFrom stats na.rm
 cleanRawReads <- function(fastqDir=NULL,
                           fastq1,
                           fastq2=NULL,
@@ -127,12 +126,6 @@ cleanRawReads <- function(fastqDir=NULL,
                           batchSize=NA,
                           postfix="filtered",
                           workDir=NULL){
-    ### Loading the required package.
-    #   This code was successfully tested with the package ShortRead v.1.67.0.
-    suppressMessages(expr=library(package=ShortRead))
-    ### Loading the required auxiliary functions.
-    source(file=paste(workDir, "cutLeftAdapter.r", sep="/"))
-    source(file=paste(workDir, "cutRigthAdapter.r", sep="/"))
     ### Setting the working directory.
     if (is.null(x=workDir)){
         workDir <- getwd()
