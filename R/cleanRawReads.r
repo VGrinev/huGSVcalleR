@@ -99,7 +99,7 @@
 #'               postfix="filtered",
 #'               workDir="D:/Vasily Grinev")
 #' @export
-#' @importFrom ShortRead readFastq writeFastq trimEnds trimTailw trimTails
+#' @importFrom ShortRead readFastq writeFastq trimEnds trimTailw trimTails id
 #' @importFrom ShortRead polynFilter occurrenceFilter dustyFilter
 #' @importFrom Biostrings width
 #' @importFrom methods as

@@ -41,6 +41,7 @@
 #' @importFrom stats density quantile
 #' @importFrom methods as is
 #' @importFrom stats density quantile
+#' @importFrom DelayedArray mean
 assessQRawReads <- function(fastqDir=NULL,
                             fastq,
                             n=NULL,
@@ -76,10 +77,7 @@ assessQRawReads <- function(fastqDir=NULL,
     reads <- readFASTQ(fastqDir=fastqDir, fastq=fastq, n=n, workDir=workDir)
     RLs <- as.numeric(x=summary(object=width(x=reads$reads)))
     ##  Per entire reads quality.
-    readsIntList=as(object=reads$QScores, Class="IntegerList")
-    print(typeof(readsIntList))
-    print(readsIntList)
-    PERQs <- mean(x=readsIntList)
+    PERQs <- mean(x=as(object=reads$QScores, Class="IntegerList"))
     names(x=PERQs) <- NULL
     PERQs <- list(means=PERQs,
                   density=do.call(what=cbind, args=density(x=PERQs)[1:2]),

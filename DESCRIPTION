@@ -28,7 +28,8 @@ Imports:
     pwalign (>= 1.4.0),
     vioplot (>= 0.5.0),
     IRanges,
-    S4Vectors
+    S4Vectors,
+    DelayedArray
 LinkingTo: 
     Rcpp,
     RcppParallel
