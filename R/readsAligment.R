@@ -509,11 +509,6 @@ reportQAlResults <- function(x,
 #' @importFrom Rsamtools sortBam indexBam
 #' @importFrom parallel detectCores
 sortBamFile <- function(bamDir, bamFile, byQname, workDir=NULL){
-  ### Loading the required packages.
-  #   This code was successfully tested with the packages parallel and
-  #   Rsamtools v.2.20.0.
-  suppressMessages(expr=library(package=parallel))
-  suppressMessages(expr=library(package=Rsamtools))
   ### Sorting and indexing of generated BAM file(-s).
   for (i in 1:length(x=bamFile)){
     sortedBam <- sortBam(file=paste(paste(workDir, bamDir, sep="/"),
