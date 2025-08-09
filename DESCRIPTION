@@ -33,13 +33,21 @@ Imports:
     Rsubread (>= 2.22.1),
     Rsamtools (>= 2.20.0),
     grDevices,
-    graphics
+    graphics,
+    doParallel (>= 1.0.17),
+    BSgenome (>= 1.72.0),
+    dplyr (>= 1.1.0),
+    stringr (>= 1.5.0),
+    purrr (>= 1.0.0),
+    tidyr (>= 1.3.0)
 LinkingTo: 
     Rcpp,
     RcppParallel
 Suggests:
     testthat,
     knitr,
-    rmarkdown
+    rmarkdown,
+    BSgenome.Hsapiens.UCSC.hg38 (>= 1.4.5)
+
 
 
