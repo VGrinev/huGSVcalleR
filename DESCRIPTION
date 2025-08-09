@@ -22,19 +22,24 @@ Imports:
     methods,
     stats,
     utils,
-    grid,
+    grid (>= 4.3.0),
     gridExtra (>= 2.3),
     pheatmap (>= 1.0.12),
     pwalign (>= 1.4.0),
     vioplot (>= 0.5.0),
     IRanges,
     S4Vectors,
-    DelayedArray
+    DelayedArray,
+    Rsubread (>= 2.22.1),
+    Rsamtools (>= 2.20.0),
+    grDevices,
+    graphics
 LinkingTo: 
     Rcpp,
     RcppParallel
-Depends:
-    R (>= 3.6.0),
-    IRanges,
-    Biostrings
+Suggests:
+    testthat,
+    knitr,
+    rmarkdown
+
 
