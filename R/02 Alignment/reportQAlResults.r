@@ -16,16 +16,17 @@
 #'                            output=NULL,
 #'                            workDir="D:/Vasily Grinev")
 #' @export
-#' Last updated: July 19, 2025.
+#' Last updated: August 13, 2025.
 
 reportQAlResults <- function(x,
                              output=NULL,
                              workDir=NULL){
     ### Loading the required packages.
-    #   This code was successfully tested with packages grid and
-    #   gridExtra v.2.3.
+    #   This code was successfully tested with packages grid, gridExtra v.2.3
+    #   and vioplot v.0.5.0.
     suppressMessages(expr=library(package=grid))
     suppressMessages(expr=library(package=gridExtra))
+    suppressMessages(expr=library(package=vioplot))
     ### Textual report.
     ##  Template of textual table.
     tab <- data.frame(Parameter=c("Sample name",
@@ -107,8 +108,8 @@ reportQAlResults <- function(x,
                        gp=gpar(col="black",
                                fontsize=11))
     title3 <- textGrob(label=sprintf(paste("Date & Time:",
-                                     format(x=Sys.time(), "%b %d %Y %X"),
-                                     sep=" ")),
+                                           format(x=Sys.time(), "%Y-%m-%d %X"),
+                                           sep=" ")),
                        just="centre",
                        vjust=-34.9,
                        gp=gpar(col="black",
@@ -206,7 +207,11 @@ reportQAlResults <- function(x,
                       "%",
                       sep=""))
     ##  Plots of template lengths.
-    p=sample(x=log10(x=x$TLENs + 1), size=1e6)
+    if (x$TNRs > 1e6){
+        p=sample(x=log10(x=x$TLENs + 1), size=1e6)
+    }else{
+        p=log10(x=x$TLENs + 1)
+    }
     plot(0, type="n", axes=FALSE, ann=FALSE, bty="n",
          xlim=c(0, 2), ylim=c(0, ceiling(x=max(x=p))))
     vioplot(x=p,
@@ -281,7 +286,7 @@ reportQAlResults <- function(x,
           col="black",
           outer=TRUE)
     mtext(text=sprintf(paste("Date & Time:",
-                             format(x=Sys.time(), "%b %d %Y %X"),
+                             format(x=Sys.time(), "%Y-%m-%d %X"),
                              sep=" ")),
           side=3,
           line=0.5,
