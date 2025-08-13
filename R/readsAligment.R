@@ -295,7 +295,7 @@ reportQAlResults <- function(x,
                      gp=gpar(col="black",
                              fontsize=11))
   title3 <- textGrob(label=sprintf(paste("Date & Time:",
-                                         format(x=Sys.time(), "%b %d %Y %X"),
+                                         format(x=Sys.time(), "%Y-%m-%d %X"),
                                          sep=" ")),
                      just="centre",
                      vjust=-34.9,
@@ -394,7 +394,11 @@ reportQAlResults <- function(x,
                     "%",
                     sep=""))
   ##  Plots of template lengths.
-  p=sample(x=log10(x=x$TLENs + 1), size=1e6)
+  if (x$TNRs > 1e6){
+    p=sample(x=log10(x=x$TLENs + 1), size=1e6)
+  }else{
+    p=log10(x=x$TLENs + 1)
+  }
   plot(0, type="n", axes=FALSE, ann=FALSE, bty="n",
        xlim=c(0, 2), ylim=c(0, ceiling(x=max(x=p))))
   vioplot(x=p,
@@ -469,7 +473,7 @@ reportQAlResults <- function(x,
         col="black",
         outer=TRUE)
   mtext(text=sprintf(paste("Date & Time:",
-                           format(x=Sys.time(), "%b %d %Y %X"),
+                           format(x=Sys.time(), "%Y-%m-%d %X"),
                            sep=" ")),
         side=3,
         line=0.5,
