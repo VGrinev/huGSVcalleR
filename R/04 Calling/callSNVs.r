@@ -73,7 +73,7 @@
 #' @author Dzianis D. Sarnatski, Mikalai M. Yatskou, Vasily V. Grinev
 #' @examples
 #' @export
-#' Last updated: July 26, 2025.
+#' Last updated: August 14, 2025.
 
 callSNVs <- function(fr_data, 
                      criteria="entropy",
@@ -186,8 +186,7 @@ callSNVs <- function(fr_data,
                                ERC="NONE",
                                cores="MAX",
                                SE=TRUE,
-                               gatk_path=NULL
+                               gatk_path=NULL,
                                workDir=workDir)
     }
 }
-
