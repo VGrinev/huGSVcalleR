@@ -20,7 +20,7 @@
 #' @author Ilia M. Ilyushonak, Vasily V. Grinev.
 #' @examples
 #' @export
-#' Last updated: July 23, 2025.
+#' Last updated: August 14, 2025.
 
 indexGenomeGATK <- function(fastaDir=NULL,
                             faFile,
@@ -43,7 +43,7 @@ indexGenomeGATK <- function(fastaDir=NULL,
     }
     ### Building the .fai index.
     if (fai == TRUE){
-        indexFa(file=paste(path, faFile, sep="/")
+        indexFa(file=paste(path, faFile, sep="/"))
     }
     ### Building the .dict index.
     if (dict == TRUE){
