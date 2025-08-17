@@ -173,6 +173,10 @@ buildIndexSubread <- function(ref_genome,
   if (is.null(x=workDir)){
     workDir <- getwd()
   }
+  ### Check for ref_genome directory existing
+  if (!dir.exists(file.path(workDir, ref_genome))) {
+    dir.create(file.path(workDir, ref_genome), recursive = TRUE)
+  }
   ### Setting the directories.
   refGenome <- paste(workDir, ref_genome, sep="/")
   refFASTA <- paste(workDir, ref_fasta, sep="/")

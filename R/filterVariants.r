@@ -64,7 +64,6 @@ filterVariants <- function(vcfDir=NULL,
     }
     ### Loading of the single nucleotide variations as an object of class
     #   CollapsedVCF.
-    setClassUnion("ExpData", c("matrix", "SummarizedExperiment"))
     SNVs <- readVcf(file=paste(vcfDir, vcfFile, sep="/"))
     ### Multi-stage Filtering.
     if (!is.null(x=gr)){

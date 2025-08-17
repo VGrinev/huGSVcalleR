@@ -52,7 +52,6 @@ annotateVariants <- function(vcfDir=NULL,
     }
     ### Loading of the single nucleotide variations as an object of class
     #   CollapsedVCF.
-    setClassUnion("ExpData", c("matrix", "SummarizedExperiment"))
     vcf <- readVcf(file=paste(vcfDir, vcfFile, sep="/"))
     ### Loading of the reference genes as an object of class GRanges.
     genes <- read.table(file=paste(workDir, ref_genes, sep="/"),
