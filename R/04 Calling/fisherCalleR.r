@@ -35,7 +35,7 @@
 #' res <- fisherCalleR(bamDir="Files_BAM",
 #'                     bamFile="SRR21721515.bam",
 #'                     fastaDir="Files_FASTA",
-#'                     faFile="hg38.fa.gz",
+#'                     faFile="hg38.fa",
 #'                     baseq=20,
 #'                     mindepth=1,
 #'                     maxdepth=1e6,
@@ -44,7 +44,7 @@
 #'                     threads=3,
 #'                     workDir="D:/Vasily Grinev")
 #' @export
-#' Last updated: July 25, 2025.
+#' Last updated: August 19, 2025.
 
 fisherCalleR <- function(bamDir=NULL,
                          bamFile,
