@@ -17,7 +17,7 @@
 #'             byQname=TRUE,
 #'             workDir="D:/Vasily Grinev")
 #' @export
-#' Last updated: July 23, 2025.
+#' Last updated: August 19, 2025.
 
 sortBamFile <- function(bamDir, bamFile, byQname, workDir=NULL){
     ### Loading the required packages.
@@ -27,18 +27,20 @@ sortBamFile <- function(bamDir, bamFile, byQname, workDir=NULL){
     suppressMessages(expr=library(package=Rsamtools))
     ### Sorting and indexing of generated BAM file(-s).
     for (i in 1:length(x=bamFile)){
-    sortedBam <- sortBam(file=paste(paste(workDir, bamDir, sep="/"),
-                                    bamFile[i],
-                                    sep="/"),
-                         destination=sub(pattern=".bam",
-                                         replacement="",
-                                         x=paste(paste(workDir,
-                                                       bamDir,
-                                                       sep="/"),
-                                                 bamFile[i],
-                                                 sep="/")),
-                         byQname=byQname,
-                         nThreads=detectCores(logical=TRUE) - 1)
-    suppressMessages(expr=indexBam(files=sortedBam))
+        sortedBam <- sortBam(file=paste(paste(workDir, bamDir, sep="/"),
+                                        bamFile[i],
+                                        sep="/"),
+                             destination=sub(pattern=".bam",
+                                             replacement="",
+                                             x=paste(paste(workDir,
+                                                           bamDir,
+                                                           sep="/"),
+                                                     bamFile[i],
+                                                     sep="/")),
+                             byQname=byQname,
+                             nThreads=detectCores(logical=TRUE) - 1)
+        if (byQname == FALSE){
+            suppressMessages(expr=indexBam(files=sortedBam))
+        }
     }
 }
