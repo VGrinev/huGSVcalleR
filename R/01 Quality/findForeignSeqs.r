@@ -26,7 +26,7 @@
 #'                          contaminants="contaminants.txt",
 #'                          workDir="D:/Vasily Grinev")
 #' @export
-#' Last updated: July 13, 2025.
+#  Last updated: July 13, 2025.
 
 findForeignSeqs <- function(fastqDir=NULL,
                             fastq,
@@ -46,7 +46,7 @@ findForeignSeqs <- function(fastqDir=NULL,
     source(file=paste(workDir, "readFASTQ.r", sep="/"))
     ### Full path to the FASTQ file(-s).
     if (is.null(x=fastqDir)){
-        path <- paste(workDir, fastqDir, sep="")
+        path <- workDir
     }else{
         path <- paste(workDir, fastqDir, sep="/")
     }

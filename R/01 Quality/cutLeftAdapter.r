@@ -45,7 +45,7 @@
 #'                         indels=FALSE, 
 #'                         workDir="D:/Vasily Grinev")
 #' @export
-#' Last updated: July 25, 2025.
+#  Last updated: July 25, 2025.
 
 cutLeftAdapter <- function(fastqDir=NULL,
                            fastq,

@@ -99,7 +99,7 @@
 #'               postfix="filtered",
 #'               workDir="D:/Vasily Grinev")
 #' @export
-#' Last updated: July 25, 2025.
+#  Last updated: July 25, 2025.
 
 cleanRawReads <- function(fastqDir=NULL,
                           fastq1,

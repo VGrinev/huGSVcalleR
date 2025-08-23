@@ -45,7 +45,7 @@
 #'                          indels=FALSE, 
 #'                          workDir="D:/Vasily Grinev")
 #' @export
-#' Last updated: July 25, 2025.
+#  Last updated: July 25, 2025.
 
 cutRigthAdapter <- function(fastqDir=NULL,
                             fastq,
@@ -68,7 +68,7 @@ cutRigthAdapter <- function(fastqDir=NULL,
     }else{
         ### Full path to the FASTQ file.
         if (is.null(x=fastqDir)){
-            path <- paste(workDir, fastqDir, sep="")
+            path <- workDir
         }else{
             path <- paste(workDir, fastqDir, sep="/")
         }

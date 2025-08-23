@@ -18,7 +18,7 @@
 #'                 n=1e5,
 #'                 workDir="D:/Vasily Grinev")
 #' @export
-#' Last updated: July 11, 2025.
+#  Last updated: July 11, 2025.
 
 readFASTQ <- function(fastqDir=NULL,
                       fastq,
@@ -33,7 +33,7 @@ readFASTQ <- function(fastqDir=NULL,
     }
     ### Full path to the FASTQ file(-s).
     if (is.null(x=fastqDir)){
-        path <- paste(workDir, fastqDir, sep="")
+        path <- workDir
     }else{
         path <- paste(workDir, fastqDir, sep="/")
     }

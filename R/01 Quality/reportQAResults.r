@@ -16,7 +16,7 @@
 #'                           output=NULL,
 #'                           workDir="D:/Vasily Grinev")
 #' @export
-#' Last updated: July 17, 2025.
+#  Last updated: July 17, 2025.
 
 reportQAResults <- function(x,
                             output=NULL,
@@ -127,8 +127,8 @@ reportQAResults <- function(x,
                        gp=gpar(col="black",
                                fontsize=11))
     title3 <- textGrob(label=sprintf(paste("Date & Time:",
-                                     format(x=Sys.time(), "%b %d %Y %X"),
-                                     sep=" ")),
+                                           format(x=Sys.time(), "%Y-%m-%d %X"),
+                                           sep=" ")),
                        just="centre",
                        vjust=-67.8,
                        gp=gpar(col="black",
@@ -373,7 +373,7 @@ reportQAResults <- function(x,
           col="black",
           outer=TRUE)
     mtext(text=sprintf(paste("Date & Time:",
-                             format(x=Sys.time(), "%b %d %Y %X"),
+                             format(x=Sys.time(), "%Y-%m-%d %X"),
                              sep=" ")),
           side=3,
           line=0.5,
@@ -515,7 +515,7 @@ reportQAResults <- function(x,
           col="black",
           outer=TRUE)
     mtext(text=sprintf(paste("Date & Time:",
-                             format(x=Sys.time(), "%b %d %Y %X"),
+                             format(x=Sys.time(), "%Y-%m-%d %X"),
                              sep=" ")),
           side=3,
           line=0.5,
