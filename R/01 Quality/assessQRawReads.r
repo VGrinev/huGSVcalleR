@@ -34,7 +34,7 @@
 #'                       contaminants=NULL,
 #'                       workDir="D:/Vasily Grinev")
 #' @export
-#' Last updated: July 12, 2025.
+#  Last updated: July 12, 2025.
 
 assessQRawReads <- function(fastqDir=NULL,
                             fastq,
