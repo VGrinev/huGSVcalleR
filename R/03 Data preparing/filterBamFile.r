@@ -44,7 +44,7 @@
 #'               index=TRUE,
 #'               workDir="D:/Vasily Grinev")
 #' @export
-#' Last updated: July 23, 2025.
+#  Last updated: July 23, 2025.
 
 filterBamFile <- function(bamDir=NULL,
                           bamFile,

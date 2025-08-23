@@ -21,7 +21,7 @@
 #' @author Ilia M. Ilyushonak, Vasily V. Grinev.
 #' @examples
 #' @export
-#' Last updated: July 23, 2025.
+#  Last updated: July 23, 2025.
 
 indexVcfGATK <- function(vcfDir=NULL,
                          vcfFile=NULL,

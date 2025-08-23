@@ -72,7 +72,7 @@
 #'                           postfix="PileupResults",
 #'                           workDir="D:/Vasily Grinev")
 #' @export
-#' Last updated: July 24, 2025.
+#  Last updated: July 24, 2025.
 
 collectBasesPileup <- function(bamDir=NULL,
                                bamFile,

@@ -39,7 +39,7 @@
 #' @author Ilia M. Ilyushonak, Vasily V. Grinev.
 #' @examples
 #' @export
-#' Last updated: August 14, 2025.
+#  Last updated: August 14, 2025.
 
 recalibrateBamGATK <- function(bamDir=NULL,
                                bamFile,

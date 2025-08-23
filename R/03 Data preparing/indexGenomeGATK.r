@@ -20,7 +20,7 @@
 #' @author Ilia M. Ilyushonak, Vasily V. Grinev.
 #' @examples
 #' @export
-#' Last updated: August 14, 2025.
+#  Last updated: August 14, 2025.
 
 indexGenomeGATK <- function(fastaDir=NULL,
                             faFile,
