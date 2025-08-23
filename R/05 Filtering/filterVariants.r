@@ -40,7 +40,7 @@
 #'                               index=TRUE,
 #'                               workDir="D:/Vasily Grinev")
 #' @export
-#' Last updated: July 28, 2025.
+#  Last updated: July 28, 2025.
 
 filterVariants <- function(vcfDir=NULL,
                            vcfFile,
