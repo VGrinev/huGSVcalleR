@@ -32,7 +32,7 @@
 #'                              output="example_seq, annotated SNVs",
 #'                              workDir="D:/Vasily Grinev")
 #' @export
-#' Last updated: July 27, 2025.
+#  Last updated: July 27, 2025.
 
 annotateVariants <- function(vcfDir=NULL,
                              vcfFile,
