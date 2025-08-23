@@ -15,7 +15,7 @@
 #'                            bamFile="SRR21721515.bam",
 #'                            workDir="D:/Vasily Grinev")
 #' @export
-#' Last updated: July 18, 2025.
+#  Last updated: July 18, 2025.
 
 assessQAlignedReads <- function(bamDir=NULL,
                                 bamFile,

@@ -16,7 +16,7 @@
 #'                            output=NULL,
 #'                            workDir="D:/Vasily Grinev")
 #' @export
-#' Last updated: August 13, 2025.
+#  Last updated: August 13, 2025.
 
 reportQAlResults <- function(x,
                              output=NULL,

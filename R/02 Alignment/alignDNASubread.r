@@ -42,7 +42,7 @@
 #'                       SV=FALSE,
 #'                       workDir=workDir)
 #' @export
-#' Last updated: July 18, 2025.
+#  Last updated: July 18, 2025.
 
 alignDNASubread <- function(genome,
                             fastqDir, fastq1, fastq2=NULL,

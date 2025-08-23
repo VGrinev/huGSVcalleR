@@ -17,7 +17,7 @@
 #'             byQname=TRUE,
 #'             workDir="D:/Vasily Grinev")
 #' @export
-#' Last updated: August 19, 2025.
+#  Last updated: August 19, 2025.
 
 sortBamFile <- function(bamDir, bamFile, byQname, workDir=NULL){
     ### Loading the required packages.

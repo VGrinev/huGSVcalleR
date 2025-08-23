@@ -20,17 +20,17 @@
 #' hash <- buildIndexSubread(ref_genome="Reference_Genomes",
 #'                           ref_fasta="Files_FASTA",
 #'                           index="GRCh38",
-#'                           fa="GRCh38.fa",
-#'                           memory=8000,
-#'                           workDir="/mnt/data/grinev")
+#'                           fa="GRCh38.fa.gz",
+#'                           memory=40000,
+#'                           workDir="D:/SNVs")
 #' @export
-#' Last updated: July 17, 2025.
+#  Last updated: August 12, 2025.
 
 buildIndexSubread <- function(ref_genome,
                               ref_fasta,
                               index,
                               fa,
-                              memory=8000,
+                              memory=40000,
                               workDir=NULL){
     ### Loading the required auxiliary package.
     #   This code was successfully tested with package Rsubread v.2.32.2.
