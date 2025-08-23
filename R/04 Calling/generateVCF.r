@@ -31,7 +31,7 @@
 #'             outputVCF="example_seq.call_table.identified_SNVs",
 #'             workDir="D:/Vasily Grinev")
 #' @export
-#' Last updated: July 28, 2025.
+#  Last updated: July 28, 2025.
 
 generateVCF <- function(input,
                         version="4.0",

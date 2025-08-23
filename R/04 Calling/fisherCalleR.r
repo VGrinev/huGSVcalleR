@@ -44,7 +44,7 @@
 #'                     threads=3,
 #'                     workDir="D:/Vasily Grinev")
 #' @export
-#' Last updated: August 19, 2025.
+#  Last updated: August 19, 2025.
 
 fisherCalleR <- function(bamDir=NULL,
                          bamFile,

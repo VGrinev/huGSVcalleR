@@ -45,7 +45,7 @@
 #' @author Ilia M. Ilyushonak, Vasily V. Grinev.
 #' @examples
 #' @export
-#' Last updated: July 26, 2025.
+#  Last updated: July 26, 2025.
 
 gatkCalleR <- function(bamDir=NULL,
                        bamFile,
