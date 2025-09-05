@@ -43,6 +43,8 @@
 #' @importFrom VariantAnnotation readVcf writeVcf
 #' @importFrom GenomicRanges makeGRangesFromDataFrame findOverlaps
 #' @importFrom methods setClassUnion
+#' @importFrom SparseArray rowRanges
+#' @importFrom S4Vectors queryHits
 filterVariants <- function(vcfDir=NULL,
                            vcfFile,
                            gr=NULL,
