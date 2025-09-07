@@ -100,7 +100,10 @@ callSNVs <- function(fr_data,
                      cores="MAX",
                      SE=TRUE,
                      gatk_path=NULL,
-                     workDir=NULL){
+                     workDir=NULL,
+                     #specific arguments to be passed to "ml"
+                     model="rpart",
+                     pvalue = FALSE) {
   ### Validation of the input criteria.
   if (length(x=criteria) == 0){
     stop("No test(-s) will be performed. Please specify valid criteria")
@@ -182,6 +185,15 @@ callSNVs <- function(fr_data,
                            SE=TRUE,
                            gatk_path=NULL,
                            workDir=workDir)
+  }
+  ### ML approach.
+  if (criteria == "ml"){
+    mlSNVs <- mlCalleR(fr_data,
+                       model=model,
+                       pvalue=pvalue,
+                       vcfDir=vcfDir,
+                       outputVCF=outputVCF,
+                       workDir=workDir)
   }
 }
 
@@ -579,4 +591,136 @@ generateVCF <- function(input,
   }
 }
 
+
+#' Call single nucleotide variations using machine learning models
+#' @description This function uses pre-trained machine learning models to
+#'     identify single nucleotide variations from frequency table data.
+#' @param model character string specifying which machine learning model to use.
+#'     Available options: "log_reg", "rand_forest", "rpart", "SVM", "xgboost".
+#'     Default is "rpart".
+#' @param pvalue logical indicating whether to return class probabilities
+#'     instead of class labels (default: FALSE). If TRUE, returns probability
+#'     of belonging to positive class (1).
+#' @param workDir character string giving the path to and name of working
+#'     directory. NULL by default that means the current working directory.
+#' @return VCF file with detected single nucleotide variations.
+#' @author Dzianis D. Sarnatski
+#' @examples
+#' # Example usage
+#' mlSNVs <- mlCalleR(model = "rpart", pvalue = FALSE, workDir = "D:/Vasily Grinev")
+#' @export
+#' @importFrom data.table data.table
+mlCalleR <- function(fr_data,
+                     model = "rpart",
+                     pvalue = FALSE,
+                     vcfDir=vcfDir,
+                     outputVCF=outputVCF,
+                     workDir = NULL) {
+
+  ### Validation of the input model
+  SUPPORTED_ML_MODELS <- c("log_reg", "rand_forest", "rpart", "SVM", "xgboost")
+
+  if (!model %in% SUPPORTED_ML_MODELS) {
+    stop(paste("Invalid model specified:", model,
+               ". Available options:", paste(SUPPORTED_ML_MODELS, collapse = ", ")))
+  }
+
+  ### Setting the working directory
+  if (is.null(x = workDir)) {
+    workDir <- getwd()
+  }
+
+  ### Validate input data structure
+  required_cols <- c("position", "reference", "A", "C", "G", "T")
+  if (!all(required_cols %in% colnames(fr_data))) {
+    stop(paste("Input data must contain columns:", paste(required_cols, collapse = ", ")))
+  }
+
+  ### Feature extraction
+  features <- c("x1", "x2", "x3", "x4")
+  data.features <- vectorise_data_cpp_parallel(fr_data, features = features)
+
+  ### Sum non-reference reads
+  target_cols <- c("x2", "x3", "x4")
+  existing_cols <- target_cols[target_cols %in% names(data.features)]
+  if (length(existing_cols) > 0) {
+    data.features$x_sum <- rowSums(data.features[, existing_cols, drop = FALSE], na.rm = TRUE)
+    data.features <- data.features[, !names(data.features) %in% target_cols]
+  }
+
+  ### Load the pre-trained model
+  model.path <- system.file("data", paste0(model, ".rds"), package = "huGSVcalleR")
+
+  if (!file.exists(model.path)) {
+    stop(paste("Model file not found:", model.path))
+  }
+
+  model.obj <- readRDS(model.path)
+
+  ### Make predictions
+  prediction <- NULL
+
+  if (model == "xgboost") {
+    if (pvalue) {
+      prediction <- predict(model.obj, xgboost::xgb.DMatrix(data = as.matrix(data.features)))
+    } else {
+      prediction <- predict(model.obj, xgboost::xgb.DMatrix(data = as.matrix(data.features))) |>
+        round() |>
+        as.factor()
+    }
+  } else if (model == "rpart") {
+    if (pvalue) {
+      pred <- predict(model.obj, newdata = data.features, type = "prob")
+      prediction <- if (is.list(pred)) {
+        sapply(pred, function(x) x[2])
+      } else if (is.matrix(pred)) {
+        pred[, 2]
+      } else {
+        pred
+      }
+    } else {
+      prediction <- predict(model.obj, newdata = data.features, type = "class")
+    }
+  } else if (model == "log_reg") {
+    if (pvalue) {
+      prediction <- predict(model.obj, newdata = data.features, type = "response") |> as.vector()
+    } else {
+      prediction <- predict(model.obj, newdata = data.features, type = "response") |> as.vector()
+      prediction <- ifelse(prediction > 0.5, 1, 0) |> as.factor()
+    }
+  } else if (model == "rand_forest") {
+    if (pvalue) {
+      pred <- predict(model.obj, newdata = data.features, type = "prob")
+      prediction <- if (is.list(pred)) {
+        sapply(pred, function(x) x[2])
+      } else if (is.matrix(pred)) {
+        pred[, 2]
+      } else {
+        pred
+      } |> as.vector()
+    } else {
+      prediction <- predict(model.obj, newdata = data.features, type = "response")
+    }
+  } else if (model == "SVM") {
+    if (pvalue) {
+      pred_obj <- predict(model.obj, newdata = data.features, probability = TRUE)
+      prediction <- attr(pred_obj, "probabilities")[, "1"]
+    } else {
+      prediction <- predict(model.obj, newdata = data.features)
+    }
+  }
+
+  ### Add predictions to the original data
+  results <- cbind(fr_data, ML_Prediction = prediction)
+
+  ### Generate VCF file
+  generateVCF(input = results,
+              version="4.0",
+              vcfDir=vcfDir,
+              outputVCF=outputVCF,
+              workDir = workDir)
+
+  ### Return the results
+  return(results)
+}
 

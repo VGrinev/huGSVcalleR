@@ -27,7 +27,9 @@ callSNVs(
   cores = "MAX",
   SE = TRUE,
   gatk_path = NULL,
-  workDir = NULL
+  workDir = NULL,
+  model = "rpart",
+  pvalue = FALSE
 )
 }
 \arguments{
