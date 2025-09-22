@@ -29,7 +29,7 @@ all duplicated reads will be kept in output BAM file, with "yes" all
 duplicated reads will be removed, and with "seq" only optical and other
 sequencing duplicates will be removed.}
 
-\item{SE}{if TRUE (by default), standart error determined by function
+\item{SE}{if TRUE (by default), standard error determined by function
 MarkDuplicates() will be writen in file STDERR.MARKDUP.TXT.}
 
 \item{gatk_path}{character string giving the path to internal or external
@@ -37,12 +37,14 @@ MarkDuplicates() will be writen in file STDERR.MARKDUP.TXT.}
 Find.Gatk() or settled manually. Default value is "gatk", i.e. function
 will uses GATK systemly from $PATH.}
 
-\item{workDir}{character string giving the path to and name of work
-directory. NULL by default that means the current working directory.}
+\item{workDir}{character string giving the path to and name of working
+directory. NULL by default that means the current working directory.
+Both bamDir (when provided) and bamFile must be somewhere inside
+directory, chosen as working directory.}
 }
 \value{
 a new BAM file with processed duplicated reads, a file with metrics
-of input BAM file and (optionally) a file with standart error log.
+of input BAM file and (optionally) a file with standard error log.
 }
 \description{
 This is a wrapper function that uses the low-level function

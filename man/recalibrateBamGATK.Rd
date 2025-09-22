@@ -38,7 +38,7 @@ directory.}
 folder for storing of reference genome.}
 
 \item{faFile}{charater string giving the name of file containing reference
-genome in format *.FASTA or *.FA.}
+genome in format FASTA or FA.}
 
 \item{createBQSR}{logical, TRUE by default. It allows to create a new BQSR
 table with provided BAM file, known variation sites and reference genome.}
@@ -62,7 +62,9 @@ Find.Gatk() or settled manually. Default value is "gatk", i.e. function
 will uses GATK systemly from $PATH.}
 
 \item{workDir}{character string giving the path to and name of work
-directory. NULL by default that means the current working directory.}
+directory. NULL by default that means the current working directory.
+All vcfDir, fastaDir, bamDir, as vcfFile, bamFile, fastaFile must be
+somewhere inside directory, chosen as work directory.}
 }
 \value{
 if createBQSR=TRUE, a new BQSR table in working directory;

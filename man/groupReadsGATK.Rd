@@ -28,7 +28,7 @@ working directory will be used instead of the specified BAM directory.}
 \item{postfix}{character string that will be added to the output file name
 as postfix. "RG" by default.}
 
-\item{SE}{if TRUE (by default), standart error determined by function
+\item{SE}{if TRUE (by default), standard error determined by function
 AddOrReplaceReadGroup() will be writen in file STDERR.RG.TXT.}
 
 \item{RGID}{RGID value for appropriate BAM field.}
@@ -46,17 +46,19 @@ AddOrReplaceReadGroup() will be writen in file STDERR.RG.TXT.}
 Find.Gatk() or settled manually. Default value is "gatk", i.e. function
 will uses GATK systemly from $PATH.}
 
-\item{workDir}{character string giving the path to and name of work
-directory. NULL by default that means the current working directory.}
+\item{workDir}{character string giving the path to and name of working
+directory. NULL by default that means the current working directory.
+Both bamDir (when provided) and bamFile must be somewhere inside
+directory, chosen as work directory.}
 }
 \value{
 a new BAM file with additional information about read groups and
-(optionally) auxillary file with standart error log.
+(optionally) auxillary file with standard error log.
 }
 \description{
 This is a wrapper function that uses the low-level function
 AddOrReplaceReadGroup() from package GATK to add read group tags to BAM
-file of interest. This stage could be not nessesery, if BAM file already
+file of interest. This stage could be unnecessary, if BAM file already
 contains read group tags.
 }
 \examples{

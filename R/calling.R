@@ -295,7 +295,7 @@ fisherCalleR <- function(bamDir=NULL,
 }
 
 
-#' Call of single nucleotide variations using haplotype caller GATK
+#' Call of single nucleotide variations using HaplotypeCaller GATK
 #' @description This is a wrapper function to run GATK within the R environment
 #'     for accurate and efficient SNVs calling.
 #' @param bamDir character string giving the name (or path to and name) of
@@ -308,7 +308,7 @@ fisherCalleR <- function(bamDir=NULL,
 #' @param fastaDir character string giving the name (or path to and name) of
 #'     folder for storing of fai-indexed reference genome.
 #' @param faFile charater string giving the name of file containing reference
-#'     genome in format *.FASTA or *.FA.
+#'     genome in format FASTA or FA.
 #' @param intervals character string specifying the name of the tab-delimited
 #'     TXT file containing coordinates of genomic location(-s) of interest. The
 #'     default value is NULL. If so, this file must contains the following four
@@ -320,7 +320,7 @@ fisherCalleR <- function(bamDir=NULL,
 #'                   of interest.
 #'     TXT file with genomic location(-s) must be in working directory.
 #' @param pcr_model GATK argument --pcr-indel-model. Possible values: NONE,
-#'     AGRESSIVE, HOSTILE, CONSERVATIVE. See HaplotypeCaller
+#'     AGRESSIVE, HOSTILE, CONSERVATIVE (by default). See HaplotypeCaller
 #'     at https://gatk.broadinstitute.org for further details.
 #' @param soft_clip GATK argument --dont-use-soft-clipped. TRUE by default.
 #' @param ERC GATK ERC mode. "NONE" by default. Possible values: NONE, GVCF or
@@ -334,9 +334,10 @@ fisherCalleR <- function(bamDir=NULL,
 #'     (system) GATK executive script. This path can be obtained by running
 #'     Find.Gatk() or settled manually. Default value is "gatk", i.e. function
 #'     will uses GATK systemly from $PATH.
-#' @param workDir character string giving the path to and name of work
+#' @param workDir character string giving the path to and name of working
 #'     directory. NULL by default that means the current working directory.
-#' @details GATK performs SNVs and short indels calling by local de novo
+#'     fastaDir, faFile, bamDir and bamFiles must be somewhere inside workDir.
+#' @details HaplotypeCaller performs SNVs and short indels calling by local de novo
 #'     assembly of mapped reads
 #' @return a new VCF file with detected SNVs.
 #' @author Ilia M. Ilyushonak, Vasily V. Grinev.
@@ -350,7 +351,7 @@ gatkCalleR <- function(bamDir=NULL,
                        fastaDir=NULL,
                        faFile,
                        intervals=NULL,
-                       pcr_model,
+                       pcr_model = "CONSERVATIVE",
                        soft_clip=TRUE,
                        ERC="NONE",
                        cores="MAX",
@@ -403,7 +404,7 @@ gatkCalleR <- function(bamDir=NULL,
                           paste(gsub(pattern=".bam",
                                      replacement="",
                                      x=bamFile),
-                                "GATK based SNVs",
+                                "HCaller",
                                 "vcf",
                                 sep="."),
                           sep="/"),

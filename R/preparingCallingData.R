@@ -397,7 +397,7 @@ filterBamFile <- function(bamDir=NULL,
 #' Group short reads in BAM file
 #' @description This is a wrapper function that uses the low-level function
 #'     AddOrReplaceReadGroup() from package GATK to add read group tags to BAM
-#'     file of interest. This stage could be not nessesery, if BAM file already
+#'     file of interest. This stage could be unnecessary, if BAM file already
 #'     contains read group tags.
 #' @param bamDir character string giving the name (or path to and name) of
 #'     directory with BAM file(s). NULL by default, which means the current
@@ -405,7 +405,7 @@ filterBamFile <- function(bamDir=NULL,
 #' @param bamFile character string giving the name of input BAM file.
 #' @param postfix character string that will be added to the output file name
 #'     as postfix. "RG" by default.
-#' @param SE if TRUE (by default), standart error determined by function
+#' @param SE if TRUE (by default), standard error determined by function
 #'     AddOrReplaceReadGroup() will be writen in file STDERR.RG.TXT.
 #' @param RGID RGID value for appropriate BAM field.
 #' @param RGLB RGLB value for appropriate BAM field.
@@ -416,10 +416,12 @@ filterBamFile <- function(bamDir=NULL,
 #'     (system) GATK executive script. This path can be obtained by running
 #'     Find.Gatk() or settled manually. Default value is "gatk", i.e. function
 #'     will uses GATK systemly from $PATH.
-#' @param workDir character string giving the path to and name of work
+#' @param workDir character string giving the path to and name of working
 #'     directory. NULL by default that means the current working directory.
+#'     Both bamDir (when provided) and bamFile must be somewhere inside
+#'     directory, chosen as work directory.
 #' @return a new BAM file with additional information about read groups and
-#'     (optionally) auxillary file with standart error log.
+#'     (optionally) auxillary file with standard error log.
 #' @author Ilia M. Ilyushonak, Vasily V. Grinev.
 #' @examples
 #' ...
@@ -452,7 +454,7 @@ groupReadsGATK <- function(bamDir=NULL,
                   postfix,
                   "bam",
                   sep=".")
-  ### Settings for saving of standart error.
+  ### Settings for saving of standard error.
   se <- ""
   if (SE == TRUE){
     se <- paste(gsub(pattern=".bam", replacement="", x=bamFile),
@@ -492,6 +494,8 @@ groupReadsGATK <- function(bamDir=NULL,
 #'     will uses GATK systemly from $PATH.
 #' @param workDir character string giving the path to and name of working
 #'     directory. NULL by default that means the current working directory.
+#'     Both fastaDir (when provided) and faFile must be somewhere inside
+#'     directory, chosen as working directory.
 #' @return index files in working directory.
 #' @author Ilia M. Ilyushonak, Vasily V. Grinev.
 #' @examples
@@ -538,15 +542,17 @@ indexGenomeGATK <- function(fastaDir=NULL,
 #'     directory.
 #' @param vcfFile character string giving the name of input VCF file.
 #' @param output_name character string giving the name of index. NULL by
-#'     default, which means that the name of input VCF file will be uased.
+#'     default, which means that the name of input VCF file will be used.
 #'     Important note: to be used correctly by the GATK, the VCF file and its
 #'     index must have the same name.
 #' @param gatk_path character string giving the path to internal or external
 #'     (system) GATK executive script. This path can be obtained by running
 #'     Find.Gatk() or settled manually. Default value is "gatk", i.e. function
 #'     will uses GATK systemly from $PATH.
-#' @param workDir character string giving the path to and name of work
+#' @param workDir character string giving the path to and name of working
 #'     directory. NULL by default that means the current working directory.
+#'     Both vcfDir (when provided) and vcfFile must be somewhere inside
+#'     directory, chosen as working directory.
 #' @return .tbi file in working directory.
 #' @author Ilia M. Ilyushonak, Vasily V. Grinev.
 #' @examples
@@ -576,7 +582,7 @@ indexVcfGATK <- function(vcfDir=NULL,
     system2(command=gatk_path,
             args=c("IndexFeatureFile -I",
                    paste(path, vcfFile, sep="/"),
-                   "-O", output_name))
+                   "-O", paste(path, output_name, sep="/")))
   }
 }
 
@@ -595,16 +601,18 @@ indexVcfGATK <- function(vcfDir=NULL,
 #'     all duplicated reads will be kept in output BAM file, with "yes" all
 #'     duplicated reads will be removed, and with "seq" only optical and other
 #'     sequencing duplicates will be removed.
-#' @param SE if TRUE (by default), standart error determined by function
+#' @param SE if TRUE (by default), standard error determined by function
 #'     MarkDuplicates() will be writen in file STDERR.MARKDUP.TXT.
 #' @param gatk_path character string giving the path to internal or external
 #'     (system) GATK executive script. This path can be obtained by running
 #'     Find.Gatk() or settled manually. Default value is "gatk", i.e. function
 #'     will uses GATK systemly from $PATH.
-#' @param workDir character string giving the path to and name of work
+#' @param workDir character string giving the path to and name of working
 #'     directory. NULL by default that means the current working directory.
+#'     Both bamDir (when provided) and bamFile must be somewhere inside
+#'     directory, chosen as working directory.
 #' @return a new BAM file with processed duplicated reads, a file with metrics
-#'     of input BAM file and (optionally) a file with standart error log.
+#'     of input BAM file and (optionally) a file with standard error log.
 #' @author Ilia M. Ilyushonak, Vasily V. Grinev.
 #' @examples
 #' ...
@@ -663,7 +671,7 @@ markDuplicatesGATK <- function(bamDir=NULL,
       }
     }
   }
-  ### Settings for saving of standart error.
+  ### Settings for saving of standard error.
   se <- ""
   if (SE == TRUE){
     se <- paste(gsub(pattern=".bam", replacement="", x=bamFile),
@@ -697,7 +705,7 @@ markDuplicatesGATK <- function(bamDir=NULL,
 #' @param fastaDir character string giving the name (or path to and name) of
 #'     folder for storing of reference genome.
 #' @param faFile charater string giving the name of file containing reference
-#'     genome in format *.FASTA or *.FA.
+#'     genome in format FASTA or FA.
 #' @param createBQSR logical, TRUE by default. It allows to create a new BQSR
 #'     table with provided BAM file, known variation sites and reference genome.
 #' @param recalibrate logical, TRUE by default. It allows to run a recalibration
@@ -715,6 +723,8 @@ markDuplicatesGATK <- function(bamDir=NULL,
 #'     will uses GATK systemly from $PATH.
 #' @param workDir character string giving the path to and name of work
 #'     directory. NULL by default that means the current working directory.
+#'     All vcfDir, fastaDir, bamDir, as vcfFile, bamFile, fastaFile must be
+#'     somewhere inside directory, chosen as work directory.
 #' @return if createBQSR=TRUE, a new BQSR table in working directory;
 #'     if recalibrate=TRUE, a new BAM file with recalibrated sequencing quality
 #'     scores of bases in working directory; if SE=TRUE, a file with standart
@@ -787,7 +797,7 @@ recalibrateBamGATK <- function(bamDir=NULL,
     }else{
       bqsr_name <- nameBQSR
     }
-    ### Settings for saving of standart error.
+    ### Settings for saving of standard error.
     se <- ""
     if (SE == TRUE){
       se <- paste(gsub(pattern=".bam", replacement="", x=bamFile),
@@ -806,13 +816,12 @@ recalibrateBamGATK <- function(bamDir=NULL,
                                            postfix,
                                            "bam",
                                            sep="."),
-                                     sep="/"), sep=" ")))
-    if (se == ""){
-      stderr=se
-    }else{
-      stderr=paste(path, se, sep="/")
-    }
+                                     sep="/"), sep=" ")),
+            if (se == ""){
+              stderr=se
+            }else{
+              stderr=paste(path, se, sep="/")
+            })
   }
 }
-
 

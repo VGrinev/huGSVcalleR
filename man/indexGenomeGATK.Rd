@@ -32,7 +32,9 @@ Find.Gatk() or settled manualy. Default value is "gatk", i.e. function
 will uses GATK systemly from $PATH.}
 
 \item{workDir}{character string giving the path to and name of working
-directory. NULL by default that means the current working directory.}
+directory. NULL by default that means the current working directory.
+Both fastaDir (when provided) and faFile must be somewhere inside
+directory, chosen as working directory.}
 }
 \value{
 index files in working directory.

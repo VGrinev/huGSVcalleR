@@ -21,7 +21,7 @@ directory.}
 \item{vcfFile}{character string giving the name of input VCF file.}
 
 \item{output_name}{character string giving the name of index. NULL by
-default, which means that the name of input VCF file will be uased.
+default, which means that the name of input VCF file will be used.
 Important note: to be used correctly by the GATK, the VCF file and its
 index must have the same name.}
 
@@ -30,8 +30,10 @@ index must have the same name.}
 Find.Gatk() or settled manually. Default value is "gatk", i.e. function
 will uses GATK systemly from $PATH.}
 
-\item{workDir}{character string giving the path to and name of work
-directory. NULL by default that means the current working directory.}
+\item{workDir}{character string giving the path to and name of working
+directory. NULL by default that means the current working directory.
+Both vcfDir (when provided) and vcfFile must be somewhere inside
+directory, chosen as working directory.}
 }
 \value{
 .tbi file in working directory.

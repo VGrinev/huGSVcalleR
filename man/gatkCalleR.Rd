@@ -2,7 +2,7 @@
 % Please edit documentation in R/calling.R
 \name{gatkCalleR}
 \alias{gatkCalleR}
-\title{Call of single nucleotide variations using haplotype caller GATK}
+\title{Call of single nucleotide variations using HaplotypeCaller GATK}
 \usage{
 gatkCalleR(
   bamDir = NULL,
@@ -11,7 +11,7 @@ gatkCalleR(
   fastaDir = NULL,
   faFile,
   intervals = NULL,
-  pcr_model,
+  pcr_model = "CONSERVATIVE",
   soft_clip = TRUE,
   ERC = "NONE",
   cores = "MAX",
@@ -35,7 +35,7 @@ will be used.}
 folder for storing of fai-indexed reference genome.}
 
 \item{faFile}{charater string giving the name of file containing reference
-genome in format *.FASTA or *.FA.}
+genome in format FASTA or FA.}
 
 \item{intervals}{character string specifying the name of the tab-delimited
 TXT file containing coordinates of genomic location(-s) of interest. The
@@ -49,7 +49,7 @@ of interest.
 TXT file with genomic location(-s) must be in working directory.}
 
 \item{pcr_model}{GATK argument --pcr-indel-model. Possible values: NONE,
-AGRESSIVE, HOSTILE, CONSERVATIVE. See HaplotypeCaller
+AGRESSIVE, HOSTILE, CONSERVATIVE (by default). See HaplotypeCaller
 at https://gatk.broadinstitute.org for further details.}
 
 \item{soft_clip}{GATK argument --dont-use-soft-clipped. TRUE by default.}
@@ -69,8 +69,9 @@ writen in file STDERR.HC.TXT.}
 Find.Gatk() or settled manually. Default value is "gatk", i.e. function
 will uses GATK systemly from $PATH.}
 
-\item{workDir}{character string giving the path to and name of work
-directory. NULL by default that means the current working directory.}
+\item{workDir}{character string giving the path to and name of working
+directory. NULL by default that means the current working directory.
+fastaDir, faFile, bamDir and bamFiles must be somewhere inside workDir.}
 }
 \value{
 a new VCF file with detected SNVs.
@@ -80,7 +81,7 @@ This is a wrapper function to run GATK within the R environment
 for accurate and efficient SNVs calling.
 }
 \details{
-GATK performs SNVs and short indels calling by local de novo
+HaplotypeCaller performs SNVs and short indels calling by local de novo
 assembly of mapped reads
 }
 \examples{
