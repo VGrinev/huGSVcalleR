@@ -9,6 +9,9 @@ annotateVariants(
   vcfFile,
   ref_genes,
   output = NULL,
+  annotateByDB = FALSE,
+  dbDir = NULL,
+  dbFile = NULL,
   workDir = NULL
 )
 }
@@ -17,7 +20,8 @@ annotateVariants(
 directory with VCF file(-s). NULL by default, which means the current
 working directory will be used instead of the specified VCF directory.}
 
-\item{vcfFile}{character string giving the name of input VCF file.}
+\item{vcfFile}{character string giving the name of input VCF file. File must
+not contain NON_REF fields (for HaplotypeCaller it means run with -ERC NONE).}
 
 \item{ref_genes}{character string giving the name of TXT file in
 tab-delimited format with basic annotations of reference genes. This
@@ -32,15 +36,33 @@ vii) strand       - (optionally) strand information about gene.}
 
 \item{output}{character string giving the name (without extension) of TXT
 file in tab-delimited format for storing annotated single nucleotide
-variations. NULL by default, which means that the name will be generated
-automatically based on the name of the input VCF file.}
+variations. The postfix "basic" will be added to this name for a file
+with a basic annotation and "extended" for a file with annotation
+according to the dbSNP. NULL by default, which means that the name
+will be generated automatically based on the name of the input
+VCF file.}
+
+\item{annotateByDB}{logical. If TRUE, extended annotation by dbSNP
+will be performed and saved in second slot of output object. Also,
+tab-delimited txt will be created. FALSE by default.
+WARNING: The current version of this feature requires a significant
+amount of RAM to load full dbSNP VCF. It is not recommended to run it
+on a computer with less than 20 GB RAM.}
+
+\item{dbDir}{character string giving the name (or path to and name) of
+directory with VCF file of dbSNP release. NULL by default, which means the current
+working directory will be used instead of the specified directory. Ignored when
+annotateByDB is FALSE.}
+
+\item{dbFile}{character string giving the name of dbSNP VCF file for
+extended annotation. Ignored when annotateByDB is FALSE.}
 
 \item{workDir}{character string giving the path to and name of working
 directory. NULL by default that means the current working directory.}
 }
 \value{
-an object of class data.frame and new TXT file in tab-delimited
-format containing annotated single nucleotide variations.
+an object of class list with two slots and two new TXT file in
+tab-delimited format with basic and extended annotation of provided single nucleotide variations.
 }
 \description{
 This function performs a multivariate annotation of the single

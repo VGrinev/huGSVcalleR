@@ -4,7 +4,8 @@
 #' @param vcfDir character string giving the name (or path to and name) of
 #'     directory with VCF file(-s). NULL by default, which means the current
 #'     working directory will be used instead of the specified VCF directory.
-#' @param vcfFile character string giving the name of input VCF file.
+#' @param vcfFile character string giving the name of input VCF file. File must
+#'     not contain NON_REF fields (for HaplotypeCaller it means run with -ERC NONE).
 #' @param ref_genes character string giving the name of TXT file in
 #'     tab-delimited format with basic annotations of reference genes. This
 #'     file must contains the following fields:
@@ -17,12 +18,27 @@
 #'     vii) strand       - (optionally) strand information about gene.
 #' @param output character string giving the name (without extension) of TXT
 #'     file in tab-delimited format for storing annotated single nucleotide
-#'     variations. NULL by default, which means that the name will be generated
-#'     automatically based on the name of the input VCF file.
+#'     variations. The postfix "basic" will be added to this name for a file
+#'     with a basic annotation and "extended" for a file with annotation
+#'     according to the dbSNP. NULL by default, which means that the name
+#'     will be generated automatically based on the name of the input
+#'     VCF file.
+#' @param annotateByDB logical. If TRUE, extended annotation by dbSNP
+#'     will be performed and saved in second slot of output object. Also,
+#'     tab-delimited txt will be created. FALSE by default.
+#'     WARNING: The current version of this feature requires a significant
+#'     amount of RAM to load full dbSNP VCF. It is not recommended to run it
+#'     on a computer with less than 20 GB RAM.
+#' @param dbDir character string giving the name (or path to and name) of
+#'     directory with VCF file of dbSNP release. NULL by default, which means the current
+#'     working directory will be used instead of the specified directory. Ignored when
+#'     annotateByDB is FALSE.
+#' @param dbFile character string giving the name of dbSNP VCF file for
+#'     extended annotation. Ignored when annotateByDB is FALSE.
 #' @param workDir character string giving the path to and name of working
 #'     directory. NULL by default that means the current working directory.
-#' @return an object of class data.frame and new TXT file in tab-delimited
-#'     format containing annotated single nucleotide variations.
+#' @return an object of class list with two slots and two new TXT file in
+#' tab-delimited format with basic and extended annotation of provided single nucleotide variations.
 #' @author Ilia M. Ilyushonak, Vasily V. Grinev.
 #' @examples
 #' genes <- "Ensembl release 114, GRCh38.p14, annotations of genes.txt"
@@ -40,6 +56,9 @@ annotateVariants <- function(vcfDir=NULL,
                              vcfFile,
                              ref_genes,
                              output=NULL,
+                             annotateByDB = FALSE,
+                             dbDir = NULL,
+                             dbFile = NULL,
                              workDir=NULL){
   ### Setting the working directory.
   if (is.null(x=workDir)){
@@ -53,6 +72,7 @@ annotateVariants <- function(vcfDir=NULL,
   }
   ### Loading of the single nucleotide variations as an object of class
   #   CollapsedVCF.
+  setClassUnion("ExpData", c("matrix", "SummarizedExperiment"))
   vcf <- readVcf(file=paste(vcfDir, vcfFile, sep="/"))
   ### Loading of the reference genes as an object of class GRanges.
   genes <- read.table(file=paste(workDir, ref_genes, sep="/"),
@@ -62,8 +82,7 @@ annotateVariants <- function(vcfDir=NULL,
                       as.is=TRUE)
   genes <- makeGRangesFromDataFrame(df=genes, keep.extra.columns=TRUE)
   ### Annotation of the single nucleotide variations with gene names.
-  rowRangesVcf = rowRanges(x=vcf)
-  mcols(x=rowRangesVcf)$gene_name <- ""
+  mcols(x=rowRanges(x=vcf))$gene_name <- ""
   hits <- findOverlaps(query=rowRanges(x=vcf),
                        subject=genes[!is.na(x=genes$gene_name)],
                        type="within",
@@ -77,37 +96,104 @@ annotateVariants <- function(vcfDir=NULL,
                              FUN=function(y){paste0(sort(x=unique(x=strsplit(x=y,
                                                                              split=",")[[1]])),
                                                     collapse=",")}))
-  rowRangesVcf[hits$V1, ]$gene_name <- as.vector(x=hits$V2)
-  ### Returning and saving of the final object.
-  SNVs <- cbind(data.frame(rowRangesVcf), info(x=vcf))
+  rowRanges(x=vcf)[hits$V1, ]$gene_name <- as.vector(x=hits$V2)
+  ### Building an object with basic annotation
+  SNVs <- cbind(data.frame(rowRanges(x=vcf)), info(x=vcf))
+  if (annotateByDB == TRUE){
+    alt.exp <- SNVs$ALT
+  }
   SNVs$ALT <- unlist(x=lapply(X=SNVs$ALT, paste0, collapse=","))
   SNVs$snv_id <- paste(paste(paste(SNVs$seqnames, SNVs$start, sep=":"),
                              SNVs$REF, sep="_"),
                        SNVs$ALT, sep="/")
   SNVs <- SNVs[, c("snv_id", "seqnames", "start", "end", "strand", "REF",
-                   "ALT", "DP", "MM", "QUAL", "gene_name")]
+                   "ALT",
+                   "DP", "MM",
+                   "QUAL", "gene_name")]
   colnames(x=SNVs) <- c(colnames(x=SNVs)[1:5],
-                        "ref", "alt", "pos_depth", "alt_depth",
+                        "ref", "alt",
+                        "pos_depth", "alt_depth",
                         "score", "gene_name")
   SNVs$seqnames <- as.character(x=SNVs$seqnames)
   SNVs$strand <- as.character(x=SNVs$strand)
   SNVs$alt_depth <- as.numeric(x=SNVs$alt_depth)
+  out.anno <- list(no_matches = NULL, matches = NULL)
+  out.anno[[1]] <- SNVs
+  names(out.anno) <- c("No dbSNP matches", "dbSNP matches")
+  ### Extended annotation by dbSNP.
+  ### Cleaning RAM from previous step VCF
+  if (annotateByDB == TRUE){
+    rm(vcf)
+    gc()
+  }
+  ### Loading of dbSNP annotation and finding overlaps with SNVs
+  ### from previous steps by coordinats
+  ref.snp <- readVcf(file = paste(vcfDir, dbFile, sep = "/"),
+                     param = ScanVcfParam(info = c("RS", "CAF", "dbSNPBuildID", "SAO",
+                                                   "SLO", "PM", "VP", "OTH")))
+  hits.ref <- findOverlaps(subject = GRanges(seqnames = SNVs$seqnames,
+                                             ranges = IRanges(start = SNVs$start,
+                                                              end = SNVs$end)),
+                           query = rowRanges(ref.snp), type = "equal")
+  hits.ref <- cbind(hits.ref@from, as.character(rowRanges(ref.snp)@seqnames)[hits.ref@to],
+                    start(rowRanges(ref.snp)@ranges[hits.ref@to]),
+                    end(rowRanges(ref.snp)@ranges[hits.ref@to]),
+                    fixed(ref.snp)[hits.ref@to, c("REF", "ALT")],
+                    info(ref.snp)[hits.ref@to, ])
+  colnames(hits.ref)[1:4] <- c("Overlap.SNVs", "seqnames", "start", "end")
+  ### Comparison ALT field with reference SNVs
+  alt.hits <- mapply(function(exp, ref) {
+    any(exp %in% ref)
+  }, alt.exp[1:10000],
+  hits.ref$ALT[1:10000])
+  hits.ref <- hits.ref[alt.hits,]
+  ### Building frame with extended annotation
+  hits.ref$ALT <- unlist(x=lapply(X=hits.ref$ALT, paste0, collapse=","))
+  hits.ref$CAF <- unlist(x=lapply(X=hits.ref$CAF, paste0, collapse=","))
+  colnames(hits.ref)[6] <- "alt_dbSNP"
+  annot.SNVs <- cbind(SNVs[hits.ref$Overlap.SNVs,],
+                      hits.ref[,6:ncol(hits.ref)])
+  ### Removing rows with dbSNP matches from first table
+  out.anno[[1]] <- out.anno[[1]][!out.anno[[1]]$snv_id %in% annot.SNVs$snv_id,]
+  out.anno[[2]] <- annot.SNVs
+  ###Writing output files
   if (is.null(x=output)){
     output_file <- paste(workDir,
-                         sub(pattern="vcf",
-                             replacement=", annotated SNVs.txt",
+                         sub(pattern=".vcf",
+                             replacement=", based annotation.txt",
                              x=vcfFile),
                          sep="/")
   }else{
-    output_file <- paste(workDir, paste(output, "txt", sep="."), sep="/")
+    output_file <- paste(workDir, paste(output, "based annotation", "txt", sep="."), sep="/")
   }
-  write.table(x=SNVs,
+  if (isTRUE(annotateByDB)){
+    if (is.null(x=output)){
+      output_file_extended <- paste(workDir,
+                                    sub(pattern=".vcf",
+                                        replacement=", extended annotation.txt",
+                                        x=vcfFile),
+                                    sep="/")
+    }else{
+      output_file_extended <- paste(workDir, paste(output, "extended annotation", "txt", sep="."), sep="/")
+    }
+  }
+
+
+  write.table(x=out.anno[[1]],
               file=output_file,
               sep="\t",
               quote=FALSE,
               col.names=TRUE,
               row.names=FALSE)
-  return(SNVs)
+  if (isTRUE(annotateByDB)){
+    write.table(x=out.anno[[2]],
+                file=output_file_extended,
+                sep="\t",
+                quote=FALSE,
+                col.names=TRUE,
+                row.names=FALSE)
+  }
+  return(out.anno)
 }
 
 #' Develop Ensembl-like annotations of experimental transcriptome
