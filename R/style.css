@@ -1,0 +1,132 @@
+/* www/style.css */
+/* Styles for huGSVcalleR Shiny application with test modules */
+
+/* Test Modules specific styles */
+.test-module-panel {
+  border: 2px solid #3498DB;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 20px;
+  background-color: #f8f9fa;
+}
+
+.test-module-panel h5 {
+  color: #3498DB;
+  border-bottom: 1px solid #3498DB;
+  padding-bottom: 5px;
+  margin-bottom: 15px;
+}
+
+/* Execution log styling */
+#execution_log {
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  line-height: 1.4;
+  background-color: #2C3E50;
+  color: #ECF0F1;
+  padding: 10px;
+  border-radius: 5px;
+  max-height: 400px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* Results display */
+.results-container {
+  background-color: white;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 15px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.results-container h4 {
+  color: #2C3E50;
+  margin-top: 0;
+}
+
+/* File preview */
+.file-preview {
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  background-color: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 10px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+/* Status indicators */
+.status-completed {
+  color: #2ECC71;
+  font-weight: bold;
+}
+
+.status-running {
+  color: #F39C12;
+  font-weight: bold;
+}
+
+.status-error {
+  color: #E74C3C;
+  font-weight: bold;
+}
+
+/* Module selection */
+.module-option {
+  padding: 8px 12px;
+  margin: 5px 0;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.module-option:hover {
+  background-color: #f8f9fa;
+}
+
+.module-option.selected {
+  background-color: #3498DB;
+  color: white;
+}
+
+/* Progress bars */
+.shiny-progress-container {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+}
+
+/* Test output styling */
+#test_output {
+  font-family: 'Courier New', monospace;
+  background-color: #2C3E50;
+  color: #ECF0F1;
+  padding: 15px;
+  border-radius: 5px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  margin-bottom: 15px;
+}
+
+/* Generated files list */
+.generated-files-list {
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.generated-files-list li {
+  padding: 5px 10px;
+  margin-bottom: 5px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  border-left: 4px solid #3498DB;
+}
+
+.generated-files-list li:hover {
+  background-color: #e9ecef;
+}
