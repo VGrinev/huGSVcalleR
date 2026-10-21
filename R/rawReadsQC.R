@@ -334,6 +334,8 @@ readFASTQ <- function(fastqDir=NULL,
 #'     Zero is the default, which will allow reads of any length to be saved.
 #' @param readq integer specifying the minimum quality of reads to be saved.
 #'     Zero is the default, which will allow reads of any quality to be saved.
+#' @param readn integer specifying the maximum number of ambiguous nucleotides
+#'     allowed in a read to be saved. Zero is the default.
 #' @param dustScore integer specifying the maximum dust score at which reads to
 #'     be saved. By default this argument is NULL and such filter is not used.
 #' @param batchSize NA (by default) or integer value indicating the maximum
@@ -342,6 +344,9 @@ readFASTQ <- function(fastqDir=NULL,
 #'     Smaller values use less memory but are computationally less efficient.
 #' @param postfix character string that will be added to the output file name
 #'     as postfix. "filtered" by default.
+#' @param overwrite logical value indicating whether existing output files
+#'     with the same names should be overwritten. FALSE by default, in which
+#'     case the function stops with an error if an output file already exists.
 #' @param workDir character string specifying the path to and name of working
 #'     directory. NULL by default that means the current working directory.
 #' @return filtered FASTQ file(-s) will be written to the same directory as
@@ -369,6 +374,7 @@ readFASTQ <- function(fastqDir=NULL,
 #'               dustScore=875,
 #'               batchSize=NA,
 #'               postfix="filtered",
+#'               overwrite=TRUE,
 #'               workDir="D:/Vasily Grinev")
 #' @export
 #' @importFrom ShortRead readFastq writeFastq trimEnds trimTailw trimTails id
@@ -398,6 +404,7 @@ cleanRawReads <- function(fastqDir=NULL,
                           dustScore=NULL,
                           batchSize=NA,
                           postfix="filtered",
+                          overwrite=FALSE,
                           workDir=NULL){
   ### Setting the working directory.
   if (is.null(x=workDir)){
@@ -553,6 +560,15 @@ cleanRawReads <- function(fastqDir=NULL,
                         replacement=paste(postfix, "fastq.gz", sep="."),
                         x=fastq1),
                    sep="/")
+  if (file.exists(output1)){
+    if (isTRUE(overwrite)){
+      file.remove(output1)
+    }else{
+      stop("Output file already exists: ",
+           output1,
+           ". Set overwrite = TRUE to replace it.")
+    }
+  }
   writeFastq(object=FQ1, file=output1, compress=TRUE)
   if (!is.null(x=fastq2)){
     output2 <- paste(path,
@@ -560,9 +576,17 @@ cleanRawReads <- function(fastqDir=NULL,
                           replacement=paste(postfix, "fastq.gz", sep="."),
                           x=fastq2),
                      sep="/")
+    if (file.exists(output2)){
+      if (isTRUE(overwrite)){
+        file.remove(output2)
+      }else{
+        stop("Output file already exists: ",
+             output2,
+             ". Set overwrite = TRUE to replace it.")
+      }
+    }
     writeFastq(object=FQ2, file=output2)
   }
-  rm(list=ls())
 }
 
 
