@@ -373,9 +373,10 @@ readFASTQ <- function(fastqDir=NULL,
 #' @export
 #' @importFrom ShortRead readFastq writeFastq trimEnds trimTailw trimTails id
 #' @importFrom ShortRead polynFilter occurrenceFilter dustyFilter
-#' @importFrom Biostrings width
+#' @importFrom Biostrings width quality
 #' @importFrom methods as
 #' @importFrom utils read.table
+#' @importFrom IRanges narrow
 cleanRawReads <- function(fastqDir=NULL,
                           fastq1,
                           fastq2=NULL,
