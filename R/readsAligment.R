@@ -212,7 +212,7 @@ buildIndexSubread <- function(ref_genome,
 #' @importFrom grid grid.draw textGrob gpar gTree gList
 #' @importFrom gridExtra tableGrob ttheme_minimal
 #' @importFrom vioplot vioplot
-#' @importFrom grDevices pdf dev.off rgb
+#' @importFrom grDevices cairo_pdf dev.off rgb
 #' @importFrom graphics hist axis title plot rect text segments par mtext
 #' @importFrom stats quantile median
 reportQAlResults <- function(x,
@@ -275,7 +275,8 @@ reportQAlResults <- function(x,
                          "pdf",
                          sep=".")
   }
-  pdf(file=paste(workDir, file_output, sep="/"), height=nrow(x=tab)/3)
+  cairo_pdf(filename = paste(workDir, file_output, sep = "/"),
+            height = nrow(x = tab)/3 + 1)
   theme=ttheme_minimal(core=list(fg_params=list(hjust=0,
                                                 x=0.03,
                                                 fontsize=10),
@@ -325,10 +326,9 @@ reportQAlResults <- function(x,
                          "pdf",
                          sep=".")
   }
-  pdf(file=paste(workDir, file_output, sep="/"),
-      onefile=TRUE,
-      paper="a4",
-      width=8.27, height=11.69)
+  cairo_pdf(filename=paste(workDir, file_output, sep="/"),
+            onefile=TRUE,
+            width=8.27, height=11.69)
   par(mfrow=c(3, 2),
       omi=c(0.79, 0.79, 1, 0.79))
   hist(x=x$MAPQs, axes=FALSE, ann=FALSE, border=FALSE,
@@ -493,7 +493,6 @@ reportQAlResults <- function(x,
         outer=TRUE)
   suppressMessages(expr=dev.off())
 }
-
 
 #' Sort and index BAM file(-s)
 #' @description This is a wrapper function that uses the low-level function
