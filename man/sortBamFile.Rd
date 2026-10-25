@@ -4,7 +4,13 @@
 \alias{sortBamFile}
 \title{Sort and index BAM file(-s)}
 \usage{
-sortBamFile(bamDir, bamFile, byQname, workDir = NULL)
+sortBamFile(
+  bamDir,
+  bamFile,
+  byQname,
+  threads = detectCores(logical = TRUE) - 1,
+  workDir = NULL
+)
 }
 \arguments{
 \item{bamDir}{character vector giving the path to and name of directory
@@ -15,6 +21,9 @@ sorted and indexed.}
 
 \item{byQname}{logical. It indicats whether the sorted destination file
 should be sorted by query-name (TRUE) or by mapping position (FALSE).}
+
+\item{threads}{numeric value giving the number of threads used for sorting.
+Default value is detectCores(logical = TRUE) - 1.}
 
 \item{workDir}{character string giving the path to and name of working
 directory. NULL by default that means the current working directory.}
@@ -30,6 +39,7 @@ sortBam() from package Rsamtools to sort and index BAM file(-s).
 sortBamFile(bamDir="Files_BAM",
             bamFile="SRR21721515.bam",
             byQname=TRUE,
+            threads=10,
             workDir="D:/Vasily Grinev")
 }
 \author{

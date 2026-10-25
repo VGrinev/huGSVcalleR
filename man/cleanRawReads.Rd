@@ -26,6 +26,7 @@ cleanRawReads(
   dustScore = NULL,
   batchSize = NA,
   postfix = "filtered",
+  overwrite = FALSE,
   workDir = NULL
 )
 }
@@ -108,6 +109,9 @@ Zero is the default, which will allow reads of any length to be saved.}
 \item{readq}{integer specifying the minimum quality of reads to be saved.
 Zero is the default, which will allow reads of any quality to be saved.}
 
+\item{readn}{integer specifying the maximum number of ambiguous nucleotides
+allowed in a read to be saved. Zero is the default.}
+
 \item{dustScore}{integer specifying the maximum dust score at which reads to
 be saved. By default this argument is NULL and such filter is not used.}
 
@@ -118,6 +122,10 @@ Smaller values use less memory but are computationally less efficient.}
 
 \item{postfix}{character string that will be added to the output file name
 as postfix. "filtered" by default.}
+
+\item{overwrite}{logical value indicating whether existing output files
+with the same names should be overwritten. FALSE by default, in which
+case the function stops with an error if an output file already exists.}
 
 \item{workDir}{character string specifying the path to and name of working
 directory. NULL by default that means the current working directory.}
@@ -152,6 +160,7 @@ cleanRawReads(fastqDir="Files_FASTQ",
               dustScore=875,
               batchSize=NA,
               postfix="filtered",
+              overwrite=TRUE,
               workDir="D:/Vasily Grinev")
 }
 \author{

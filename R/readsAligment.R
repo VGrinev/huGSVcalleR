@@ -504,6 +504,8 @@ reportQAlResults <- function(x,
 #'     sorted and indexed.
 #' @param byQname logical. It indicats whether the sorted destination file
 #'     should be sorted by query-name (TRUE) or by mapping position (FALSE).
+#' @param threads numeric value giving the number of threads used for sorting.
+#'     Default value is detectCores(logical = TRUE) - 1.
 #' @param workDir character string giving the path to and name of working
 #'     directory. NULL by default that means the current working directory.
 #' @return sorted and indexed BAM file(-s).
@@ -512,11 +514,16 @@ reportQAlResults <- function(x,
 #' sortBamFile(bamDir="Files_BAM",
 #'             bamFile="SRR21721515.bam",
 #'             byQname=TRUE,
+#'             threads=10,
 #'             workDir="D:/Vasily Grinev")
 #' @export
 #' @importFrom Rsamtools sortBam indexBam
 #' @importFrom parallel detectCores
-sortBamFile <- function(bamDir, bamFile, byQname, workDir=NULL){
+sortBamFile <- function(bamDir,
+                        bamFile,
+                        byQname,
+                        threads=detectCores(logical=TRUE) - 1,
+                        workDir=NULL){
   ### Sorting and indexing of generated BAM file(-s).
   for (i in 1:length(x=bamFile)){
     sortedBam <- sortBam(file=paste(paste(workDir, bamDir, sep="/"),
@@ -530,9 +537,8 @@ sortBamFile <- function(bamDir, bamFile, byQname, workDir=NULL){
                                                  bamFile[i],
                                                  sep="/")),
                          byQname=byQname,
-                         nThreads=detectCores(logical=TRUE) - 1)
+                         nThreads=threads)
     suppressMessages(expr=indexBam(files=sortedBam))
   }
 }
-
 
