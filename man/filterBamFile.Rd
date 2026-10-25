@@ -12,6 +12,8 @@ filterBamFile(
   tlen = NULL,
   mapq = NULL,
   index = FALSE,
+  threads = detectCores(logical = TRUE) - 1,
+  overwrite = FALSE,
   workDir = NULL
 )
 }
@@ -52,6 +54,13 @@ default that mean no any limitations.}
 \item{index}{logical, FALSE by default. If TRUE, it allows to sort and index
 a new filtered BAM file.}
 
+\item{threads}{numeric value giving the number of threads used for sorting.
+Default value is detectCores(logical = TRUE) - 1.}
+
+\item{overwrite}{logical value indicating whether an existing output file
+with the same name should be overwritten. FALSE by default, in which
+case the function stops with an error if the output file already exists.}
+
 \item{workDir}{character string giving the path to and name of work
 directory. NULL by default that means the current working directory.}
 }
@@ -70,6 +79,8 @@ filterBamFile(bamDir="Files_BAM",
               tlen=300,
               mapq=20,
               index=TRUE,
+              threads=10,
+              overwrite=TRUE,
               workDir="D:/Vasily Grinev")
 }
 \author{

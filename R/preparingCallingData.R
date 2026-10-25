@@ -310,6 +310,11 @@ collectBasesPileup <- function(bamDir=NULL,
 #'     default that mean no any limitations.
 #' @param index logical, FALSE by default. If TRUE, it allows to sort and index
 #'     a new filtered BAM file.
+#' @param threads numeric value giving the number of threads used for sorting.
+#'     Default value is detectCores(logical = TRUE) - 1.
+#' @param overwrite logical value indicating whether an existing output file
+#'     with the same name should be overwritten. FALSE by default, in which
+#'     case the function stops with an error if the output file already exists.
 #' @param workDir character string giving the path to and name of work
 #'     directory. NULL by default that means the current working directory.
 #' @return filtered BAM file (optionally, sorted and indexed if index=TRUE)
@@ -323,9 +328,12 @@ collectBasesPileup <- function(bamDir=NULL,
 #'               tlen=300,
 #'               mapq=20,
 #'               index=TRUE,
+#'               threads=10,
+#'               overwrite=TRUE,
 #'               workDir="D:/Vasily Grinev")
 #' @export
-#' @importFrom Rsamtools scanBamFlag ScanBamParam filterBam sortBam indexBam
+#' @importFrom Rsamtools scanBamFlag ScanBamParam filterBam
+#' @importFrom Rsamtools sortBam indexBam
 #' @importFrom GenomicRanges makeGRangesListFromDataFrame
 #' @importFrom IRanges IRangesList
 #' @importFrom parallel detectCores
@@ -337,6 +345,8 @@ filterBamFile <- function(bamDir=NULL,
                           tlen=NULL,
                           mapq=NULL,
                           index=FALSE,
+                          threads=detectCores(logical=TRUE) - 1,
+                          overwrite=FALSE,
                           workDir=NULL){
   ### Setting the working directory.
   if (is.null(x=workDir)){
@@ -376,19 +386,31 @@ filterBamFile <- function(bamDir=NULL,
   }else{
     filter <- FilterRules()
   }
+  ### Output file and overwrite check.
   dest <- gsub(pattern="bam",
                replacement="filtered.bam",
                x=paste(path, bamFile, sep="/"))
+  if (file.exists(dest)){
+    if (isTRUE(overwrite)){
+      file.remove(dest)
+    }else{
+      stop("Output file already exists: ",
+           dest,
+           ". Set overwrite = TRUE to replace it.")
+    }
+  }
+  ### Filtering.
   f <- filterBam(file=paste(path, bamFile, sep="/"),
                  index=paste(path, bamFile, sep="/"),
                  filter=filter,
                  param=param,
                  destination=dest,
                  indexDestination=FALSE)
+  ### Optional sorting and indexing.
   if (isTRUE(x=index)){
     s <- sortBam(file=f,
                  destination=gsub(pattern=".bam", replacement="", x=f),
-                 nThreads=detectCores(logical=TRUE) - 1)
+                 nThreads=threads)
     indexBam(files=s)
   }
 }
