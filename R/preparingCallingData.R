@@ -12,7 +12,8 @@
                        pattern="temp_stat_chr(\\d+|[XY])_(\\d+)\\.csv")
   chr <- matches[, 2]
   pos <- as.numeric(matches[, 3])
-  chr <- ifelse(chr == "X", 23, ifelse(chr == "Y", 24, as.numeric(x=chr)))
+  chr <- ifelse(chr == "X", 23,
+                ifelse(chr == "Y", 24, as.numeric(x=chr)))
   list(chr=chr, pos=pos)
 }
 
@@ -161,7 +162,8 @@ collectBasesPileup <- function(bamDir=NULL,
         GRs <- GRs[nchar(x=GRs$seqnames) == 1, ]
       }
     }
-    if (grepl(pattern="chr", x=seqnames(seqinfo(x=bam_link))[1]) == "TRUE"){
+    if (grepl(pattern="chr",
+              x=seqnames(seqinfo(x=bam_link))[1]) == "TRUE"){
       GRs <- makeGRangesFromDataFrame(df=GRs)
     }else{
       GRs$seqnames <- gsub(pattern="chr", replacement="", x=GRs$seqnames)
@@ -177,86 +179,102 @@ collectBasesPileup <- function(bamDir=NULL,
   ### Collection of pileup statistics.
   ##  Processing of genomic location(-s) as chunk(-s) based on memory limits.
   bpparam <- SnowParam(workers=threads, stop.on.error=TRUE)
-  foreach_result <- bplapply(X=seq_along(GRs),
-                             FUN=function(i,
-                                          GRs,
-                                          bam_link,
-                                          depth,
-                                          baseq,
-                                          mapq,
-                                          coverage,
-                                          genome_obj,
-                                          tmpDir){
-                               #   Get pileup statistics for the current chunk.
-                               chunk <- GRs[i]
-                               pileup_data <- pileup(file=bam_link,
-                                                     scanBamParam=ScanBamParam(which=chunk),
-                                                     pileupParam=PileupParam(max_depth=depth,
-                                                                             min_base_quality=baseq,
-                                                                             min_mapq=mapq,
-                                                                             distinguish_strands=FALSE,
-                                                                             include_deletions=FALSE,
-                                                                             include_insertions=FALSE))
-                               #   Transformation of the primary pileup object to a six-fields table
-                               #   object of class data.frame.
-                               pileup_data$position <- paste(pileup_data$seqnames,
-                                                             pileup_data$pos,
-                                                             sep=":")
-                               #   Cumulative statistics.
-                               temp_stat <- pileup_data %>%
-                                 mutate(reference=0, A=0, C=0, G=0, T=0) %>%
-                                 mutate(A=case_when(nucleotide == "A" ~ count, TRUE ~ A),
-                                        C=case_when(nucleotide == "C" ~ count, TRUE ~ C),
-                                        G=case_when(nucleotide == "G" ~ count, TRUE ~ G),
-                                        T=case_when(nucleotide == "T" ~ count, TRUE ~ T))
-                               temp_stat <- as.data.table(temp_stat)[, .(seqnames=seqnames,
-                                                                         pos=pos,
-                                                                         reference=sum(x=reference),
-                                                                         A=sum(x=A),
-                                                                         C=sum(x=C),
-                                                                         G=sum(x=G),
-                                                                         T=sum(x=T)),
-                                                                     by=position][,
-                                                                                  .(position, seqnames, pos, reference, A, C, G, T)]
-                               #   Filtration against too low coverage.
-                               if (!is.null(x=coverage)){
-                                 temp_stat <- temp_stat %>%
-                                   filter(rowSums(x=across(c(A, C, G, T))) >= coverage)
-                               }
-                               #   Reference nucleotides.
-                               ref <- temp_stat %>%
-                                 select(seqnames, pos) %>%
-                                 mutate(start=pos) %>%
-                                 mutate(end=pos) %>%
-                                 select(-pos)
-                               ref <- makeGRangesFromDataFrame(df=ref)
-                               temp_stat <- temp_stat %>%
-                                 mutate(reference=getSeq(x=genome_obj,
-                                                         names=ref,
-                                                         as.character=TRUE)) %>%
-                                 select(-pos, -seqnames)
-                               #   Writing temporary file with pileup statistics.
-                               if (nrow(x=temp_stat) > 0){
-                                 fwrite(x=temp_stat,
-                                        file=paste0(tmpDir,
-                                                    "/",
-                                                    "temp_stat_",
-                                                    gsub(pattern=":",
-                                                         replacement="_",
-                                                         x=temp_stat[1, "position"]),
-                                                    ".csv"))
-                               }
-                               NULL
-                             },
-                             GRs=GRs,
-                             bam_link=bam_link,
-                             depth=depth,
-                             baseq=baseq,
-                             mapq=mapq,
-                             coverage=coverage,
-                             genome_obj=genome_obj,
-                             tmpDir=tmpDir,
-                             BPPARAM=bpparam)
+  foreach_result <- bplapply(
+    X=seq_along(GRs),
+    FUN=function(i,
+                 GRs,
+                 bam_link,
+                 depth,
+                 baseq,
+                 mapq,
+                 coverage,
+                 genome_obj,
+                 tmpDir){
+      #   Get pileup statistics for the current chunk.
+      chunk <- GRs[i]
+      pileup_data <- pileup(
+        file=bam_link,
+        scanBamParam=ScanBamParam(which=chunk),
+        pileupParam=PileupParam(
+          max_depth=depth,
+          min_base_quality=baseq,
+          min_mapq=mapq,
+          distinguish_strands=FALSE,
+          include_deletions=FALSE,
+          include_insertions=FALSE
+        )
+      )
+      #   Transformation of the primary pileup object to a six-fields table
+      #   object of class data.frame.
+      pileup_data$position <- paste(pileup_data$seqnames,
+                                    pileup_data$pos,
+                                    sep=":")
+      #   Cumulative statistics.
+      temp_stat <- pileup_data %>%
+        mutate(reference=0, A=0, C=0, G=0, T=0) %>%
+        mutate(
+          A=case_when(nucleotide == "A" ~ count, TRUE ~ A),
+          C=case_when(nucleotide == "C" ~ count, TRUE ~ C),
+          G=case_when(nucleotide == "G" ~ count, TRUE ~ G),
+          T=case_when(nucleotide == "T" ~ count, TRUE ~ T)
+        )
+      temp_stat <- as.data.table(temp_stat)
+      temp_stat <- temp_stat[,
+                             .(seqnames=seqnames,
+                               pos=pos,
+                               reference=sum(x=reference),
+                               A=sum(x=A),
+                               C=sum(x=C),
+                               G=sum(x=G),
+                               T=sum(x=T)),
+                             by=position
+      ]
+      temp_stat <- temp_stat[,
+                             .(position, seqnames, pos, reference, A, C, G, T)
+      ]
+      #   Filtration against too low coverage.
+      if (!is.null(x=coverage)){
+        temp_stat <- temp_stat %>%
+          filter(rowSums(x=across(c(A, C, G, T))) >= coverage)
+      }
+      #   Reference nucleotides.
+      ref <- temp_stat %>%
+        select(seqnames, pos) %>%
+        mutate(start=pos) %>%
+        mutate(end=pos) %>%
+        select(-pos)
+      ref <- makeGRangesFromDataFrame(df=ref)
+      temp_stat <- temp_stat %>%
+        mutate(
+          reference=getSeq(x=genome_obj,
+                           names=ref,
+                           as.character=TRUE)
+        ) %>%
+        select(-pos, -seqnames)
+      #   Writing temporary file with pileup statistics.
+      if (nrow(x=temp_stat) > 0){
+        position_label <- temp_stat[1, "position"]
+        position_label <- gsub(pattern=":",
+                               replacement="_",
+                               x=position_label)
+        tmp_file <- file.path(tmpDir,
+                              paste0("temp_stat_",
+                                     position_label,
+                                     ".csv"))
+        fwrite(x=temp_stat, file=tmp_file)
+      }
+      NULL
+    },
+    GRs=GRs,
+    bam_link=bam_link,
+    depth=depth,
+    baseq=baseq,
+    mapq=mapq,
+    coverage=coverage,
+    genome_obj=genome_obj,
+    tmpDir=tmpDir,
+    BPPARAM=bpparam
+  )
   ##  Consolidation of pileup statistics.
   #   Listing of temporary file(-s).
   files <- list.files(path=tmpDir, pattern="^temp_stat.*\\.csv$")
