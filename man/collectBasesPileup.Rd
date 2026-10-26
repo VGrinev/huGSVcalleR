@@ -14,7 +14,7 @@ collectBasesPileup(
   mapq = 20,
   coverage = NULL,
   genome = "BSgenome.Hsapiens.UCSC.hg38",
-  tmpDir = NULL,
+  tmpDir = tempdir(),
   postfix = NULL,
   workDir = NULL
 )
@@ -63,8 +63,8 @@ package BSgenome.Hsapiens.UCSC.hg38.}
 
 \item{tmpDir}{character string giving the name (or path to and name) of
 directory for storing of temporary file(-s) with pileup statistics.
-NULL by default, which means the current working directory will be used
-instead of the specified directory.}
+Default value is tempdir(), which means the R session temporary
+directory will be used.}
 
 \item{postfix}{character string that will be added to the CSV output file
 name as postfix. NULL by default. In this case, the postfix

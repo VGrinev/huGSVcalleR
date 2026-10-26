@@ -36,8 +36,8 @@
 #'     package BSgenome.Hsapiens.UCSC.hg38.
 #' @param tmpDir character string giving the name (or path to and name) of
 #'     directory for storing of temporary file(-s) with pileup statistics.
-#'     NULL by default, which means the current working directory will be used
-#'     instead of the specified directory.
+#'     Default value is tempdir(), which means the R session temporary
+#'     directory will be used.
 #' @param postfix character string that will be added to the CSV output file
 #'     name as postfix. NULL by default. In this case, the postfix
 #'     "PileupResults" will be used.
@@ -93,16 +93,12 @@ collectBasesPileup <- function(bamDir=NULL,
                                depth=1e6, baseq=20, mapq=20,
                                coverage=NULL,
                                genome="BSgenome.Hsapiens.UCSC.hg38",
-                               tmpDir=NULL,
+                               tmpDir=tempdir(),
                                postfix=NULL,
                                workDir=NULL){
   ### Setting the working directory.
   if (is.null(x=workDir)){
     workDir <- getwd()
-  }
-  ### Setting the temporary directory.
-  if (is.null(x=tmpDir)){
-    tmpDir <- workDir
   }
   ### Full path to the BAM file.
   if (is.null(x=bamDir)){
@@ -225,10 +221,9 @@ collectBasesPileup <- function(bamDir=NULL,
   stopCluster(cl)
   ##  Consolidation of pileup statistics.
   #   Listing of temporary file(-s).
-  setwd(dir=tmpDir)
-  files <- list.files(path=tmpDir, pattern="temp_stat_.*\\.csv$")
+  files <- list.files(path=tmpDir, pattern="^temp_stat.*\\.csv$")
   if (length(x=files) == 0){
-    files <- Sys.glob(paths="temp_stat*")
+    stop("No temporary pileup files found in: ", tmpDir)
   }
   #   Extracting of chromosome and position data.
   extract_chr_pos <- function(filename){
@@ -266,13 +261,14 @@ collectBasesPileup <- function(bamDir=NULL,
   )
   #   Collecting data into a single file.
   for (file in files){
-    temp_df <- fread(file=file)
+    full_path <- file.path(tmpDir, file)
+    temp_df <- fread(file=full_path)
     if (!file.exists(csv_file)){
       fwrite(x=temp_df, file=csv_file)
     }else{
       fwrite(x=temp_df, file=csv_file, append=TRUE)
     }
-    file.remove(file)
+    file.remove(full_path)
   }
   temp_df <- fread(file=csv_file)
   temp_df <- temp_df[!duplicated(x=temp_df), ]
