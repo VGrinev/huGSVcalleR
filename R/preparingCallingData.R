@@ -113,14 +113,14 @@ collectBasesPileup <- function(bamDir=NULL,
   bam_link <- BamFile(file=bam)
   ### Setting the genomic location(-s) of interest.
   if (gr == "SeqInfo"){
-    GRs <- as.data.frame(cbind(seqinfo(x=bam_link)@seqnames, 1,
-                               seqinfo(x=bam_link)@seqlengths))
+    GRs <- as.data.frame(cbind(seqnames(seqinfo(x=bam_link)), 1,
+                               seqlengths(seqinfo(x=bam_link))))
     colnames(x=GRs) <- c("seqnames", "start", "end")
     GRs$start <- as.numeric(x=GRs$start)
     GRs$end <- as.numeric(x=GRs$end)
     if (isTRUE(x=canChr)){
       if (grepl(pattern="chr",
-                x=seqinfo(x=bam_link)@seqnames[1]) == "TRUE"){
+                x=seqnames(seqinfo(x=bam_link))[1]) == "TRUE"){
         GRs <- GRs[nchar(x=GRs$seqnames) <= 5, ]
       }else{
         GRs <- GRs[nchar(x=GRs$seqnames) == 1, ]
