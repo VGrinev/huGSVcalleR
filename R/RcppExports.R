@@ -210,3 +210,7 @@ snp_poisson_cpp_parallel <- function(df_d) {
     .Call('_huGSVcalleR_snp_poisson_cpp_parallel', PACKAGE = 'huGSVcalleR', df_d)
 }
 
+vectorise_data_cpp_parallel <- function(df_d, features) {
+    .Call('_huGSVcalleR_vectorise_data_cpp_parallel', PACKAGE = 'huGSVcalleR', df_d, features)
+}
+

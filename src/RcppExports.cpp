@@ -66,6 +66,18 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// vectorise_data_cpp_parallel
+DataFrame vectorise_data_cpp_parallel(DataFrame& df_d, CharacterVector features);
+RcppExport SEXP _huGSVcalleR_vectorise_data_cpp_parallel(SEXP df_dSEXP, SEXP featuresSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< DataFrame& >::type df_d(df_dSEXP);
+    Rcpp::traits::input_parameter< CharacterVector >::type features(featuresSEXP);
+    rcpp_result_gen = Rcpp::wrap(vectorise_data_cpp_parallel(df_d, features));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_huGSVcalleR_snp_binomial_cpp_parallel", (DL_FUNC) &_huGSVcalleR_snp_binomial_cpp_parallel, 1},
@@ -73,6 +85,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_huGSVcalleR_snp_entropy_cpp_parallel", (DL_FUNC) &_huGSVcalleR_snp_entropy_cpp_parallel, 2},
     {"_huGSVcalleR_snp_fisher_cpp_parallel", (DL_FUNC) &_huGSVcalleR_snp_fisher_cpp_parallel, 1},
     {"_huGSVcalleR_snp_poisson_cpp_parallel", (DL_FUNC) &_huGSVcalleR_snp_poisson_cpp_parallel, 1},
+    {"_huGSVcalleR_vectorise_data_cpp_parallel", (DL_FUNC) &_huGSVcalleR_vectorise_data_cpp_parallel, 2},
     {NULL, NULL, 0}
 };
 
