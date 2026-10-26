@@ -1,3 +1,22 @@
+#' Extract chromosome and position from a temporary pileup file name
+#' @description Internal helper function for parsing temporary pileup file
+#'     names of the form "temp_stat_<chr>_<pos>.csv".
+#' @param filename character string giving the name of a temporary file.
+#' @return a list with two elements: \code{chr} (numeric chromosome code,
+#'     where X = 23, Y = 24) and \code{pos} (numeric position).
+#' @author Vasily V. Grinev, Dzianis D. Sarnatski, Mikalai M. Yatskou
+#' @keywords internal
+#' @noRd
+.extractChrPos <- function(filename){
+  matches <- str_match(string=filename,
+                       pattern="temp_stat_chr(\\d+|[XY])_(\\d+)\\.csv")
+  chr <- matches[, 2]
+  pos <- as.numeric(matches[, 3])
+  chr <- ifelse(chr == "X", 23, ifelse(chr == "Y", 24, as.numeric(x=chr)))
+  list(chr=chr, pos=pos)
+}
+
+
 #' Calculate pileup statistics for a BAM file
 #' @description This is a high-level function that performs a multi-threaded
 #'     calculation of the nucleotide-wise read coverage based on the BAM file
@@ -136,13 +155,13 @@ collectBasesPileup <- function(bamDir=NULL,
                       as.is=TRUE)
     if (isTRUE(x=canChr)){
       if (grepl(pattern="chr",
-                x=seqinfo(x=bam_link)@seqnames[1]) == "TRUE"){
+                x=seqnames(seqinfo(x=bam_link))[1]) == "TRUE"){
         GRs <- GRs[nchar(x=GRs$seqnames) <= 5, ]
       }else{
         GRs <- GRs[nchar(x=GRs$seqnames) == 1, ]
       }
     }
-    if (grepl(pattern="chr", x=seqinfo(x=bam_link)@seqnames[1]) == "TRUE"){
+    if (grepl(pattern="chr", x=seqnames(seqinfo(x=bam_link))[1]) == "TRUE"){
       GRs <- makeGRangesFromDataFrame(df=GRs)
     }else{
       GRs$seqnames <- gsub(pattern="chr", replacement="", x=GRs$seqnames)
@@ -150,7 +169,7 @@ collectBasesPileup <- function(bamDir=NULL,
     }
   }
   ### Loading the reference genome object.
-  if (!requireNamespace(genome, quietly = TRUE)){
+  if (!requireNamespace(genome, quietly=TRUE)){
     stop("Package ", genome, " is not installed. ",
          "Install it with BiocManager::install('", genome, "').")
   }
@@ -245,16 +264,8 @@ collectBasesPileup <- function(bamDir=NULL,
     stop("No temporary pileup files found in: ", tmpDir)
   }
   #   Extracting of chromosome and position data.
-  extract_chr_pos <- function(filename){
-    matches <- str_match(string=filename,
-                         pattern="temp_stat_chr(\\d+|[XY])_(\\d+)\\.csv")
-    chr <- matches[, 2]
-    pos <- as.numeric(matches[, 3])
-    chr <- ifelse(chr == "X", 23, ifelse(chr == "Y", 24, as.numeric(x=chr)))
-    list(chr=chr, pos=pos)
-  }
   file_info <- map_dfr(files, function(file){
-    info <- extract_chr_pos(file)
+    info <- .extractChrPos(file)
     tibble(file=file, chr=info$chr, pos=info$pos)
   })
   #   Sorting files by chromosomes and positions.
