@@ -37,9 +37,10 @@ callSNVs(
 returned by collectBasesPileup() function) or an object of class
 data.frame with frequancy table.}
 
-\item{criteria}{character vector specifying which test(-s) to be performed.
-The following values are possible: "binomial", "counting", "entropy"
-(by default), "fisher", "fisherSmyth", "gatk" and "poisson".}
+\item{criteria}{character string specifying which test to be performed.
+Only one criterion per call is allowed. The following values are
+possible: "binomial", "counting", "entropy" (by default), "fisher",
+"fisherSmyth", "gatk", "ml" and "poisson".}
 
 \item{vcfDir}{character string giving the name (or path to and name) of
 directory for storing of generated VCF file(-s). NULL by default, which
@@ -122,9 +123,18 @@ will uses GATK systemly from $PATH.}
 
 \item{workDir}{character string giving the path to and name of work
 directory. NULL by default that means the current working directory.}
+
+\item{model}{character string specifying which machine learning model to
+use. Available options: "log_reg", "rand_forest", "rpart", "SVM",
+"xgboost". Default is "rpart". Only with criterion "ml".}
+
+\item{pvalue}{logical indicating whether to return class probabilities
+instead of class labels. Default is FALSE. Only with criterion "ml".}
 }
 \value{
-VCF file(-s) with detected single nucleotide variations.
+VCF file(-s) with detected single nucleotide variations. The
+function returns the result of the low-level function corresponding
+to the chosen criterion.
 }
 \description{
 This function is a wrapper that allows to call and control
@@ -132,7 +142,11 @@ various low-level functions for identification of single nucleotide
 variations from NGS data.
 }
 \examples{
-...
+res <- callSNVs(fr_data="test_seq.PileupResults.csv",
+                criteria="fisher",
+                vcfDir="Files_VCF",
+                outputVCF="test_seq.fisher",
+                workDir="D:/Vasily Grinev")
 }
 \author{
 Dzianis D. Sarnatski, Mikalai M. Yatskou, Vasily V. Grinev

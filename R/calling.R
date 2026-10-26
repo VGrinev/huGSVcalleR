@@ -5,9 +5,10 @@
 #' @param fr_data either a name of CSV file containing pileup statistics (as
 #'     returned by collectBasesPileup() function) or an object of class
 #'     data.frame with frequancy table.
-#' @param criteria character vector specifying which test(-s) to be performed.
-#'     The following values are possible: "binomial", "counting", "entropy"
-#'     (by default), "fisher", "fisherSmyth", "gatk" and "poisson".
+#' @param criteria character string specifying which test to be performed.
+#'     Only one criterion per call is allowed. The following values are
+#'     possible: "binomial", "counting", "entropy" (by default), "fisher",
+#'     "fisherSmyth", "gatk", "ml" and "poisson".
 #' @param vcfDir character string giving the name (or path to and name) of
 #'     directory for storing of generated VCF file(-s). NULL by default, which
 #'     means the current working directory will be used instead of the
@@ -69,10 +70,21 @@
 #'     will uses GATK systemly from $PATH.
 #' @param workDir character string giving the path to and name of work
 #'     directory. NULL by default that means the current working directory.
-#' @return VCF file(-s) with detected single nucleotide variations.
+#' @param model character string specifying which machine learning model to
+#'     use. Available options: "log_reg", "rand_forest", "rpart", "SVM",
+#'     "xgboost". Default is "rpart". Only with criterion "ml".
+#' @param pvalue logical indicating whether to return class probabilities
+#'     instead of class labels. Default is FALSE. Only with criterion "ml".
+#' @return VCF file(-s) with detected single nucleotide variations. The
+#'     function returns the result of the low-level function corresponding
+#'     to the chosen criterion.
 #' @author Dzianis D. Sarnatski, Mikalai M. Yatskou, Vasily V. Grinev
 #' @examples
-#' ...
+#' res <- callSNVs(fr_data="test_seq.PileupResults.csv",
+#'                 criteria="fisher",
+#'                 vcfDir="Files_VCF",
+#'                 outputVCF="test_seq.fisher",
+#'                 workDir="D:/Vasily Grinev")
 #' @export
 #' @importFrom data.table data.table
 callSNVs <- function(fr_data,
@@ -103,100 +115,91 @@ callSNVs <- function(fr_data,
                      workDir=NULL,
                      #specific arguments to be passed to "ml"
                      model="rpart",
-                     pvalue = FALSE) {
+                     pvalue=FALSE){
   ### Validation of the input criteria.
-  if (length(x=criteria) == 0){
-    stop("No test(-s) will be performed. Please specify valid criteria")
-  }
-  invalid_criteria <- setdiff(x=criteria, y=SUPPORTED_CLASSICAL_TESTS)
-  if (length(x=invalid_criteria) > 0){
-    stop(paste("Invalid criteria specified:",
-               paste(invalid_criteria, collapse=", ")))
-  }
+  criteria <- match.arg(arg=criteria, choices=SUPPORTED_CALLERS)
   ### Setting the working directory.
   if (is.null(x=workDir)){
     workDir <- getwd()
   }
-  ### Classical tests.
-  if (criteria %in% c("binomial", "counting", "entropy", "fisher", "poisson")){
-    ##  Retrieving of the frequancy table.
-    if (is.object(x=fr_data)){
-      fr_table=fr_data
-    }else{
-      #   Full path to the CSV file.
-      path <- paste(workDir, fr_data, sep="/")
-      #   Retrieving and validation of the file extension.
-      frt <- tools::file_ext(x=path)
-      if (!frt %in% "csv"){
-        stop("Invalid format of CSV file")
-      }
-      #   Does the file actually exist in the specified location?
-      if (!file.exists(path)){
-        stop(paste("File not found:", path))
-      }
-      #   Loading of the CSV file as an object of class data.frame.
-      fr_table <- read.csv(file=path, header=TRUE)
-    }
-    ##  Initialization.
-    results <- list()
-    ##  Perform tests based on the specified criteria.
-    tests <- list(counting=snp_counting_cpp_parallel,
-                  binomial=snp_binomial_cpp_parallel,
-                  entropy=snp_entropy_cpp_parallel,
-                  fisher=snp_fisher_cpp_parallel,
-                  poisson=snp_poisson_cpp_parallel)
-    results <- lapply(X=criteria,
-                      FUN=function(test){tests[[test]](fr_table)})
-    names(x=results) <- criteria
-    ##  Transformation and writing of the results to VCF file.
-    input <- data.table(cbind(fr_table, results))
-    generateVCF(input=input,
-                version="4.0",
-                vcfDir=vcfDir,
-                outputVCF=outputVCF,
-                workDir=workDir)
-  }
-  ### Gordon K. Smyth's based approach.
-  if (criteria == "fisherSmyth"){
-    fisherSmythSNVs <- fisherCalleR(bamDir=bamDir,
-                                    bamFile=bamFile,
-                                    fastaDir=fastaDir,
-                                    faFile=faFile,
-                                    baseq=baseq,
-                                    mindepth=mindepth,
-                                    maxdepth=maxdepth,
-                                    qvalue=qvalue,
-                                    trim=trim,
-                                    threads=threads,
-                                    workDir=workDir)
-  }
-  ### GATK approach.
-  if (criteria == "gatk"){
-    gatkSNVs <- gatkCalleR(bamDir=bamDir,
-                           bamFile=bamFile,
-                           postfix=postfix,
-                           fastaDir=fastaDir,
-                           faFile=faFile,
-                           intervals=NULL,
-                           pcr_model,
-                           soft_clip=TRUE,
-                           ERC="NONE",
-                           cores="MAX",
-                           SE=TRUE,
-                           gatk_path=NULL,
-                           workDir=workDir)
-  }
-  ### ML approach.
-  if (criteria == "ml"){
-    mlSNVs <- mlCalleR(fr_data,
-                       model=model,
-                       pvalue=pvalue,
+  ### Dispatch to the low-level function.
+  switch(criteria,
+         binomial =,
+         counting =,
+         entropy =,
+         fisher =,
+         poisson = {
+           ##  Retrieving of the frequency table.
+           if (is.object(x=fr_data)){
+             fr_table <- fr_data
+           }else{
+             #   Full path to the CSV file.
+             path <- paste(workDir, fr_data, sep="/")
+             #   Retrieving and validation of the file extension.
+             frt <- tools::file_ext(x=path)
+             if (!frt %in% "csv"){
+               stop("Invalid format of CSV file")
+             }
+             #   Does the file actually exist in the specified location?
+             if (!file.exists(path)){
+               stop(paste("File not found:", path))
+             }
+             #   Loading of the CSV file as an object of class data.frame.
+             fr_table <- read.csv(file=path, header=TRUE)
+           }
+           ##  Perform the test based on the specified criterion.
+           tests <- list(counting=snp_counting_cpp_parallel,
+                         binomial=snp_binomial_cpp_parallel,
+                         entropy=snp_entropy_cpp_parallel,
+                         fisher=snp_fisher_cpp_parallel,
+                         poisson=snp_poisson_cpp_parallel)
+           result <- tests[[criteria]](fr_table)
+           ##  Transformation and writing of the results to VCF file.
+           input <- data.table(cbind(fr_table, result))
+           generateVCF(input=input,
+                       version="4.0",
                        vcfDir=vcfDir,
                        outputVCF=outputVCF,
                        workDir=workDir)
-  }
+         },
+         fisherSmyth = {
+           fisherCalleR(bamDir=bamDir,
+                        bamFile=bamFile,
+                        fastaDir=fastaDir,
+                        faFile=faFile,
+                        baseq=baseq,
+                        mindepth=mindepth,
+                        maxdepth=maxdepth,
+                        qvalue=qvalue,
+                        trim=trim,
+                        threads=threads,
+                        workDir=workDir)
+         },
+         gatk = {
+           gatkCalleR(bamDir=bamDir,
+                      bamFile=bamFile,
+                      postfix=postfix,
+                      fastaDir=fastaDir,
+                      faFile=faFile,
+                      intervals=intervals,
+                      pcr_model=pcr_model,
+                      soft_clip=soft_clip,
+                      ERC=ERC,
+                      cores=cores,
+                      SE=SE,
+                      gatk_path=gatk_path,
+                      workDir=workDir)
+         },
+         ml = {
+           mlCalleR(fr_data=fr_data,
+                    model=model,
+                    pvalue=pvalue,
+                    vcfDir=vcfDir,
+                    outputVCF=outputVCF,
+                    workDir=workDir)
+         }
+  )
 }
-
 
 #' Call of single nucleotide variations using Fisher’s exact test
 #' @description This is a wrapper function that uses the low-level function
