@@ -16,6 +16,7 @@ collectBasesPileup(
   genome = "BSgenome.Hsapiens.UCSC.hg38",
   tmpDir = tempdir(),
   postfix = NULL,
+  threads = 1,
   workDir = NULL
 )
 }
@@ -70,6 +71,9 @@ directory will be used.}
 name as postfix. NULL by default. In this case, the postfix
 "PileupResults" will be used.}
 
+\item{threads}{integer value giving the number of threads (workers) used
+for parallel pileup calculation. Default value is 1.}
+
 \item{workDir}{character string giving the path to and name of work
 directory. NULL by default that means the current working directory.}
 }
@@ -106,8 +110,9 @@ res <- collectBasesPileup(bamDir="Files_BAM",
                           mapq=20,
                           coverage=10,
                           genome="BSgenome.Hsapiens.UCSC.hg38",
-                          tmpDir=NULL,
+                          tmpDir=tempdir(),
                           postfix="PileupResults",
+                          threads=2,
                           workDir="D:/Vasily Grinev")
 }
 \author{
