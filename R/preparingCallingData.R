@@ -85,6 +85,7 @@
 #' @importFrom utils read.table
 #' @importFrom methods is
 #' @importFrom foreach foreach %dopar%
+#' @importFrom tibble tibble
 collectBasesPileup <- function(bamDir=NULL,
                                bamFile,
                                gr="SeqInfo",
