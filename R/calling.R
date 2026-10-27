@@ -191,6 +191,7 @@ callSNVs <- function(fr_data,
                         qvalue=qvalue,
                         trim=trim,
                         threads=threads,
+                        outputVCF=outputVCF,
                         workDir=workDir)
          },
          gatk = {
@@ -249,6 +250,10 @@ callSNVs <- function(fr_data,
 #'     each end of the read. Default value is 0.
 #' @param threads numeric value giving the number of threads/CPUs used. Default
 #'     value is 1.
+#' @param outputVCF character string giving the name of output VCF file. NULL
+#'     by default, in which case the file name is generated automatically as
+#'     <bam_basename>.fisherCalleR.SNVs.vcf. If not NULL, the file name is
+#'     <bam_basename>.<outputVCF>.vcf.
 #' @param workDir character string giving the path to and name of working
 #'     directory. NULL by default that means the current working directory.
 #' @return file of VCF format is written to the BAM directory.
@@ -265,6 +270,7 @@ fisherCalleR <- function(bamDir=NULL,
                          qvalue=12,
                          trim=0,
                          threads=1,
+                         outputVCF=NULL,
                          workDir=NULL){
   ### Setting the working directory.
   if (is.null(x=workDir)){
@@ -287,9 +293,11 @@ fisherCalleR <- function(bamDir=NULL,
   ### Setting the FASTA file.
   fa <- paste(path2, faFile, sep="/")
   ### Setting the output VCF file.
-  vcf <- gsub(pattern=".bam",
-              replacement=", fisherCalleR, SNVs.vcf",
-              x=bam)
+  if (is.null(x=outputVCF)){
+    vcf <- paste0(sub(".bam$", "", bam), ".fisherCalleR.SNVs.vcf")
+  }else{
+    vcf <- paste0(sub(".bam$", "", bam), ".", outputVCF, ".vcf")
+  }
   ### Detection of SNVs.
   SNVs <- exactSNP(readFile=bam,
                    isBAM=TRUE,

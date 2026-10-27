@@ -40,7 +40,7 @@ data.frame with frequancy table.}
 \item{criteria}{character string specifying which test to be performed.
 Only one criterion per call is allowed. The following values are
 possible: "binomial", "counting", "entropy" (by default), "fisher",
-"fisherSmyth", "gatk", "ml" and "poisson".}
+"fisherRSubread", "gatk", "ml" and "poisson".}
 
 \item{vcfDir}{character string giving the name (or path to and name) of
 directory for storing of generated VCF file(-s). NULL by default, which
@@ -140,6 +140,18 @@ to the chosen criterion.
 This function is a wrapper that allows to call and control
 various low-level functions for identification of single nucleotide
 variations from NGS data.
+}
+\details{
+\if{html}{\out{<div class="sourceCode">}}\preformatted{The function supports two groups of criteria:
+\\itemize\{
+  \\item Table-based criteria (\code{"binomial"}, \code{"counting"},
+        \code{"entropy"}, \code{"fisher"}, \code{"poisson"},
+        \code{"ml"}) require \code{fr_data} --- a frequency table
+        produced by \code{collectBasesPileup()}.
+  \\item BAM-based criteria (\code{"fisherRSubread"}, \code{"gatk"})
+        require \code{bamFile} and work directly with the BAM file.
+\}
+}\if{html}{\out{</div>}}
 }
 \examples{
 res <- callSNVs(fr_data="test_seq.PileupResults.csv",
