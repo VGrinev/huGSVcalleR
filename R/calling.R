@@ -8,7 +8,7 @@
 #' @param criteria character string specifying which test to be performed.
 #'     Only one criterion per call is allowed. The following values are
 #'     possible: "binomial", "counting", "entropy" (by default), "fisher",
-#'     "fisherSmyth", "gatk", "ml" and "poisson".
+#'     "fisherRSubread", "gatk", "ml" and "poisson".
 #' @param vcfDir character string giving the name (or path to and name) of
 #'     directory for storing of generated VCF file(-s). NULL by default, which
 #'     means the current working directory will be used instead of the
@@ -78,6 +78,16 @@
 #' @return VCF file(-s) with detected single nucleotide variations. The
 #'     function returns the result of the low-level function corresponding
 #'     to the chosen criterion.
+#' @details
+#'     The function supports two groups of criteria:
+#'     \itemize{
+#'       \item Table-based criteria (\code{"binomial"}, \code{"counting"},
+#'             \code{"entropy"}, \code{"fisher"}, \code{"poisson"},
+#'             \code{"ml"}) require \code{fr_data} --- a frequency table
+#'             produced by \code{collectBasesPileup()}.
+#'       \item BAM-based criteria (\code{"fisherRSubread"}, \code{"gatk"})
+#'             require \code{bamFile} and work directly with the BAM file.
+#'     }
 #' @author Dzianis D. Sarnatski, Mikalai M. Yatskou, Vasily V. Grinev
 #' @examples
 #' res <- callSNVs(fr_data="test_seq.PileupResults.csv",
@@ -91,12 +101,12 @@ callSNVs <- function(fr_data,
                      criteria="entropy",
                      vcfDir=NULL,
                      outputVCF,
-                     #common arguments to be passed to "fisherSmyth" and "gatk"
+                     #common arguments to be passed to "fisherRSubread" and "gatk"
                      bamDir=NULL,
                      bamFile=NA,
                      fastaDir=NULL,
                      faFile=NA,
-                     #specific arguments to be passed to "fisherSmyth"
+                     #specific arguments to be passed to "fisherRSubread"
                      baseq=20,
                      mindepth=1,
                      maxdepth=1e6,
@@ -118,6 +128,14 @@ callSNVs <- function(fr_data,
                      pvalue=FALSE){
   ### Validation of the input criteria.
   criteria <- match.arg(arg=criteria, choices=SUPPORTED_CALLERS)
+  ### Validation of input arguments depending on the criterion.
+  if (criteria %in% SUPPORTED_TABLE_CALLERS && missing(fr_data)){
+    stop("fr_data is required for criteria = '", criteria, "'. ",
+         "Use collectBasesPileup() to generate it from a BAM file.")
+  }
+  if (criteria %in% SUPPORTED_BAM_CALLERS && is.na(bamFile)){
+    stop("bamFile is required for criteria = '", criteria, "'.")
+  }
   ### Setting the working directory.
   if (is.null(x=workDir)){
     workDir <- getwd()
@@ -162,7 +180,7 @@ callSNVs <- function(fr_data,
                        outputVCF=outputVCF,
                        workDir=workDir)
          },
-         fisherSmyth = {
+         fisherRSubread = {
            fisherCalleR(bamDir=bamDir,
                         bamFile=bamFile,
                         fastaDir=fastaDir,
@@ -201,9 +219,10 @@ callSNVs <- function(fr_data,
   )
 }
 
+
 #' Call of single nucleotide variations using Fisher’s exact test
-#' @description This is a wrapper function that uses the low-level function
-#'     exactSNP() from package Rsubread for accurate and efficient SNVs calling.
+#' @description Internal wrapper around Rsubread::exactSNP() for SNV
+#'     calling. Called from callSNVs(criteria = "fisherRSubread").
 #' @param bamDir character string giving the name (or path to and name) of
 #'     directory with BAM file(-s). NULL by default, which means the current
 #'     working directory will be used instead of the specified BAM directory.
@@ -232,21 +251,10 @@ callSNVs <- function(fr_data,
 #'     value is 1.
 #' @param workDir character string giving the path to and name of working
 #'     directory. NULL by default that means the current working directory.
-#' @return file of VCF format is written to the current working directory.
+#' @return file of VCF format is written to the BAM directory.
 #' @author Vasily V. Grinev.
-#' @examples
-#' res <- fisherCalleR(bamDir="Files_BAM",
-#'                     bamFile="SRR21721515.bam",
-#'                     fastaDir="Files_FASTA",
-#'                     faFile="hg38.fa.gz",
-#'                     baseq=20,
-#'                     mindepth=1,
-#'                     maxdepth=1e6,
-#'                     qvalue=12,
-#'                     trim=0,
-#'                     threads=3,
-#'                     workDir="D:/Vasily Grinev")
-#' @export
+#' @keywords internal
+#' @noRd
 #' @importFrom Rsubread exactSNP
 fisherCalleR <- function(bamDir=NULL,
                          bamFile,
@@ -299,8 +307,8 @@ fisherCalleR <- function(bamDir=NULL,
 
 
 #' Call of single nucleotide variations using HaplotypeCaller GATK
-#' @description This is a wrapper function to run GATK within the R environment
-#'     for accurate and efficient SNVs calling.
+#' @description Internal wrapper around GATK HaplotypeCaller for SNV
+#'     calling. Called from callSNVs(criteria = "gatk").
 #' @param bamDir character string giving the name (or path to and name) of
 #'     directory with BAM file(s). NULL by default, which means the current
 #'     working directory will be used instead of the specified BAM directory.
@@ -340,13 +348,12 @@ fisherCalleR <- function(bamDir=NULL,
 #' @param workDir character string giving the path to and name of working
 #'     directory. NULL by default that means the current working directory.
 #'     fastaDir, faFile, bamDir and bamFiles must be somewhere inside workDir.
-#' @details HaplotypeCaller performs SNVs and short indels calling by local de novo
-#'     assembly of mapped reads
+#' @details HaplotypeCaller performs SNVs and short indels calling by local de
+#'     novo assembly of mapped reads.
 #' @return a new VCF file with detected SNVs.
 #' @author Ilia M. Ilyushonak, Vasily V. Grinev.
-#' @examples
-#' ...
-#' @export
+#' @keywords internal
+#' @noRd
 #' @importFrom parallel detectCores
 gatkCalleR <- function(bamDir=NULL,
                        bamFile,
@@ -456,7 +463,8 @@ gatkCalleR <- function(bamDir=NULL,
 
 
 #' Generate VCF file based on call table
-#' @description This function converts call table to standard VCF file.
+#' @description Internal helper that converts a call table to VCF. Called
+#'     from callSNVs() and mlCalleR().
 #' @param input character string giving the name of tab-delimited TXT file or
 #'     R object of class data.frame containing call data. File or object must
 #'     contains the following fields:
@@ -481,13 +489,8 @@ gatkCalleR <- function(bamDir=NULL,
 #' @return file(-s) of VCF format is/are written to the current working
 #'     directory or specified VCF directory.
 #' @author Vasily V. Grinev.
-#' @examples
-#' generateVCF(input="example_seq.call_table.txt",
-#'             version="4.0",
-#'             vcfDir="Files_VCF",
-#'             outputVCF="example_seq.call_table.identified_SNVs",
-#'             workDir="D:/Vasily Grinev")
-#' @export
+#' @keywords internal
+#' @noRd
 #' @importFrom data.table fread
 generateVCF <- function(input,
                         version="4.0",
@@ -597,134 +600,129 @@ generateVCF <- function(input,
 
 
 #' Call single nucleotide variations using machine learning models
-#' @description This function uses pre-trained machine learning models to
-#'     identify single nucleotide variations from frequency table data.
+#' @description Internal wrapper around pre-trained machine learning models
+#'     for SNV calling. Called from callSNVs(criteria = "ml").
+#' @param fr_data data.frame with frequency table.
 #' @param model character string specifying which machine learning model to use.
 #'     Available options: "log_reg", "rand_forest", "rpart", "SVM", "xgboost".
 #'     Default is "rpart".
 #' @param pvalue logical indicating whether to return class probabilities
 #'     instead of class labels (default: FALSE). If TRUE, returns probability
 #'     of belonging to positive class (1).
+#' @param vcfDir character string giving the name (or path to and name) of
+#'     directory for storing of generated VCF file(-s).
+#' @param outputVCF character string giving the name of output VCF file.
 #' @param workDir character string giving the path to and name of working
 #'     directory. NULL by default that means the current working directory.
-#' @return VCF file with detected single nucleotide variations.
+#' @return data.frame with predictions added.
 #' @author Dzianis D. Sarnatski
-#' @examples
-#' # Example usage
-#' mlSNVs <- mlCalleR(model = "rpart", pvalue = FALSE, workDir = "D:/Vasily Grinev")
-#' @export
+#' @keywords internal
+#' @noRd
 #' @importFrom data.table data.table
 mlCalleR <- function(fr_data,
-                     model = "rpart",
-                     pvalue = FALSE,
-                     vcfDir=vcfDir,
-                     outputVCF=outputVCF,
-                     workDir = NULL) {
-
-  ### Validation of the input model
+                     model="rpart",
+                     pvalue=FALSE,
+                     vcfDir=NULL,
+                     outputVCF,
+                     workDir=NULL){
+  ### Validation of the input model.
   SUPPORTED_ML_MODELS <- c("log_reg", "rand_forest", "rpart", "SVM", "xgboost")
-
-  if (!model %in% SUPPORTED_ML_MODELS) {
+  if (!model %in% SUPPORTED_ML_MODELS){
     stop(paste("Invalid model specified:", model,
-               ". Available options:", paste(SUPPORTED_ML_MODELS, collapse = ", ")))
+               ". Available options:",
+               paste(SUPPORTED_ML_MODELS, collapse=", ")))
   }
-
-  ### Setting the working directory
-  if (is.null(x = workDir)) {
+  ### Setting the working directory.
+  if (is.null(x=workDir)){
     workDir <- getwd()
   }
-
-  ### Validate input data structure
+  ### Validate input data structure.
   required_cols <- c("position", "reference", "A", "C", "G", "T")
-  if (!all(required_cols %in% colnames(fr_data))) {
-    stop(paste("Input data must contain columns:", paste(required_cols, collapse = ", ")))
+  if (!all(required_cols %in% colnames(fr_data))){
+    stop(paste("Input data must contain columns:",
+               paste(required_cols, collapse=", ")))
   }
-
-  ### Feature extraction
+  ### Feature extraction.
   features <- c("x1", "x2", "x3", "x4")
-  data.features <- vectorise_data_cpp_parallel(fr_data, features = features)
-
-  ### Sum non-reference reads
+  data.features <- vectorise_data_cpp_parallel(fr_data, features=features)
+  ### Sum non-reference reads.
   target_cols <- c("x2", "x3", "x4")
   existing_cols <- target_cols[target_cols %in% names(data.features)]
-  if (length(existing_cols) > 0) {
-    data.features$x_sum <- rowSums(data.features[, existing_cols, drop = FALSE], na.rm = TRUE)
+  if (length(existing_cols) > 0){
+    data.features$x_sum <- rowSums(data.features[, existing_cols, drop=FALSE],
+                                   na.rm=TRUE)
     data.features <- data.features[, !names(data.features) %in% target_cols]
   }
-
-  ### Load the pre-trained model
-  model.path <- system.file("data", paste0(model, ".rds"), package = "huGSVcalleR")
-
-  if (!file.exists(model.path)) {
+  ### Load the pre-trained model.
+  model.path <- system.file("data", paste0(model, ".rds"),
+                            package="huGSVcalleR")
+  if (!file.exists(model.path)){
     stop(paste("Model file not found:", model.path))
   }
-
   model.obj <- readRDS(model.path)
-
-  ### Make predictions
+  ### Make predictions.
   prediction <- NULL
-
-  if (model == "xgboost") {
-    if (pvalue) {
-      prediction <- predict(model.obj, xgboost::xgb.DMatrix(data = as.matrix(data.features)))
-    } else {
-      prediction <- predict(model.obj, xgboost::xgb.DMatrix(data = as.matrix(data.features))) |>
+  if (model == "xgboost"){
+    if (pvalue){
+      prediction <- predict(model.obj,
+                            xgboost::xgb.DMatrix(data=as.matrix(data.features)))
+    }else{
+      prediction <- predict(model.obj,
+                            xgboost::xgb.DMatrix(data=as.matrix(data.features))) |>
         round() |>
         as.factor()
     }
-  } else if (model == "rpart") {
-    if (pvalue) {
-      pred <- predict(model.obj, newdata = data.features, type = "prob")
-      prediction <- if (is.list(pred)) {
+  }else if (model == "rpart"){
+    if (pvalue){
+      pred <- predict(model.obj, newdata=data.features, type="prob")
+      prediction <- if (is.list(pred)){
         sapply(pred, function(x) x[2])
-      } else if (is.matrix(pred)) {
+      }else if (is.matrix(pred)){
         pred[, 2]
-      } else {
+      }else{
         pred
       }
-    } else {
-      prediction <- predict(model.obj, newdata = data.features, type = "class")
+    }else{
+      prediction <- predict(model.obj, newdata=data.features, type="class")
     }
-  } else if (model == "log_reg") {
-    if (pvalue) {
-      prediction <- predict(model.obj, newdata = data.features, type = "response") |> as.vector()
-    } else {
-      prediction <- predict(model.obj, newdata = data.features, type = "response") |> as.vector()
+  }else if (model == "log_reg"){
+    if (pvalue){
+      prediction <- predict(model.obj, newdata=data.features,
+                            type="response") |> as.vector()
+    }else{
+      prediction <- predict(model.obj, newdata=data.features,
+                            type="response") |> as.vector()
       prediction <- ifelse(prediction > 0.5, 1, 0) |> as.factor()
     }
-  } else if (model == "rand_forest") {
-    if (pvalue) {
-      pred <- predict(model.obj, newdata = data.features, type = "prob")
-      prediction <- if (is.list(pred)) {
+  }else if (model == "rand_forest"){
+    if (pvalue){
+      pred <- predict(model.obj, newdata=data.features, type="prob")
+      prediction <- if (is.list(pred)){
         sapply(pred, function(x) x[2])
-      } else if (is.matrix(pred)) {
+      }else if (is.matrix(pred)){
         pred[, 2]
-      } else {
+      }else{
         pred
       } |> as.vector()
-    } else {
-      prediction <- predict(model.obj, newdata = data.features, type = "response")
+    }else{
+      prediction <- predict(model.obj, newdata=data.features, type="response")
     }
-  } else if (model == "SVM") {
-    if (pvalue) {
-      pred_obj <- predict(model.obj, newdata = data.features, probability = TRUE)
+  }else if (model == "SVM"){
+    if (pvalue){
+      pred_obj <- predict(model.obj, newdata=data.features, probability=TRUE)
       prediction <- attr(pred_obj, "probabilities")[, "1"]
-    } else {
-      prediction <- predict(model.obj, newdata = data.features)
+    }else{
+      prediction <- predict(model.obj, newdata=data.features)
     }
   }
-
-  ### Add predictions to the original data
-  results <- cbind(fr_data, ML_Prediction = prediction)
-
-  ### Generate VCF file
-  generateVCF(input = results,
+  ### Add predictions to the original data.
+  results <- cbind(fr_data, ML_Prediction=prediction)
+  ### Generate VCF file.
+  generateVCF(input=results,
               version="4.0",
               vcfDir=vcfDir,
               outputVCF=outputVCF,
-              workDir = workDir)
-
-  ### Return the results
+              workDir=workDir)
+  ### Return the results.
   return(results)
 }
-
