@@ -377,11 +377,13 @@ gatkCalleR <- function(bamDir=NULL,
                        gatk_path=NULL,
                        workDir=NULL){
   ### Validation of GATK path.
-  if(is.null(x=gatk_path)){
-    return("Cannot run GATK without path. Please provide full path to GATK
-                folder and execution script! Format of
-                path: /home/Bioinformatics/Soft/gatk-4.2.6.1/gatk. Or use a
-                just *gatk*, if it can be called directly from bash console")
+  if (is.null(x=gatk_path)){
+    stop("Cannot run GATK without path. Please provide full path to GATK ",
+         "executive script, or 'gatk' if it can be called from $PATH.")
+  }
+  if (!file.exists(gatk_path) && !nzchar(Sys.which(gatk_path))){
+    stop("GATK executable not found: ", gatk_path,
+         ". Provide a valid path or ensure 'gatk' is in $PATH.")
   }
   ### Setting the working directory.
   if (is.null(x=workDir)){
@@ -460,13 +462,19 @@ gatkCalleR <- function(bamDir=NULL,
                 sep=".")
   }
   ### Running of command.
-  system2(command=gatk_path,
-          args=c("HaplotypeCaller", input, output, fa, pcr, softclip, erc, cores),
-          if (se == ""){
-            stderr=se
-          }else{
-            stderr=paste(path1, se, sep="/")
-          })
+  status <- system2(command=gatk_path,
+                    args=c("HaplotypeCaller", input, output, fa,
+                           pcr, softclip, erc, cores),
+                    if (se == ""){
+                      stderr=se
+                    }else{
+                      stderr=paste(path1, se, sep="/")
+                    })
+  if (status != 0){
+    stop("GATK HaplotypeCaller failed with exit code ", status,
+         ". Check that gatk_path points to a valid GATK executable ",
+         "and that the input files (BAM, FASTA, intervals) are correct.")
+  }
 }
 
 
