@@ -357,7 +357,9 @@ fisherCalleR <- function(bamDir=NULL,
 #'     directory. NULL by default that means the current working directory.
 #'     fastaDir, faFile, bamDir and bamFiles must be somewhere inside workDir.
 #' @details HaplotypeCaller performs SNVs and short indels calling by local de
-#'     novo assembly of mapped reads.
+#'     novo assembly of mapped reads. GATK is not natively available on
+#'     Windows; on Windows, use WSL2 or Docker and run GATK manually. See the
+#'     INSTALL file for details.
 #' @return a new VCF file with detected SNVs.
 #' @author Ilia M. Ilyushonak, Vasily V. Grinev.
 #' @keywords internal
@@ -376,6 +378,13 @@ gatkCalleR <- function(bamDir=NULL,
                        SE=TRUE,
                        gatk_path=NULL,
                        workDir=NULL){
+  ### Platform check: GATK is not natively supported on Windows.
+  if (.Platform$OS.type == "windows"){
+    stop("GATK is not natively supported on Windows. ",
+         "Please use WSL2 or Docker and run GATK manually, ",
+         "then use callSNVs(criteria = 'fisher') or another method. ",
+         "See the INSTALL file for details.")
+  }
   ### Validation of GATK path.
   if (is.null(x=gatk_path)){
     stop("Cannot run GATK without path. Please provide full path to GATK ",

@@ -1,0 +1,19 @@
+GATK is required for callSNVs(criteria = "gatk").
+
+GATK is not natively available on Windows. On Linux and macOS, install GATK
+from https://gatk.broadinstitute.org/ and ensure the 'gatk' executable is
+on your PATH, or pass its full path to callSNVs(gatk_path = "/path/to/gatk").
+
+On Windows, use one of the following approaches:
+  1. WSL2 (Windows Subsystem for Linux):
+     https://learn.microsoft.com/windows/wsl/
+     Install GATK inside WSL2 and run it manually. Note that Windows paths
+     (e.g., D:/folder/file.bam) must be converted to WSL paths
+     (e.g., /mnt/d/folder/file.bam).
+  2. Docker:
+     https://gatk.broadinstitute.org/hc/en-us/articles/360035889931-Docker
+     Run the GATK Docker image and mount your data directory.
+
+On Windows, callSNVs(criteria = "gatk") will stop with an informative error.
+Use callSNVs(criteria = "fisher") or another method on Windows, or run GATK
+manually via WSL2 or Docker.
