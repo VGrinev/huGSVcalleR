@@ -691,14 +691,25 @@ mlCalleR <- function(fr_table,
   ### Feature extraction.
   features <- c("x1", "x2", "x3", "x4")
   data.features <- vectorise_data_cpp_parallel(fr_table, features=features)
-  ### Sum non-reference reads.
+  ### Total and non-reference fraction
+  total <- rowSums(data.features)
   target_cols <- c("x2", "x3", "x4")
   existing_cols <- target_cols[target_cols %in% names(data.features)]
   if (length(existing_cols) > 0){
-    data.features$x_sum <- rowSums(data.features[, existing_cols, drop=FALSE],
-                                   na.rm=TRUE)
-    data.features <- data.features[, !names(data.features) %in% target_cols]
+    x_sum <- rowSums(data.features[, existing_cols, drop=FALSE],
+                     na.rm=TRUE)
+  }else{
+    stop("Non-reference columns (x2, x3, x4) are missing in data.features.")
   }
+  data.features <- data.frame(
+    x_sum_norm = x_sum / total,
+    total = total
+  )
+  ### Filter out non-finite rows (e.g., total = 0).
+  finite_rows <- is.finite(data.features$x_sum_norm) &
+    is.finite(data.features$total)
+  data.features <- data.features[finite_rows, , drop=FALSE]
+  fr_table_filt <- fr_table[finite_rows, , drop=FALSE]
   ### Load the pre-trained model.
   if (model == "xgboost"){
     model.path <- system.file("extdata", paste0(model, ".json"),
@@ -717,26 +728,23 @@ mlCalleR <- function(fr_table,
     }
     model.obj <- readRDS(model.path)
   }
-  ### Data normalization
-  row_sums <- rowSums(data.features)
-  data.features <- data.features / row_sums
-
   ### Make predictions.
   prediction <- NULL
   if (model == "xgboost"){
     if (pvalue){
       prediction <- predict(model.obj,
-                            xgboost::xgb.DMatrix(data=as.matrix(data.features)))
+                            xgboost::xgb.DMatrix(
+                              data=as.matrix(data.features)))
     }else{
       prediction <- predict(model.obj,
-                            xgboost::xgb.DMatrix(data=as.matrix(data.features))) |>
+                            xgboost::xgb.DMatrix(
+                              data=as.matrix(data.features))) |>
         round() |>
         as.factor()
     }
   }else if (model == "rpart"){
     if (pvalue){
       pred <- predict(model.obj, newdata=data.features, type="prob")
-
       prediction <- if (is.list(pred)){
         sapply(pred, function(x) x[2])
       }else if (is.matrix(pred)){
@@ -767,19 +775,30 @@ mlCalleR <- function(fr_table,
         pred
       } |> as.vector()
     }else{
-      prediction <- predict(model.obj, newdata=data.features, type="response")
+      prediction <- predict(model.obj, newdata=data.features, type="class")
     }
-  } else if (model == "SVM") {
-    if (pvalue) {
-      pred_obj <- predict(model.obj, newx = as.matrix(data.features), proba = TRUE)
+  }else if (model == "SVM"){
+    if (pvalue){
+      pred_obj <- predict(model.obj,
+                          newx=as.matrix(data.features),
+                          proba=TRUE)
+      if (is.null(pred_obj$probabilities) ||
+          ncol(pred_obj$probabilities) < 2){
+        stop("SVM model does not support probability output. ",
+             "It must be trained with LiblineaR type 0, 6 or 7 ",
+             "(logistic regression) to compute probabilities. ",
+             "Use pvalue = FALSE for class labels.")
+      }
       prediction <- pred_obj$probabilities[, "1"]
-    } else {
-      pred_obj <- predict(model.obj, newx = as.matrix(data.features), proba = FALSE)
+    }else{
+      pred_obj <- predict(model.obj,
+                          newx=as.matrix(data.features),
+                          proba=FALSE)
       prediction <- pred_obj$predictions
     }
   }
   ### Add predictions to the original data.
-  results <- data.table(cbind(fr_table, ML_Prediction = prediction))
+  results <- data.table(cbind(fr_table_filt, ML_Prediction = prediction))
   ### Generate VCF file.
   generateVCF(input=results,
               version="4.0",
