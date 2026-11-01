@@ -140,6 +140,22 @@ callSNVs <- function(fr_data,
   if (is.null(x=workDir)){
     workDir <- getwd()
   }
+  ### Retrieving of the frequency table (for table-based criteria).
+  if (criteria %in% SUPPORTED_TABLE_CALLERS){
+    if (is.object(x=fr_data)){
+      fr_table <- fr_data
+    }else{
+      path <- paste(workDir, fr_data, sep="/")
+      frt <- tools::file_ext(x=path)
+      if (!frt %in% "csv"){
+        stop("Invalid format of CSV file")
+      }
+      if (!file.exists(path)){
+        stop(paste("File not found:", path))
+      }
+      fr_table <- read.csv(file=path, header=TRUE)
+    }
+  }
   ### Dispatch to the low-level function.
   switch(criteria,
          binomial =,
@@ -210,7 +226,7 @@ callSNVs <- function(fr_data,
                       workDir=workDir)
          },
          ml = {
-           mlCalleR(fr_data=fr_data,
+           mlCalleR(fr_table=fr_table,
                     model=model,
                     pvalue=pvalue,
                     vcfDir=vcfDir,
@@ -534,7 +550,7 @@ generateVCF <- function(input,
   }
   ### Retrieving of the input data.
   if (is.object(x=input)){
-    vcf_pre=input
+    vcf_pre <- as.data.table(input)
   }else{
     vcf_pre <- fread(file=paste(workDir, input, sep="/"))
   }
@@ -600,7 +616,11 @@ generateVCF <- function(input,
               "##INFO=<ID=MM,Number=1,Type=String,Description=\"Number of supporting reads for each alternative allele\">",
               "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO")
     for (i in 1:length(x=tests)){
-      VCF$QUAL <- round(x=VCF[, tests[i]], digits=4)
+      if (is.numeric(VCF[, tests[i]])){
+        VCF$QUAL <- round(x=VCF[, tests[i]], digits=4)
+      }else{
+        VCF$QUAL <- as.character(VCF[, tests[i]])
+      }
       vcf_name <- paste(paste(vcfDir,
                               paste(outputVCF,
                                     tests[i],
@@ -627,7 +647,7 @@ generateVCF <- function(input,
 #' Call single nucleotide variations using machine learning models
 #' @description Internal wrapper around pre-trained machine learning models
 #'     for SNV calling. Called from callSNVs(criteria = "ml").
-#' @param fr_data data.frame with frequency table.
+#' @param fr_table data.frame with frequency table.
 #' @param model character string specifying which machine learning model to use.
 #'     Available options: "log_reg", "rand_forest", "rpart", "SVM", "xgboost".
 #'     Default is "rpart".
@@ -644,14 +664,15 @@ generateVCF <- function(input,
 #' @keywords internal
 #' @noRd
 #' @importFrom data.table data.table
-mlCalleR <- function(fr_data,
+#' @import randomForest
+#' @import LiblineaR
+mlCalleR <- function(fr_table,
                      model="rpart",
                      pvalue=FALSE,
                      vcfDir=NULL,
                      outputVCF,
                      workDir=NULL){
   ### Validation of the input model.
-  SUPPORTED_ML_MODELS <- c("log_reg", "rand_forest", "rpart", "SVM", "xgboost")
   if (!model %in% SUPPORTED_ML_MODELS){
     stop(paste("Invalid model specified:", model,
                ". Available options:",
@@ -663,13 +684,13 @@ mlCalleR <- function(fr_data,
   }
   ### Validate input data structure.
   required_cols <- c("position", "reference", "A", "C", "G", "T")
-  if (!all(required_cols %in% colnames(fr_data))){
+  if (!all(required_cols %in% colnames(fr_table))){
     stop(paste("Input data must contain columns:",
                paste(required_cols, collapse=", ")))
   }
   ### Feature extraction.
   features <- c("x1", "x2", "x3", "x4")
-  data.features <- vectorise_data_cpp_parallel(fr_data, features=features)
+  data.features <- vectorise_data_cpp_parallel(fr_table, features=features)
   ### Sum non-reference reads.
   target_cols <- c("x2", "x3", "x4")
   existing_cols <- target_cols[target_cols %in% names(data.features)]
@@ -679,12 +700,27 @@ mlCalleR <- function(fr_data,
     data.features <- data.features[, !names(data.features) %in% target_cols]
   }
   ### Load the pre-trained model.
-  model.path <- system.file("data", paste0(model, ".rds"),
-                            package="huGSVcalleR")
-  if (!file.exists(model.path)){
-    stop(paste("Model file not found:", model.path))
+  if (model == "xgboost"){
+    model.path <- system.file("extdata", paste0(model, ".json"),
+                              package="huGSVcalleR")
+    if (!nzchar(model.path) || !file.exists(model.path)){
+      stop("Model file not found: ", model.path,
+           ". Expected a .json file in inst/extdata/.")
+    }
+    model.obj <- xgboost::xgb.load(model.path)
+  }else{
+    model.path <- system.file("extdata", paste0(model, ".rds"),
+                              package="huGSVcalleR")
+    if (!nzchar(model.path) || !file.exists(model.path)){
+      stop("Model file not found: ", model.path,
+           ". Expected a .rds file in inst/extdata/.")
+    }
+    model.obj <- readRDS(model.path)
   }
-  model.obj <- readRDS(model.path)
+  ### Data normalization
+  row_sums <- rowSums(data.features)
+  data.features <- data.features / row_sums
+
   ### Make predictions.
   prediction <- NULL
   if (model == "xgboost"){
@@ -700,6 +736,7 @@ mlCalleR <- function(fr_data,
   }else if (model == "rpart"){
     if (pvalue){
       pred <- predict(model.obj, newdata=data.features, type="prob")
+
       prediction <- if (is.list(pred)){
         sapply(pred, function(x) x[2])
       }else if (is.matrix(pred)){
@@ -732,16 +769,17 @@ mlCalleR <- function(fr_data,
     }else{
       prediction <- predict(model.obj, newdata=data.features, type="response")
     }
-  }else if (model == "SVM"){
-    if (pvalue){
-      pred_obj <- predict(model.obj, newdata=data.features, probability=TRUE)
-      prediction <- attr(pred_obj, "probabilities")[, "1"]
-    }else{
-      prediction <- predict(model.obj, newdata=data.features)
+  } else if (model == "SVM") {
+    if (pvalue) {
+      pred_obj <- predict(model.obj, newx = as.matrix(data.features), proba = TRUE)
+      prediction <- pred_obj$probabilities[, "1"]
+    } else {
+      pred_obj <- predict(model.obj, newx = as.matrix(data.features), proba = FALSE)
+      prediction <- pred_obj$predictions
     }
   }
   ### Add predictions to the original data.
-  results <- cbind(fr_data, ML_Prediction=prediction)
+  results <- data.table(cbind(fr_table, ML_Prediction = prediction))
   ### Generate VCF file.
   generateVCF(input=results,
               version="4.0",

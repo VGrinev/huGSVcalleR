@@ -45,7 +45,10 @@ Imports:
     SparseArray,
     GenomicFeatures (>= 1.40.1),
     rtracklayer (>= 1.48.0),
-    txdbmaker
+    txdbmaker,
+    xgboost,
+    randomForest,
+    LiblineaR
 LinkingTo: 
     Rcpp,
     RcppParallel
