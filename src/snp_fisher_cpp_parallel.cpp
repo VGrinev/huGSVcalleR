@@ -1,5 +1,7 @@
 #include "snp_fisher_cpp_parallel.h"
 #include "utils.h"
+#include <cmath>
+#include <limits>
 
 struct FisherWorker : public Worker {
   const RVector<int> A;
@@ -64,68 +66,85 @@ struct FisherCalcWorker : public Worker
   {
     for (std::size_t j = begin; j < end; ++j)
     {
-      fisher[j] = 0; // Инициализируем значение fisher
+      // Accumulate in log-space to avoid overflow.
+      double log_fisher = R_NegInf;
       for (int i = 0; i <= ctr_max[j]; ++i)
       {
         if (ctr[j] >= i)
         {
-          double temp = cpp_choose(ct[j], i) * cpp_choose(cn[j], cr[j] - i) / cpp_choose(ct[j] + cm[j], cm[j]);
-          fisher[j] += temp;
+          double log_temp = cpp_lchoose(ct[j], i) +
+            cpp_lchoose(cn[j], cr[j] - i) -
+            cpp_lchoose(ct[j] + cm[j], cm[j]);
+          // log-sum-exp accumulation
+          if (log_fisher == R_NegInf) {
+            log_fisher = log_temp;
+          } else {
+            double m = std::max(log_fisher, log_temp);
+            log_fisher = m + std::log1p(std::exp(std::min(log_fisher, log_temp) - m));
+          }
         }
+      }
+      fisher[j] = std::exp(log_fisher);
+      // Safety clamp to [0, 1] (p-value cannot exceed 1).
+      if (!std::isfinite(fisher[j]) || fisher[j] > 1.0) {
+        fisher[j] = 1.0;
+      }
+      if (fisher[j] < 0.0) {
+        fisher[j] = 0.0;
       }
     }
   }
 };
 
-//' Parallel SNP Fisher's Exact Test Calculation
-//' @name snp_fisher_cpp_parallel
-//' @description
-//' This function performs a parallel computation of Fisher's Exact Test for SNP (single nucleotide polymorphism) data.
-//' It calculates the Fisher's exact test statistic based on nucleotide counts (A, C, G, T) at each SNP position.
-//' The function utilizes parallel processing to efficiently handle large datasets by distributing the computation
-//' across multiple CPU cores using RcppParallel.
-//'
-//' @param df_d A data frame containing the following columns:
-//'   - `reference`: A character vector with the reference alleles ("A", "C", "G", "T").
-//'   - `A`, `C`, `G`, `T`: Integer vectors representing the counts of each nucleotide (A, C, G, T) at each SNP position.
-//'
-//' @return A numeric vector containing the p-values from Fisher's Exact Test for each SNP position.
-//'   A p-value of 1 indicates no variation, while smaller values suggest greater variation and statistical significance.
-//'
-//' @details
-//' The function performs the following steps:
-//' 1. For each SNP position, the nucleotide counts for A, C, G, T are extracted from the input data frame.
-//' 2. Intermediate quantities such as `cn`, `ct`, `cr`, and others are computed using parallel processing.
-//' 3. Fisher's exact test statistics are calculated for each SNP position using binomial coefficients.
-//' 4. The function is optimized for parallel execution, distributing the workload across multiple cores.
-//'
-//' @author Dzianis D. Sarnatski, Mikalai M. Yatskou
-//' @examples
-//' df <- data.frame(reference = c("A", "C", "G", "T"),
-//'                  A = c(10, 0, 5, 0),
-//'                  C = c(2, 10, 0, 0),
-//'                  G = c(0, 0, 10, 5),
-//'                  T = c(0, 0, 0, 10))
-//'
-//' result <- snp_fisher_cpp_parallel(df)
-//' print(result)
-//'
-// [[Rcpp::export]]
-NumericVector snp_fisher_cpp_parallel(DataFrame& df_d)
-{
+ //' Parallel SNP Fisher's Exact Test Calculation
+ //' @name snp_fisher_cpp_parallel
+ //' @description
+ //' This function performs a parallel computation of Fisher's Exact Test for SNP (single nucleotide polymorphism) data.
+ //' It calculates the Fisher's exact test statistic based on nucleotide counts (A, C, G, T) at each SNP position.
+ //' The function utilizes parallel processing to efficiently handle large datasets by distributing the computation
+ //' across multiple CPU cores using RcppParallel.
+ //'
+ //' @param df_d A data frame containing the following columns:
+ //'   - `reference`: A character vector with the reference alleles ("A", "C", "G", "T").
+ //'   - `A`, `C`, `G`, `T`: Integer vectors representing the counts of each nucleotide (A, C, G, T) at each SNP position.
+ //'
+ //' @return A numeric vector containing the p-values from Fisher's Exact Test for each SNP position.
+ //'   A p-value of 1 indicates no variation, while smaller values suggest greater variation and statistical significance.
+ //'
+ //' @details
+ //' The function performs the following steps:
+ //' 1. For each SNP position, the nucleotide counts for A, C, G, T are extracted from the input data frame.
+ //' 2. Intermediate quantities such as `cn`, `ct`, `cr`, and others are computed using parallel processing.
+ //' 3. Fisher's exact test statistics are calculated for each SNP position using binomial coefficients.
+ //'    The computation is performed in log-space via `lgamma` to avoid overflow for large counts.
+ //' 4. The function is optimized for parallel execution, distributing the workload across multiple cores.
+ //'
+ //' @author Dzianis D. Sarnatski, Mikalai M. Yatskou
+ //' @examples
+ //' df <- data.frame(reference = c("A", "C", "G", "T"),
+ //'                  A = c(10, 0, 5, 0),
+ //'                  C = c(2, 10, 0, 0),
+ //'                  G = c(0, 0, 10, 5),
+ //'                  T = c(0, 0, 0, 10))
+ //'
+ //' result <- snp_fisher_cpp_parallel(df)
+ //' print(result)
+ //'
+ // [[Rcpp::export]]
+ NumericVector snp_fisher_cpp_parallel(DataFrame& df_d)
+ {
+   int n = df_d.nrows();
+   NumericVector fisher(n);
+   IntegerVector cn(n), ct(n), cr(n), cm(n), ctr(n), ctr_max(n);
 
-  int n = df_d.nrows();
-  NumericVector fisher(n);
-  IntegerVector cn(n), ct(n), cr(n), cm(n), ctr(n), ctr_max(n);
+   // 1. Parallel computation of cn, ct, cr, cm, ctr
+   FisherWorker worker(df_d["A"], df_d["C"], df_d["G"], df_d["T"],
+                       df_d["reference"], cn, ct, cr, cm, ctr, ctr_max);
+   parallelFor(0, n, worker);
 
-  // 1. Параллельные вычисления для cn, ct, cr, cm, ctr
-  FisherWorker worker(df_d["A"], df_d["C"], df_d["G"], df_d["T"],
-                      df_d["reference"], cn, ct, cr, cm, ctr, ctr_max);
-  parallelFor(0, n, worker);
+   // 2. Parallel computation of fisher p-values
+   FisherCalcWorker fisherCalcWorker(cn, ct, cr, cm, ctr, ctr_max, fisher);
+   parallelFor(0, n, fisherCalcWorker);
 
-  // 2. Параллельные вычисления для fisher
-  FisherCalcWorker fisherCalcWorker(cn, ct, cr, cm, ctr, ctr_max, fisher);
-  parallelFor(0, n, fisherCalcWorker);
-
-  return fisher;
-}
+   return fisher;
+ }

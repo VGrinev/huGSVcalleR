@@ -38,7 +38,7 @@
 #' result <- snp_binomial_cpp_parallel(df)
 #' print(result)
 snp_binomial_cpp_parallel <- function(df_d) {
-    .Call('_huGSVcalleR_snp_binomial_cpp_parallel', PACKAGE = 'huGSVcalleR', df_d)
+    .Call(`_huGSVcalleR_snp_binomial_cpp_parallel`, df_d)
 }
 
 #' Parallel SNP Counting in a DataFrame
@@ -75,7 +75,7 @@ snp_binomial_cpp_parallel <- function(df_d) {
 #' print(result)
 #'
 snp_counting_cpp_parallel <- function(df_d) {
-    .Call('_huGSVcalleR_snp_counting_cpp_parallel', PACKAGE = 'huGSVcalleR', df_d)
+    .Call(`_huGSVcalleR_snp_counting_cpp_parallel`, df_d)
 }
 
 #' Parallel SNP Entropy and P-value Calculation
@@ -131,44 +131,11 @@ snp_counting_cpp_parallel <- function(df_d) {
 #' print(entropy)
 #'
 snp_entropy_cpp_parallel <- function(df_d, p_value = FALSE) {
-    .Call('_huGSVcalleR_snp_entropy_cpp_parallel', PACKAGE = 'huGSVcalleR', df_d, p_value)
+    .Call(`_huGSVcalleR_snp_entropy_cpp_parallel`, df_d, p_value)
 }
 
-#' Parallel SNP Fisher's Exact Test Calculation
-#' @name snp_fisher_cpp_parallel
-#' @description
-#' This function performs a parallel computation of Fisher's Exact Test for SNP (single nucleotide polymorphism) data.
-#' It calculates the Fisher's exact test statistic based on nucleotide counts (A, C, G, T) at each SNP position.
-#' The function utilizes parallel processing to efficiently handle large datasets by distributing the computation
-#' across multiple CPU cores using RcppParallel.
-#'
-#' @param df_d A data frame containing the following columns:
-#'   - `reference`: A character vector with the reference alleles ("A", "C", "G", "T").
-#'   - `A`, `C`, `G`, `T`: Integer vectors representing the counts of each nucleotide (A, C, G, T) at each SNP position.
-#'
-#' @return A numeric vector containing the p-values from Fisher's Exact Test for each SNP position.
-#'   A p-value of 1 indicates no variation, while smaller values suggest greater variation and statistical significance.
-#'
-#' @details
-#' The function performs the following steps:
-#' 1. For each SNP position, the nucleotide counts for A, C, G, T are extracted from the input data frame.
-#' 2. Intermediate quantities such as `cn`, `ct`, `cr`, and others are computed using parallel processing.
-#' 3. Fisher's exact test statistics are calculated for each SNP position using binomial coefficients.
-#' 4. The function is optimized for parallel execution, distributing the workload across multiple cores.
-#'
-#' @author Dzianis D. Sarnatski, Mikalai M. Yatskou
-#' @examples
-#' df <- data.frame(reference = c("A", "C", "G", "T"),
-#'                  A = c(10, 0, 5, 0),
-#'                  C = c(2, 10, 0, 0),
-#'                  G = c(0, 0, 10, 5),
-#'                  T = c(0, 0, 0, 10))
-#'
-#' result <- snp_fisher_cpp_parallel(df)
-#' print(result)
-#'
 snp_fisher_cpp_parallel <- function(df_d) {
-    .Call('_huGSVcalleR_snp_fisher_cpp_parallel', PACKAGE = 'huGSVcalleR', df_d)
+    .Call(`_huGSVcalleR_snp_fisher_cpp_parallel`, df_d)
 }
 
 #' Parallel Poisson Test for SNP Detection
@@ -207,10 +174,10 @@ snp_fisher_cpp_parallel <- function(df_d) {
 #' print(result)
 #'
 snp_poisson_cpp_parallel <- function(df_d) {
-    .Call('_huGSVcalleR_snp_poisson_cpp_parallel', PACKAGE = 'huGSVcalleR', df_d)
+    .Call(`_huGSVcalleR_snp_poisson_cpp_parallel`, df_d)
 }
 
 vectorise_data_cpp_parallel <- function(df_d, features) {
-    .Call('_huGSVcalleR_vectorise_data_cpp_parallel', PACKAGE = 'huGSVcalleR', df_d, features)
+    .Call(`_huGSVcalleR_vectorise_data_cpp_parallel`, df_d, features)
 }
 

@@ -6,6 +6,7 @@
 
 using namespace Rcpp;
 
+double cpp_lchoose(int n, int k);
 double cpp_choose(int n, int k);
 
 #endif // UTILS_H
