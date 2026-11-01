@@ -205,6 +205,18 @@ filterVariants <- function(vcfDir=NULL,
 #' @return consolidated data frame containing values of benchmarking metrics;
 #'     in addition, if featureTable=TRUE, in the working directory is writing
 #'     CSV file containing a detailed report of the benchmarking results.
+#' @details
+#'     The function splits variants into two classes (SNP and INDEL)
+#'     based on the length of REF and ALT alleles and reports metrics
+#'     separately for each class and for all variants together.
+#'     \strong{Precision} is calculated as \code{TP / (TP + FP)}.
+#'     \strong{Recall} is calculated as \code{TP / (TP + FN)}.
+#'     \strong{F1} is the harmonic mean of precision and recall.
+#'     When no variants of a given class were found by the query
+#'     (\code{TP + FP = 0}), \strong{Precision} and \strong{F1} are
+#'     reported as \code{NA}, because they are undefined in this case.
+#'     \strong{Recall} is reported as 0 in this case, because all
+#'     truth variants of this class were missed.
 #' @author Liudmila S. Varaniuk.
 #' @examples
 #' res <- benchmarkVariants(vcfDir="Files_VCF",
@@ -234,7 +246,22 @@ benchmarkVariants <- function(vcfDir,
   #   data.table.
   read_vcf <- function(input){
     if (is.character(x=input) && file.exists(x=input)){
-      vcf <- fread(input, skip="#CHROM", header=TRUE, data.table=TRUE)
+      # Check that the file is not empty
+      if (file.size(input) == 0){
+        stop("VCF file is empty: ", input)
+      }
+      # Skip meta-information lines (starting with "##") and read the
+      # header line ("#CHROM ...") plus the data rows.
+      vcf <- fread(input,
+                   skip = "##",
+                   header = TRUE,
+                   sep = "\t",
+                   data.table = TRUE)
+      # Check that the file contains at least one data row
+      if (ncol(vcf) < 8 || nrow(vcf) == 0){
+        stop("VCF file contains no variant records: ", input)
+      }
+      # Rename the first 8 columns to standard VCF names
       colnames(x=vcf)[1:8] <- c("CHROM", "POS", "ID", "REF",
                                 "ALT", "QUAL", "FILTER", "INFO")
     }else if (is.data.frame(x=input)){
@@ -242,10 +269,13 @@ benchmarkVariants <- function(vcfDir,
     }else{
       stop("Input data must be a path to a file or data frame.")
     }
+    # Split multi-allelic ALT into separate rows
     vcf <- vcf[, .(ALT=unlist(x=strsplit(x=ALT, split=","))),
                by=.(CHROM, POS=as.integer(x=POS), REF)]
+    # Classify variant type
     vcf[, type := ifelse(nchar(x=REF) == 1 & nchar(x=ALT) == 1,
                          "SNP", "INDEL")]
+    # Build a unique key for matching
     vcf[, key := paste0(CHROM, ":", POS, "_", REF, ">", ALT)]
     return(vcf)
   }
