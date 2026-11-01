@@ -131,7 +131,9 @@ filterVariants <- function(vcfDir=NULL,
     MM_na <- as.numeric(x=unlist(x=lapply(X=MM_na,
                                           FUN=function(y){max(x=strsplit(x=y, split=",")[[1]])})))
     MM[is.na(x=MM)] <- MM_na
-    SNVs <- SNVs[MM/info(x=SNVs)$DP >= heterozyg1]
+    ratio <- MM/info(x=SNVs)$DP
+    keep <- !is.na(ratio) & ratio >= heterozyg1
+    SNVs <- SNVs[keep]
   }
   ##  Stage 6: filter by variant allele frequency (AD, GENO).
   if (!is.null(x=vaf) && "AD" %in% geno_fields){
