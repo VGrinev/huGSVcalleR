@@ -192,7 +192,12 @@ callSNVs <- function(fr_data,
              result <- tests[[criteria]](fr_table)
            }
            ##  Transformation and writing of the results to VCF file.
+           ##  The result column is renamed to the test name so that
+           ##  generateVCF() can identify which test produced it and
+           ##  apply the correct QUAL transformation (Phred for p-value
+           ##  tests, raw values for counting).
            input <- data.table(cbind(fr_table, result))
+           colnames(input)[ncol(input)] <- criteria
            generateVCF(input=input,
                        version="4.0",
                        vcfDir=vcfDir,
@@ -532,6 +537,15 @@ gatkCalleR <- function(bamDir=NULL,
 #'     directory. NULL by default that means the current working directory.
 #' @return file(-s) of VCF format is/are written to the current working
 #'     directory or specified VCF directory.
+#' @details
+#'     For tests that return a p-value (\code{"binomial"}, \code{"poisson"},
+#'     \code{"fisher"}, \code{"entropy"}), the QUAL field is written as a
+#'     Phred-scaled score \code{-10 * log10(p)}, which is the standard VCF
+#'     convention. Values with \code{p = 0} (underflow) are written as 1000.
+#'     For \code{"counting"} the QUAL field contains the raw ratio of
+#'     reference reads (0--1), because this test does not return a p-value.
+#'     For \code{"ml"} the QUAL field contains the probability of the
+#'     positive class (0--1).
 #' @author Vasily V. Grinev.
 #' @keywords internal
 #' @noRd
@@ -618,11 +632,22 @@ generateVCF <- function(input,
               "##INFO=<ID=MMsum,Number=1,Type=Integer,Description=\"Number of supporting reads for alternative allele(-s)\">",
               "##INFO=<ID=MM,Number=1,Type=String,Description=\"Number of supporting reads for each alternative allele\">",
               "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO")
+    ##  Tests that return a p-value in [0, 1] and must be converted to
+    ##  Phred-scaled QUAL (-10 * log10(p)).
+    pvalue_tests <- c("binomial", "poisson", "fisher", "entropy")
     for (i in 1:length(x=tests)){
-      if (is.numeric(VCF[, tests[i]])){
-        VCF$QUAL <- round(x=VCF[, tests[i]], digits=4)
+      qual_values <- VCF[, tests[i]]
+      if (is.numeric(qual_values) && tests[i] %in% pvalue_tests){
+        # Phred-scaled QUAL for p-value tests
+        qual_values <- pmin(pmax(qual_values, 0), 1)  # clamp to [0, 1]
+        qual_values <- -10 * log10(qual_values)
+        qual_values[is.infinite(qual_values)] <- 1000  # underflow
+        VCF$QUAL <- round(x=qual_values, digits=4)
+      }else if (is.numeric(qual_values)){
+        # counting and ml: keep raw values
+        VCF$QUAL <- round(x=qual_values, digits=4)
       }else{
-        VCF$QUAL <- as.character(VCF[, tests[i]])
+        VCF$QUAL <- as.character(qual_values)
       }
       vcf_name <- paste(paste(vcfDir,
                               paste(outputVCF,
@@ -644,170 +669,4 @@ generateVCF <- function(input,
       writeLines(text=cleaning[-6], con=vcf_name)
     }
   }
-}
-
-
-#' Call single nucleotide variations using machine learning models
-#' @description Internal wrapper around pre-trained machine learning models
-#'     for SNV calling. Called from callSNVs(criteria = "ml").
-#' @param fr_table data.frame with frequency table.
-#' @param model character string specifying which machine learning model to use.
-#'     Available options: "log_reg", "rand_forest", "rpart", "SVM", "xgboost".
-#'     Default is "rpart".
-#' @param pvalue logical indicating whether to return class probabilities
-#'     instead of class labels (default: FALSE). If TRUE, returns probability
-#'     of belonging to positive class (1).
-#' @param vcfDir character string giving the name (or path to and name) of
-#'     directory for storing of generated VCF file(-s).
-#' @param outputVCF character string giving the name of output VCF file.
-#' @param workDir character string giving the path to and name of working
-#'     directory. NULL by default that means the current working directory.
-#' @return data.frame with predictions added.
-#' @author Dzianis D. Sarnatski
-#' @keywords internal
-#' @noRd
-#' @importFrom data.table data.table
-#' @import randomForest
-#' @import LiblineaR
-mlCalleR <- function(fr_table,
-                     model="rpart",
-                     pvalue=FALSE,
-                     vcfDir=NULL,
-                     outputVCF,
-                     workDir=NULL){
-  ### Validation of the input model.
-  if (!model %in% SUPPORTED_ML_MODELS){
-    stop(paste("Invalid model specified:", model,
-               ". Available options:",
-               paste(SUPPORTED_ML_MODELS, collapse=", ")))
-  }
-  ### Setting the working directory.
-  if (is.null(x=workDir)){
-    workDir <- getwd()
-  }
-  ### Validate input data structure.
-  required_cols <- c("position", "reference", "A", "C", "G", "T")
-  if (!all(required_cols %in% colnames(fr_table))){
-    stop(paste("Input data must contain columns:",
-               paste(required_cols, collapse=", ")))
-  }
-  ### Feature extraction.
-  features <- c("x1", "x2", "x3", "x4")
-  data.features <- vectorise_data_cpp_parallel(fr_table, features=features)
-  ### Total and non-reference fraction
-  total <- rowSums(data.features)
-  target_cols <- c("x2", "x3", "x4")
-  existing_cols <- target_cols[target_cols %in% names(data.features)]
-  if (length(existing_cols) > 0){
-    x_sum <- rowSums(data.features[, existing_cols, drop=FALSE],
-                     na.rm=TRUE)
-  }else{
-    stop("Non-reference columns (x2, x3, x4) are missing in data.features.")
-  }
-  data.features <- data.frame(
-    x_sum_norm = x_sum / total,
-    total = total
-  )
-  ### Filter out non-finite rows (e.g., total = 0).
-  finite_rows <- is.finite(data.features$x_sum_norm) &
-    is.finite(data.features$total)
-  data.features <- data.features[finite_rows, , drop=FALSE]
-  fr_table_filt <- fr_table[finite_rows, , drop=FALSE]
-  ### Load the pre-trained model.
-  if (model == "xgboost"){
-    model.path <- system.file("extdata", paste0(model, ".json"),
-                              package="huGSVcalleR")
-    if (!nzchar(model.path) || !file.exists(model.path)){
-      stop("Model file not found: ", model.path,
-           ". Expected a .json file in inst/extdata/.")
-    }
-    model.obj <- xgboost::xgb.load(model.path)
-  }else{
-    model.path <- system.file("extdata", paste0(model, ".rds"),
-                              package="huGSVcalleR")
-    if (!nzchar(model.path) || !file.exists(model.path)){
-      stop("Model file not found: ", model.path,
-           ". Expected a .rds file in inst/extdata/.")
-    }
-    model.obj <- readRDS(model.path)
-  }
-  ### Make predictions.
-  prediction <- NULL
-  if (model == "xgboost"){
-    if (pvalue){
-      prediction <- predict(model.obj,
-                            xgboost::xgb.DMatrix(
-                              data=as.matrix(data.features)))
-    }else{
-      prediction <- predict(model.obj,
-                            xgboost::xgb.DMatrix(
-                              data=as.matrix(data.features))) |>
-        round() |>
-        as.factor()
-    }
-  }else if (model == "rpart"){
-    if (pvalue){
-      pred <- predict(model.obj, newdata=data.features, type="prob")
-      prediction <- if (is.list(pred)){
-        sapply(pred, function(x) x[2])
-      }else if (is.matrix(pred)){
-        pred[, 2]
-      }else{
-        pred
-      }
-    }else{
-      prediction <- predict(model.obj, newdata=data.features, type="class")
-    }
-  }else if (model == "log_reg"){
-    if (pvalue){
-      prediction <- predict(model.obj, newdata=data.features,
-                            type="response") |> as.vector()
-    }else{
-      prediction <- predict(model.obj, newdata=data.features,
-                            type="response") |> as.vector()
-      prediction <- ifelse(prediction > 0.5, 1, 0) |> as.factor()
-    }
-  }else if (model == "rand_forest"){
-    if (pvalue){
-      pred <- predict(model.obj, newdata=data.features, type="prob")
-      prediction <- if (is.list(pred)){
-        sapply(pred, function(x) x[2])
-      }else if (is.matrix(pred)){
-        pred[, 2]
-      }else{
-        pred
-      } |> as.vector()
-    }else{
-      prediction <- predict(model.obj, newdata=data.features, type="class")
-    }
-  }else if (model == "SVM"){
-    if (pvalue){
-      pred_obj <- predict(model.obj,
-                          newx=as.matrix(data.features),
-                          proba=TRUE)
-      if (is.null(pred_obj$probabilities) ||
-          ncol(pred_obj$probabilities) < 2){
-        stop("SVM model does not support probability output. ",
-             "It must be trained with LiblineaR type 0, 6 or 7 ",
-             "(logistic regression) to compute probabilities. ",
-             "Use pvalue = FALSE for class labels.")
-      }
-      prediction <- pred_obj$probabilities[, "1"]
-    }else{
-      pred_obj <- predict(model.obj,
-                          newx=as.matrix(data.features),
-                          proba=FALSE)
-      prediction <- pred_obj$predictions
-    }
-  }
-  ### Add predictions to the original data.
-  results <- data.table(cbind(fr_table_filt, ML_Prediction = prediction))
-  ### Generate VCF file.
-  generateVCF(input=results,
-              version="4.0",
-              vcfDir=vcfDir,
-              outputVCF=outputVCF,
-              workDir=workDir)
-  ### Return the results.
-  return(results)
 }
