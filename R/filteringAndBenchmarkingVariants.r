@@ -113,23 +113,31 @@ filterVariants <- function(vcfDir=NULL,
   }
   ##  Stage 2: filter by QUAL.
   if (!is.null(x=score)){
-    SNVs <- SNVs[rowRanges(x=SNVs)$QUAL >= score]
+    vals <- rowRanges(x=SNVs)$QUAL
+    keep <- !is.na(vals) & vals >= score
+    SNVs <- SNVs[keep]
   }
   ##  Stage 3: filter by sequencing depth (DP).
   if (depth > 1 && "DP" %in% info_fields){
-    SNVs <- SNVs[info(x=SNVs)$DP >= depth]
+    vals <- info(x=SNVs)$DP
+    keep <- !is.na(vals) & vals >= depth
+    SNVs <- SNVs[keep]
   }
   ##  Stage 4: filter by total heterozygosity (MMsum/DP).
   if (heterozyg > 0 && "MMsum" %in% info_fields){
-    SNVs <- SNVs[info(x=SNVs)$MMsum/info(x=SNVs)$DP >= heterozyg]
+    ratio <- info(x=SNVs)$MMsum/info(x=SNVs)$DP
+    keep <- !is.na(ratio) & ratio >= heterozyg
+    SNVs <- SNVs[keep]
   }
   ##  Stage 5: filter by heterozygosity of the first alternative allele
   #   (MM/DP).
   if (heterozyg1 > 0 && "MM" %in% info_fields){
     MM <- suppressWarnings(expr=as.numeric(x=info(x=SNVs)$MM))
     MM_na <- info(x=SNVs)$MM[is.na(x=MM)]
-    MM_na <- as.numeric(x=unlist(x=lapply(X=MM_na,
-                                          FUN=function(y){max(x=strsplit(x=y, split=",")[[1]])})))
+    MM_na <- as.numeric(x=unlist(x=lapply(
+      X=MM_na,
+      FUN=function(y){max(as.numeric(x=strsplit(x=y, split=",")[[1]]))}
+    )))
     MM[is.na(x=MM)] <- MM_na
     ratio <- MM/info(x=SNVs)$DP
     keep <- !is.na(ratio) & ratio >= heterozyg1
@@ -144,32 +152,45 @@ filterVariants <- function(vcfDir=NULL,
       alt <- ad_mat[, 2]
       af <- alt/(ref + alt)
       af[is.na(x=af)] <- 0
-      SNVs <- SNVs[af >= vaf]
+      keep <- !is.na(af) & af >= vaf
+      SNVs <- SNVs[keep]
     }
   }
   ##  Stage 7: filter by QD (Quality by Depth, GATK).
   if (!is.null(x=qd) && "QD" %in% info_fields){
-    SNVs <- SNVs[info(x=SNVs)$QD >= qd]
+    vals <- info(x=SNVs)$QD
+    keep <- !is.na(vals) & vals >= qd
+    SNVs <- SNVs[keep]
   }
   ##  Stage 8: filter by MQ (Mapping Quality, GATK).
   if (!is.null(x=mq) && "MQ" %in% info_fields){
-    SNVs <- SNVs[info(x=SNVs)$MQ >= mq]
+    vals <- info(x=SNVs)$MQ
+    keep <- !is.na(vals) & vals >= mq
+    SNVs <- SNVs[keep]
   }
   ##  Stage 9: filter by SOR (Symmetric Odds Ratio, GATK).
   if (!is.null(x=sor) && "SOR" %in% info_fields){
-    SNVs <- SNVs[info(x=SNVs)$SOR <= sor]
+    vals <- info(x=SNVs)$SOR
+    keep <- !is.na(vals) & vals <= sor
+    SNVs <- SNVs[keep]
   }
   ##  Stage 10: filter by FS (Fisher Strand bias, GATK).
   if (!is.null(x=fs) && "FS" %in% info_fields){
-    SNVs <- SNVs[info(x=SNVs)$FS <= fs]
+    vals <- info(x=SNVs)$FS
+    keep <- !is.na(vals) & vals <= fs
+    SNVs <- SNVs[keep]
   }
   ##  Stage 11: filter by MQRankSum (GATK).
   if (!is.null(x=mqrs) && "MQRankSum" %in% info_fields){
-    SNVs <- SNVs[info(x=SNVs)$MQRankSum >= mqrs]
+    vals <- info(x=SNVs)$MQRankSum
+    keep <- !is.na(vals) & vals >= mqrs
+    SNVs <- SNVs[keep]
   }
   ##  Stage 12: filter by ReadPosRankSum (GATK).
   if (!is.null(x=rpps) && "ReadPosRankSum" %in% info_fields){
-    SNVs <- SNVs[info(x=SNVs)$ReadPosRankSum >= rpps]
+    vals <- info(x=SNVs)$ReadPosRankSum
+    keep <- !is.na(vals) & vals >= rpps
+    SNVs <- SNVs[keep]
   }
   ### Replace "." with "PASS" in the FILTER field.
   fixed_SNVs <- fixed(x=SNVs)
@@ -178,13 +199,14 @@ filterVariants <- function(vcfDir=NULL,
   ### Saving and returning of the final object.
   writeVcf(obj=SNVs,
            filename=paste(vcfDir,
-                          sub(pattern="vcf",
-                              replacement="filtered.vcf",
+                          sub(pattern="\\.vcf$",
+                              replacement=".filtered.vcf",
                               x=vcfFile),
                           sep="/"),
            index=index)
   return(SNVs)
 }
+
 
 #' Benchmark called variants against reference variants
 #' @description This function performs benchmarking of called variants against
@@ -307,22 +329,24 @@ benchmarkVariants <- function(vcfDir,
                     by="key", all=TRUE, suffixes=c(".truth", ".test"))
     merged[, tag := fifelse(!is.na(x=CHROM.truth) & !is.na(x=CHROM.test), "TP",
                             fifelse(is.na(x=CHROM.truth) & !is.na(x=CHROM.test), "FP", "FN"))]
-    clean <- data.frame(CHROM=ifelse(is.na(x=merged$CHROM.test),
-                                     merged$CHROM.truth,
-                                     merged$CHROM.test),
-                        POS=ifelse(is.na(x=merged$POS.test),
-                                   merged$POS.truth,
-                                   merged$POS.test),
-                        REF=merged$REF.test,
-                        REF.truth=merged$REF.truth,
-                        ALT=merged$ALT.test,
-                        type=ifelse(is.na(x=merged$type.test),
-                                    merged$type.truth,
-                                    merged$type.test),
-                        tag=merged$tag)
-    outfile <- paste0(sub(pattern=".vcf", replacement="", x=query_vcf),
+    clean <- data.frame(
+      CHROM = fifelse(is.na(merged$CHROM.test),
+                      merged$CHROM.truth,
+                      merged$CHROM.test),
+      POS = fifelse(is.na(merged$POS.test),
+                    merged$POS.truth,
+                    merged$POS.test),
+      REF = merged$REF.test,
+      REF.truth = merged$REF.truth,
+      ALT = merged$ALT.test,
+      type = fifelse(is.na(merged$type.test),
+                     merged$type.truth,
+                     merged$type.test),
+      tag = merged$tag
+    )
+    outfile <- paste0(sub(pattern="\\.vcf$", replacement="", x=query_vcf),
                       " vs ",
-                      sub(pattern=".vcf", replacement="", x=ref_vcf),
+                      sub(pattern="\\.vcf$", replacement="", x=ref_vcf),
                       ", benchmarking results.csv")
     write.csv(x=clean,
               file=paste(workDir, outfile, sep="/"),
@@ -336,4 +360,3 @@ benchmarkVariants <- function(vcfDir,
                    ALL=get_metrics(truth_keys=truth$key, test_keys=test$key))
   return(metrics)
 }
-
