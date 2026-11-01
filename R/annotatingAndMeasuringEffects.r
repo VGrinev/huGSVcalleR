@@ -53,7 +53,6 @@
 #' @importFrom SparseArray rowRanges
 #' @importFrom GenomicRanges makeGRangesFromDataFrame findOverlaps GRanges
 #' @importFrom IRanges IRanges
-#' @importFrom methods setClassUnion
 annotateDbSNP <- function(annoDir=NULL,
                           annoFile,
                           output=NULL,
@@ -206,8 +205,8 @@ annotateDbSNP <- function(annoDir=NULL,
 #' @importFrom data.table data.table
 #' @importFrom VariantAnnotation readVcf info
 #' @importFrom SparseArray rowRanges
+#' @importFrom SummarizedExperiment "rowRanges<-"
 #' @importFrom GenomicRanges makeGRangesFromDataFrame findOverlaps
-#' @importFrom methods setClassUnion
 annotateBasic <- function(vcfDir=NULL,
                           vcfFile,
                           ref_genes,
@@ -225,7 +224,6 @@ annotateBasic <- function(vcfDir=NULL,
   }
   ### Loading of the single nucleotide variations as an object of class
   #   CollapsedVCF.
-  setClassUnion("ExpData", c("matrix", "SummarizedExperiment"))
   vcf <- readVcf(file=paste(vcfDir, vcfFile, sep="/"))
   ### Loading of the reference genes as an object of class GRanges.
   genes <- read.table(file=paste(workDir, ref_genes, sep="/"),
@@ -920,9 +918,9 @@ extractSSsCoordsGTF <- function(x, gtfDir=NULL, workDir=NULL){
 #' @importFrom VariantAnnotation readVcf alt alt<- predictCoding
 #' @importFrom SparseArray rowRanges
 #' @importFrom Biostrings DNAStringSetList
-#' @importFrom dplyr select
-#' @importFrom GenomicRanges start
+#' @importFrom GenomicRanges start seqnames
 #' @importFrom methods setClassUnion
+#' @importFrom BiocGenerics "%in%" match
 introduceSNVtoAAs <- function(vcfDir=NULL,
                               vcfFile,
                               OrgDb="org.Hs.eg.db",
@@ -946,8 +944,12 @@ introduceSNVtoAAs <- function(vcfDir=NULL,
   }
   ### Loading of the single nucleotide variations as an object of class
   #   GRanges.
-  setClassUnion("ExpData", c("matrix", "SummarizedExperiment"))
   vcf <- readVcf(file=paste(vcfDir, vcfFile, sep="/"))
+  ### Filter to canonical chromosomes to avoid out-of-bound ranges
+  #   warnings from predictCoding().
+  canonical <- paste0("chr", c(1:22, "X", "Y", "M"))
+  vcf <- vcf[seqnames(rowRanges(vcf)) %in% canonical]
+  ### Handle multi-allelic ALT.
   ALT <- as.character(x=unlist(x=rowRanges(x=vcf)$ALT))
   vcf <- vcf[rep(x=1:length(x=vcf), times=lengths(x=rowRanges(x=vcf)$ALT)), ]
   alt(x=vcf) <- DNAStringSetList(strsplit(x=ALT, split=""))
@@ -970,19 +972,28 @@ introduceSNVtoAAs <- function(vcfDir=NULL,
   AAs$snv_ref <- as.character(x=AAs$REF)
   AAs$snv_alt <- as.character(x=unlist(x=AAs$ALT))
   AAs$snv_qual <- AAs$QUAL
-  AAs$Ensembl_gene_IDs <- select(x=orgDb,
-                                 keys=AAs$GENEID,
-                                 columns="ENSEMBL",
-                                 keytype="ENTREZID")$ENSEMBL
+  AAs$Ensembl_gene_IDs <- AnnotationDbi::mapIds(
+    x=orgDb,
+    keys=AAs$GENEID,
+    column="ENSEMBL",
+    keytype="ENTREZID",
+    multiVals="first"
+  )
   AAs$Entrez_gene_IDs <- AAs$GENEID
-  AAs$HUGO_gene_symbols <- select(x=orgDb,
-                                  keys=AAs$GENEID,
-                                  columns="SYMBOL",
-                                  keytype="ENTREZID")$SYMBOL
-  AAs$Ensembl_tx_names <- select(x=txDb,
-                                 keys=AAs$TXID,
-                                 columns="TXNAME",
-                                 keytype="TXID")$TXNAME
+  AAs$HUGO_gene_symbols <- AnnotationDbi::mapIds(
+    x=orgDb,
+    keys=AAs$GENEID,
+    column="SYMBOL",
+    keytype="ENTREZID",
+    multiVals="first"
+  )
+  AAs$Ensembl_tx_names <- AnnotationDbi::mapIds(
+    x=txDb,
+    keys=AAs$TXID,
+    column="TXNAME",
+    keytype="TXID",
+    multiVals="first"
+  )
   AAs$Ensembl_tx_names <- substr(x=AAs$Ensembl_tx_names, start=1, stop=15)
   AAs$SNV_CDS_loc <- start(x=AAs$CDSLOC)
   AAs$ref_codon <- as.vector(x=as.character(x=AAs$REFCODON))
@@ -1002,7 +1013,6 @@ introduceSNVtoAAs <- function(vcfDir=NULL,
   ### Returning the final object.
   return(AAs)
 }
-
 
 #' Introduce single nucleotide variant(-s) to splice site(-s)
 #' @description Introduction of single nucleotide variant(-s) into the splice
@@ -1044,7 +1054,6 @@ introduceSNVtoAAs <- function(vcfDir=NULL,
 #' @importFrom S4Vectors queryHits subjectHits
 #' @importFrom GenomicRanges start end strand seqnames
 #' @importFrom Biostrings DNAStringSet reverseComplement
-#' @importFrom methods setClassUnion
 introduceSNVtoSSs <- function(x,
                               vcfDir=NULL,
                               vcfFile,
@@ -1062,7 +1071,6 @@ introduceSNVtoSSs <- function(x,
   }
   ### Loading of the single nucleotide variations as an object of class
   #   GRanges.
-  setClassUnion("ExpData", c("matrix", "SummarizedExperiment"))
   vcf <- rowRanges(x=readVcf(file=paste(vcfDir, vcfFile, sep="/")))[, "ALT"]
   ALT <- as.character(x=unlist(x=vcf$ALT))
   vcf <- vcf[rep(x=1:length(x=vcf), times=lengths(x=vcf$ALT)), ]
