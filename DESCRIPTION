@@ -10,7 +10,9 @@ Authors@R:
 Description: The package huGSVcalleR incudes over 35 high-level functions written in R and/or C++ programming languages. This package combines all functions into an integrated pipeline aimed at identification and annotation of single nucleotide polymorphism sites in whole genome or targeted sequencing data. The complete pipeline includes six modules: quality control of raw reads, alignment of reads, data preparing for calling, calling of primary variants, filtering of primary variants and annotation of filtered variants. The calling of variants can be done using six different approaches, at the end-user's choice. The main feature of the annotation module (and one of the key tasks solved by this package) is the linking of detected polymorphism sites to splicing machinery.
 License: MIT
 Encoding: UTF-8
-SystemRequirements: GATK (>= 4.0) for callSNVs(criteria = "gatk")
+SystemRequirements: 
+    GATK (>= 4.0) for callSNVs(criteria = "gatk"),
+    Perl (>= 5.0) for scoreSSs()
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
 Imports: 

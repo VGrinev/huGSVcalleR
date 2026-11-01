@@ -1184,6 +1184,11 @@ scoreSSs <- function(x,
     seqSSs <- readDNAStringSet(filepath=paste(workDir, x, sep="/"),
                                format=frt)
   }
+  if (Sys.which("perl") == "") {
+    stop("Perl not found in PATH. scoreSSs() requires Perl ",
+         "for MaxEntScan. Install Perl (e.g., Strawberry Perl on Windows) ",
+         "and ensure it is available in PATH.")
+  }
   ### Quality control of splice site sequences.
   if (!type %in% c(3, 5)){
     stop("Invalid type of splice sites. ",
