@@ -40,6 +40,20 @@ CSV file containing a detailed report of the benchmarking results.
 This function performs benchmarking of called variants against
 reference variants based on chromosome, position and allele identity.
 }
+\details{
+\if{html}{\out{<div class="sourceCode">}}\preformatted{The function splits variants into two classes (SNP and INDEL)
+based on the length of REF and ALT alleles and reports metrics
+separately for each class and for all variants together.
+\\strong\{Precision\} is calculated as \code{TP / (TP + FP)}.
+\\strong\{Recall\} is calculated as \code{TP / (TP + FN)}.
+\\strong\{F1\} is the harmonic mean of precision and recall.
+When no variants of a given class were found by the query
+(\code{TP + FP = 0}), \\strong\{Precision\} and \\strong\{F1\} are
+reported as \code{NA}, because they are undefined in this case.
+\\strong\{Recall\} is reported as 0 in this case, because all
+truth variants of this class were missed.
+}\if{html}{\out{</div>}}
+}
 \examples{
 res <- benchmarkVariants(vcfDir="Files_VCF",
                          ref_vcf="test_truth.vcf",

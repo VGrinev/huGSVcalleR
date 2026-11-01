@@ -225,7 +225,7 @@ filterVariants <- function(vcfDir=NULL,
 #'                          featureTable=FALSE,
 #'                          workDir="D:/Vasily Grinev")
 #' @export
-#' @importFrom data.table fread as.data.table data.table
+#' @importFrom data.table fread as.data.table data.table fifelse
 benchmarkVariants <- function(vcfDir,
                               ref_vcf,
                               query_vcf,
