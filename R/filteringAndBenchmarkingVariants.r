@@ -1,6 +1,11 @@
 #' Filter of single nucleotide variations
 #' @description This function performs multi-stage filtering of single
-#'     nucleotide variations given in the standard VCF format.
+#'     nucleotide variations given in the standard VCF format. It supports
+#'     VCF files produced by all callers of the package: classical tests
+#'     (binomial, counting, entropy, fisher, poisson), machine learning
+#'     models (ml), Rsubread (fisherRSubread) and GATK. Filters specific
+#'     to a particular caller are applied only if the corresponding INFO
+#'     or GENO field is present in the VCF.
 #' @param vcfDir character string giving the name (or path to and name) of
 #'     directory with VCF file(-s). NULL by default, which means the current
 #'     working directory will be used instead of the specified VCF directory.
@@ -15,7 +20,7 @@
 #'                   of interest.
 #'     TXT file with genomic location(-s) must be in working directory.
 #' @param depth integer value giving the threshold for the minimum sequencing
-#'     depth. Default value is 1.
+#'     depth (DP field). Default value is 1.
 #' @param score numeric value that specifies the threshold for the QUAL field.
 #'     Default value is NULL.
 #' @param heterozyg numeric value that specifies the threshold for the total
@@ -23,7 +28,21 @@
 #' @param heterozyg1 numeric value that specifies the threshold for the
 #'     heterozygosity of first alternative allele calculated by the fields MM
 #'     and DP. Default value is 0.
-#' @param index logical agrument, whether to bgzip the output file and generate
+#' @param vaf numeric value that specifies the threshold for the variant allele
+#'     frequency calculated from the AD field (GENO). Default value is NULL.
+#' @param qd numeric value that specifies the threshold for the QD field
+#'     (Quality by Depth, GATK). Default value is NULL.
+#' @param mq numeric value that specifies the threshold for the MQ field
+#'     (Mapping Quality, GATK). Default value is NULL.
+#' @param sor numeric value that specifies the threshold for the SOR field
+#'     (Symmetric Odds Ratio, GATK). Default value is NULL.
+#' @param fs numeric value that specifies the threshold for the FS field
+#'     (Fisher Strand bias, GATK). Default value is NULL.
+#' @param mqrs numeric value that specifies the threshold for the MQRankSum
+#'     field (GATK). Default value is NULL.
+#' @param rpps numeric value that specifies the threshold for the
+#'     ReadPosRankSum field (GATK). Default value is NULL.
+#' @param index logical argument, whether to bgzip the output file and generate
 #'     a tabix index.
 #' @param workDir character string giving the path to and name of working
 #'     directory. NULL by default that means the current working directory.
@@ -42,80 +61,127 @@
 #' @export
 #' @importFrom VariantAnnotation readVcf writeVcf
 #' @importFrom GenomicRanges makeGRangesFromDataFrame findOverlaps
-#' @importFrom methods setClassUnion
-#' @importFrom SparseArray rowRanges
 #' @importFrom S4Vectors queryHits
+#' @importFrom SummarizedExperiment rowRanges
+#' @importFrom VariantAnnotation geno info fixed "fixed<-"
 filterVariants <- function(vcfDir=NULL,
                            vcfFile,
                            gr=NULL,
                            depth=1,
+                           vaf=NULL,
+                           qd=NULL,
+                           mq=NULL,
+                           sor=NULL,
+                           fs=NULL,
+                           mqrs=NULL,
+                           rpps=NULL,
                            score=NULL,
                            heterozyg=0,
                            heterozyg1=0,
                            index=FALSE,
                            workDir=NULL){
-    ### Setting the working directory.
-    if (is.null(x=workDir)){
-        workDir <- getwd()
+  ### Setting the working directory.
+  if (is.null(x=workDir)){
+    workDir <- getwd()
+  }
+  ### Setting the VCF directory.
+  if (is.null(x=vcfDir)){
+    vcfDir <- workDir
+  }else{
+    vcfDir <- paste(workDir, vcfDir, sep="/")
+  }
+  ### Loading of the single nucleotide variations.
+  SNVs <- readVcf(file=paste(vcfDir, vcfFile, sep="/"))
+  ### Detecting available INFO fields.
+  info_fields <- colnames(info(x=SNVs))
+  ### Detecting available GENO fields.
+  geno_fields <- rownames(geno(x=SNVs))
+  ### Multi-stage filtering.
+  ##  Stage 1: filter by genomic location(-s).
+  if (!is.null(x=gr)){
+    intervals <- read.table(file=paste(workDir, gr, sep="/"),
+                            sep="\t",
+                            header=TRUE,
+                            quote="\"",
+                            as.is=TRUE)
+    intervals <- makeGRangesFromDataFrame(df=intervals)
+    hits <- findOverlaps(query=rowRanges(x=SNVs),
+                         subject=intervals,
+                         type="within",
+                         ignore.strand=TRUE)
+    SNVs <- SNVs[queryHits(x=hits)]
+  }
+  ##  Stage 2: filter by QUAL.
+  if (!is.null(x=score)){
+    SNVs <- SNVs[rowRanges(x=SNVs)$QUAL >= score]
+  }
+  ##  Stage 3: filter by sequencing depth (DP).
+  if (depth > 1 && "DP" %in% info_fields){
+    SNVs <- SNVs[info(x=SNVs)$DP >= depth]
+  }
+  ##  Stage 4: filter by total heterozygosity (MMsum/DP).
+  if (heterozyg > 0 && "MMsum" %in% info_fields){
+    SNVs <- SNVs[info(x=SNVs)$MMsum/info(x=SNVs)$DP >= heterozyg]
+  }
+  ##  Stage 5: filter by heterozygosity of the first alternative allele
+  #   (MM/DP).
+  if (heterozyg1 > 0 && "MM" %in% info_fields){
+    MM <- suppressWarnings(expr=as.numeric(x=info(x=SNVs)$MM))
+    MM_na <- info(x=SNVs)$MM[is.na(x=MM)]
+    MM_na <- as.numeric(x=unlist(x=lapply(X=MM_na,
+                                          FUN=function(y){max(x=strsplit(x=y, split=",")[[1]])})))
+    MM[is.na(x=MM)] <- MM_na
+    SNVs <- SNVs[MM/info(x=SNVs)$DP >= heterozyg1]
+  }
+  ##  Stage 6: filter by variant allele frequency (AD, GENO).
+  if (!is.null(x=vaf) && "AD" %in% geno_fields){
+    ad <- geno(x=SNVs)$AD
+    ad_mat <- do.call(rbind, ad)
+    if (ncol(ad_mat) >= 2){
+      ref <- ad_mat[, 1]
+      alt <- ad_mat[, 2]
+      af <- alt/(ref + alt)
+      af[is.na(x=af)] <- 0
+      SNVs <- SNVs[af >= vaf]
     }
-    ### Setting the VCF directory.
-    if (is.null(x=vcfDir)){
-        vcfDir <- workDir
-    }else{
-        vcfDir <- paste(workDir, vcfDir, sep="/")
-    }
-    ### Loading of the single nucleotide variations as an object of class
-    #   CollapsedVCF.
-    SNVs <- readVcf(file=paste(vcfDir, vcfFile, sep="/"))
-    ### Multi-stage Filtering.
-    if (!is.null(x=gr)){
-        ##  Stage 1: Filter by genomic location(-s).
-        #   Loading of the genomic location(-s) as an object of class GRanges.
-        intervals <- read.table(file=paste(workDir, gr, sep="/"),
-                                sep="\t",
-                                header=TRUE,
-                                quote="\"",
-                                as.is=TRUE)
-        intervals <- makeGRangesFromDataFrame(df=intervals)
-        #   Filtering at stage 1.
-        hits <- findOverlaps(query=rowRanges(x=SNVs),
-                             subject=intervals,
-                             type="within",
-                             ignore.strand=TRUE)
-        SNVs <- SNVs[queryHits(x=hits)]
-    }
-    if (!is.null(x=score)){
-        ##  Stage 2: Filter by score.
-        SNVs <- SNVs[rowRanges(x=SNVs)$QUAL >= score]
-    }
-    if (depth > 1){
-        ##  Stage 3: Filter by sequencing depth.
-        SNVs <- SNVs[info(x=SNVs)$DP >= depth]
-    }
-    if (heterozyg > 0){
-        ##  Stage 4: Filter by heterozygosity.
-        if ("MMsum" %in% colnames(info(x=SNVs))){
-            SNVs <- SNVs[info(x=SNVs)$MMsum/info(x=SNVs)$DP >= heterozyg]
-        }
-    }
-    if (heterozyg1 > 0){
-        ##  Stage 5: Filter by heterozygosity of the first alternative allele.
-        MM <- suppressWarnings(expr=as.numeric(x=info(x=SNVs)$MM))
-        MM_na <- info(x=SNVs)$MM[is.na(x=MM)]
-        MM_na <- as.numeric(x=unlist(x=lapply(X=MM_na,
-                       FUN=function(y){max(x=strsplit(x=y, split=",")[[1]])})))
-        MM[is.na(x=MM)] <- MM_na
-        SNVs <- SNVs[MM/info(x=SNVs)$DP >= heterozyg1]
-    }
-    ### Saving and returning of the final object.
-    writeVcf(obj=SNVs,
-             filename=paste(vcfDir,
-                            sub(pattern="vcf",
-                                replacement="filtered.vcf",
-                                x=vcfFile),
-                            sep="/"),
-             index=index)
-    return(SNVs)
+  }
+  ##  Stage 7: filter by QD (Quality by Depth, GATK).
+  if (!is.null(x=qd) && "QD" %in% info_fields){
+    SNVs <- SNVs[info(x=SNVs)$QD >= qd]
+  }
+  ##  Stage 8: filter by MQ (Mapping Quality, GATK).
+  if (!is.null(x=mq) && "MQ" %in% info_fields){
+    SNVs <- SNVs[info(x=SNVs)$MQ >= mq]
+  }
+  ##  Stage 9: filter by SOR (Symmetric Odds Ratio, GATK).
+  if (!is.null(x=sor) && "SOR" %in% info_fields){
+    SNVs <- SNVs[info(x=SNVs)$SOR <= sor]
+  }
+  ##  Stage 10: filter by FS (Fisher Strand bias, GATK).
+  if (!is.null(x=fs) && "FS" %in% info_fields){
+    SNVs <- SNVs[info(x=SNVs)$FS <= fs]
+  }
+  ##  Stage 11: filter by MQRankSum (GATK).
+  if (!is.null(x=mqrs) && "MQRankSum" %in% info_fields){
+    SNVs <- SNVs[info(x=SNVs)$MQRankSum >= mqrs]
+  }
+  ##  Stage 12: filter by ReadPosRankSum (GATK).
+  if (!is.null(x=rpps) && "ReadPosRankSum" %in% info_fields){
+    SNVs <- SNVs[info(x=SNVs)$ReadPosRankSum >= rpps]
+  }
+  ### Replace "." with "PASS" in the FILTER field.
+  fixed_SNVs <- fixed(x=SNVs)
+  fixed_SNVs$FILTER[fixed_SNVs$FILTER == "."] <- "PASS"
+  fixed(x=SNVs) <- fixed_SNVs
+  ### Saving and returning of the final object.
+  writeVcf(obj=SNVs,
+           filename=paste(vcfDir,
+                          sub(pattern="vcf",
+                              replacement="filtered.vcf",
+                              x=vcfFile),
+                          sep="/"),
+           index=index)
+  return(SNVs)
 }
 
 #' Benchmark called variants against reference variants

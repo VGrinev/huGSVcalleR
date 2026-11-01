@@ -9,6 +9,13 @@ filterVariants(
   vcfFile,
   gr = NULL,
   depth = 1,
+  vaf = NULL,
+  qd = NULL,
+  mq = NULL,
+  sor = NULL,
+  fs = NULL,
+  mqrs = NULL,
+  rpps = NULL,
   score = NULL,
   heterozyg = 0,
   heterozyg1 = 0,
@@ -34,7 +41,28 @@ of interest.
 TXT file with genomic location(-s) must be in working directory.}
 
 \item{depth}{integer value giving the threshold for the minimum sequencing
-depth. Default value is 1.}
+depth (DP field). Default value is 1.}
+
+\item{vaf}{numeric value that specifies the threshold for the variant allele
+frequency calculated from the AD field (GENO). Default value is NULL.}
+
+\item{qd}{numeric value that specifies the threshold for the QD field
+(Quality by Depth, GATK). Default value is NULL.}
+
+\item{mq}{numeric value that specifies the threshold for the MQ field
+(Mapping Quality, GATK). Default value is NULL.}
+
+\item{sor}{numeric value that specifies the threshold for the SOR field
+(Symmetric Odds Ratio, GATK). Default value is NULL.}
+
+\item{fs}{numeric value that specifies the threshold for the FS field
+(Fisher Strand bias, GATK). Default value is NULL.}
+
+\item{mqrs}{numeric value that specifies the threshold for the MQRankSum
+field (GATK). Default value is NULL.}
+
+\item{rpps}{numeric value that specifies the threshold for the
+ReadPosRankSum field (GATK). Default value is NULL.}
 
 \item{score}{numeric value that specifies the threshold for the QUAL field.
 Default value is NULL.}
@@ -46,7 +74,7 @@ heterozygosity calculated by the fields MMsum and DP. Default value is 0.}
 heterozygosity of first alternative allele calculated by the fields MM
 and DP. Default value is 0.}
 
-\item{index}{logical agrument, whether to bgzip the output file and generate
+\item{index}{logical argument, whether to bgzip the output file and generate
 a tabix index.}
 
 \item{workDir}{character string giving the path to and name of working
@@ -57,7 +85,12 @@ filtered VCF file with postfix "filtered".
 }
 \description{
 This function performs multi-stage filtering of single
-nucleotide variations given in the standard VCF format.
+nucleotide variations given in the standard VCF format. It supports
+VCF files produced by all callers of the package: classical tests
+(binomial, counting, entropy, fisher, poisson), machine learning
+models (ml), Rsubread (fisherRSubread) and GATK. Filters specific
+to a particular caller are applied only if the corresponding INFO
+or GENO field is present in the VCF.
 }
 \examples{
 SNVs_filter <- filterVariants(vcfDir="Files_VCF",
