@@ -182,12 +182,15 @@ callSNVs <- function(fr_data,
              fr_table <- read.csv(file=path, header=TRUE)
            }
            ##  Perform the test based on the specified criterion.
-           tests <- list(counting=snp_counting_cpp_parallel,
-                         binomial=snp_binomial_cpp_parallel,
-                         entropy=snp_entropy_cpp_parallel,
-                         fisher=snp_fisher_cpp_parallel,
-                         poisson=snp_poisson_cpp_parallel)
-           result <- tests[[criteria]](fr_table)
+           if (criteria == "entropy"){
+             result <- snp_entropy_cpp_parallel(fr_table, p_value = TRUE)
+           }else{
+             tests <- list(counting=snp_counting_cpp_parallel,
+                           binomial=snp_binomial_cpp_parallel,
+                           fisher=snp_fisher_cpp_parallel,
+                           poisson=snp_poisson_cpp_parallel)
+             result <- tests[[criteria]](fr_table)
+           }
            ##  Transformation and writing of the results to VCF file.
            input <- data.table(cbind(fr_table, result))
            generateVCF(input=input,
