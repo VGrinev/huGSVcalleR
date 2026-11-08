@@ -60,7 +60,8 @@ Suggests:
     rmarkdown,
     BSgenome.Hsapiens.UCSC.hg38 (>= 1.4.5),
     org.Hs.eg.db (>= 3.21.0),
-    TxDb.Hsapiens.UCSC.hg38.knownGene (>= 3.21.0)
+    TxDb.Hsapiens.UCSC.hg38.knownGene (>= 3.21.0),
+VignetteBuilder: knitr
     
 
 

@@ -383,6 +383,7 @@ collectBasesPileup <- function(bamDir=NULL,
 #' @importFrom IRanges IRangesList
 #' @importFrom parallel detectCores
 #' @importFrom utils read.table
+#' @importFrom S4Vectors FilterRules
 filterBamFile <- function(bamDir=NULL,
                           bamFile,
                           gr=NULL,
