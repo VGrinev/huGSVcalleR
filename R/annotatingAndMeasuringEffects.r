@@ -919,8 +919,8 @@ extractSSsCoordsGTF <- function(x, gtfDir=NULL, workDir=NULL){
 #' @importFrom SparseArray rowRanges
 #' @importFrom Biostrings DNAStringSetList
 #' @importFrom GenomicRanges start seqnames
-#' @importFrom methods setClassUnion
 #' @importFrom BiocGenerics "%in%" match
+#' @importFrom AnnotationDbi mapIds
 introduceSNVtoAAs <- function(vcfDir=NULL,
                               vcfFile,
                               OrgDb="org.Hs.eg.db",
@@ -928,10 +928,13 @@ introduceSNVtoAAs <- function(vcfDir=NULL,
                               genome="BSgenome.Hsapiens.UCSC.hg38",
                               proteins,
                               workDir=NULL){
-  ### Loading of required packages.
-  suppressMessages(expr=library(package=genome, character.only=TRUE))
-  suppressMessages(expr=library(package=OrgDb, character.only=TRUE))
-  suppressMessages(expr=library(package=TxDb, character.only=TRUE))
+  ### Checking of required packages.
+  for (pkg in c(genome, OrgDb, TxDb)){
+    if (!requireNamespace(pkg, quietly=TRUE)){
+      stop("Package '", pkg, "' is required but not installed. ",
+           "Install it with BiocManager::install('", pkg, "').")
+    }
+  }
   ### Setting the working directory.
   if (is.null(x=workDir)){
     workDir <- getwd()
@@ -954,9 +957,9 @@ introduceSNVtoAAs <- function(vcfDir=NULL,
   vcf <- vcf[rep(x=1:length(x=vcf), times=lengths(x=rowRanges(x=vcf)$ALT)), ]
   alt(x=vcf) <- DNAStringSetList(strsplit(x=ALT, split=""))
   ### Loading gene models as an object of class TxDb.
-  txDb <- get(x=TxDb)
+  txDb <- get(x=TxDb, envir=asNamespace(TxDb))
   ### Loading genome wide annotations as an object of class OrgDb.
-  orgDb <- get(x=OrgDb)
+  orgDb <- get(x=OrgDb, envir=asNamespace(OrgDb))
   ### Loading of the protein annotations as an object of class data frame.
   pr <- read.table(file=paste(workDir, proteins, sep="/"),
                    sep="\t",
@@ -965,14 +968,16 @@ introduceSNVtoAAs <- function(vcfDir=NULL,
                    as.is=TRUE)
   rownames(x=pr) <- pr[, 1]
   ### Prediction of amino acid coding changes for single nucleotide variants.
-  AAs <- predictCoding(query=vcf, subject=txDb, seqSource=get(x=genome))
+  AAs <- predictCoding(query=vcf,
+                       subject=txDb,
+                       seqSource=get(x=genome, envir=asNamespace(genome)))
   AAs <- AAs[AAs$CONSEQUENCE == "nonsynonymous", ]
   ### Annotation.
   AAs$snv_id <- names(x=AAs)
   AAs$snv_ref <- as.character(x=AAs$REF)
   AAs$snv_alt <- as.character(x=unlist(x=AAs$ALT))
   AAs$snv_qual <- AAs$QUAL
-  AAs$Ensembl_gene_IDs <- AnnotationDbi::mapIds(
+  AAs$Ensembl_gene_IDs <- mapIds(
     x=orgDb,
     keys=AAs$GENEID,
     column="ENSEMBL",
@@ -980,14 +985,14 @@ introduceSNVtoAAs <- function(vcfDir=NULL,
     multiVals="first"
   )
   AAs$Entrez_gene_IDs <- AAs$GENEID
-  AAs$HUGO_gene_symbols <- AnnotationDbi::mapIds(
+  AAs$HUGO_gene_symbols <- mapIds(
     x=orgDb,
     keys=AAs$GENEID,
     column="SYMBOL",
     keytype="ENTREZID",
     multiVals="first"
   )
-  AAs$Ensembl_tx_names <- AnnotationDbi::mapIds(
+  AAs$Ensembl_tx_names <- mapIds(
     x=txDb,
     keys=AAs$TXID,
     column="TXNAME",
