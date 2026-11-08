@@ -1,2 +1,5 @@
 ^huGSVcalleR\.Rproj$
 ^\.Rproj\.user$
+^src/.*\.dll$
+^src/.*\.o$
+^src/.*\.so$

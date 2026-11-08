@@ -1,3 +1,6 @@
 .Rproj.user
 .Rhistory
 R/.Rhistory
+^src/.*\.dll$
+^src/.*\.o$
+^src/.*\.so$
