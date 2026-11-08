@@ -211,31 +211,32 @@ collectBasesPileup <- function(bamDir=NULL,
                                     sep=":")
       #   Cumulative statistics.
       temp_stat <- pileup_data %>%
-        mutate(reference=0, A=0, C=0, G=0, T=0) %>%
+        mutate(reference = 0, A = 0, C = 0, G = 0, T = 0) %>%
         mutate(
-          A=case_when(nucleotide == "A" ~ count, TRUE ~ A),
-          C=case_when(nucleotide == "C" ~ count, TRUE ~ C),
-          G=case_when(nucleotide == "G" ~ count, TRUE ~ G),
-          T=case_when(nucleotide == "T" ~ count, TRUE ~ T)
+          A = case_when(nucleotide == "A" ~ count, TRUE ~ .data$A),
+          C = case_when(nucleotide == "C" ~ count, TRUE ~ .data$C),
+          G = case_when(nucleotide == "G" ~ count, TRUE ~ .data$G),
+          T = case_when(nucleotide == "T" ~ count, TRUE ~ .data$T)
         )
       temp_stat <- as.data.table(temp_stat)
       temp_stat <- temp_stat[,
-                             .(seqnames=seqnames,
-                               pos=pos,
-                               reference=sum(x=reference),
-                               A=sum(x=A),
-                               C=sum(x=C),
-                               G=sum(x=G),
-                               T=sum(x=T)),
-                             by=position
+                             .(seqnames = seqnames,
+                               pos = pos,
+                               reference = sum(x = reference),
+                               A = sum(x = A),
+                               C = sum(x = C),
+                               G = sum(x = G),
+                               T = sum(x = get("T"))),
+                             by = position
       ]
       temp_stat <- temp_stat[,
-                             .(position, seqnames, pos, reference, A, C, G, T)
+                             .(position, seqnames, pos, reference,
+                               A, C, G, get("T"))
       ]
       #   Filtration against too low coverage.
       if (!is.null(x=coverage)){
         temp_stat <- temp_stat %>%
-          filter(rowSums(x=across(c(A, C, G, T))) >= coverage)
+          filter(rowSums(x=across(c(A, C, G, .data$T))) >= coverage)
       }
       #   Reference nucleotides.
       ref <- temp_stat %>%

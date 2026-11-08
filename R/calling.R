@@ -753,11 +753,11 @@ generateVCF <- function(input,
   G$ALT <- "G"
   G$MM <- G$G
   G <- G[, -3]
-  T <- vcf_pre[vcf_pre$T > 0 & vcf_pre$reference != "T", c(-3:-5)]
-  T$ALT <- "T"
-  T$MM <- T$T
-  T <- T[, -3]
-  vcf_pre <- rbind(A, C, G, T)
+  T_sub <- vcf_pre[vcf_pre$T > 0 & vcf_pre$reference != "T", c(-3:-5)]
+  T_sub$ALT <- "T"
+  T_sub$MM <- T_sub$T
+  T_sub <- T_sub[, -3]
+  vcf_pre <- rbind(A, C, G, T_sub)
   if (version == "4.0"){
     VCF <- unique(vcf_pre[, 1:(ncol(x=vcf_pre) - 2)])
     VCF <- VCF[order(x=VCF$position), ]
