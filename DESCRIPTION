@@ -4,11 +4,18 @@ biocViews: Technology, Software, SNP, Sequencing,
         GeneticVariability, Annotation
 Title: huGSVcalleR Toolkit
 Version: 0.1.0
-Authors@R: 
+Authors@R:
     c(
-        person("Vasiliy V.", "Grinev", role = c("aut"), email = "Grinev_vv@bsu.by"),
-        person("Mikalai M.", "Yatskou", role = c("aut"), email = "Yatskou@bsu.by"),
-        person("Dzianis D.", "Sarnatski", role = c("aut", "cre"), email = "denisiussarnatski@gmail.com")
+        person("Vasiliy V.", "Grinev", role = c("aut"),
+               email = "Grinev_vv@bsu.by",
+               comment = c(ORCID = "0000-0001-9981-7333")),
+        person("Dzianis D.", "Sarnatski", role = c("aut", "cre"),
+               email = "denisiussarnatski@gmail.com",
+               comment = c(ORCID = "0009-0006-4382-1062")),
+        person("Ilia M.", "Ilyushonak", role = "aut"),
+        person("Liudmila S.", "Varaniuk", role = "aut"),
+        person("Mikalai M.", "Yatskou", role = "aut"),
+        person("Vasiliy V.", "Skakun", role = "aut")
     )
 Description: The package huGSVcalleR incudes over 40 high-level functions written in R and/or C++ programming languages. This package combines all functions into an integrated pipeline aimed at identification and annotation of single nucleotide polymorphism sites in whole genome or targeted sequencing data. The complete pipeline includes six modules: quality control of raw reads, alignment of reads, data preparing for calling, calling of primary variants, filtering of primary variants and annotation of filtered variants. The calling of variants can be done using six different approaches, at the end-user's choice. The main feature of the annotation module (and one of the key tasks solved by this package) is the linking of detected polymorphism sites to splicing machinery.
 License: MIT
@@ -18,6 +25,7 @@ SystemRequirements:
     Perl (>= 5.0) for scoreSSs()
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
+Depends: R (>= 4.5.0)
 Imports: 
     Biostrings (>= 2.72.1),
     tools,
