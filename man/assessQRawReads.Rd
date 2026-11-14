@@ -51,12 +51,14 @@ reads.
 Calculation of the quality scores for short reads.
 }
 \examples{
-qa <- assessQRawReads(fastqDir="Files_FASTQ",
-                      fastq="2-Galkina-A_S2_L001_R1_001.fastq.gz",
-                      n=1e5,
-                      adapters=NULL,
-                      contaminants=NULL,
-                      workDir="D:/Vasily Grinev")
+qa <- assessQRawReads(
+    fastqDir = "Files_FASTQ",
+    fastq = "2-Galkina-A_S2_L001_R1_001.fastq.gz",
+    n = 1e5,
+    adapters = NULL,
+    contaminants = NULL,
+    workDir = "D:/Vasily Grinev"
+)
 }
 \author{
 Vasily V. Grinev

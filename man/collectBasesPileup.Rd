@@ -101,19 +101,21 @@ counts for A, C, G and T.
 }\if{html}{\out{</div>}}
 }
 \examples{
-res <- collectBasesPileup(bamDir="Files_BAM",
-                          bamFile="SRR21721515.bam",
-                          gr="genomic_intervals.txt",
-                          canChr=TRUE,
-                          depth=1e6,
-                          baseq=20,
-                          mapq=20,
-                          coverage=10,
-                          genome="BSgenome.Hsapiens.UCSC.hg38",
-                          tmpDir=tempdir(),
-                          postfix="PileupResults",
-                          threads=2,
-                          workDir="D:/Vasily Grinev")
+res <- collectBasesPileup(
+    bamDir = "Files_BAM",
+    bamFile = "SRR21721515.bam",
+    gr = "genomic_intervals.txt",
+    canChr = TRUE,
+    depth = 1e6,
+    baseq = 20,
+    mapq = 20,
+    coverage = 10,
+    genome = "BSgenome.Hsapiens.UCSC.hg38",
+    tmpDir = tempdir(),
+    postfix = "PileupResults",
+    threads = 2,
+    workDir = "D:/Vasily Grinev"
+)
 }
 \author{
 Vasily V. Grinev, Dzianis D. Sarnatski, Mikalai M. Yatskou

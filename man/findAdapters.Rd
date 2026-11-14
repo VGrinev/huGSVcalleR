@@ -35,11 +35,13 @@ frequency data on the presence of adapter sequences in short reads.
 Identification of the adapter sequences in short reads.
 }
 \examples{
-ad <- findAdapters(fastqDir="Files_FASTQ",
-                   fastq="2-Galkina-A_S2_L001_R1_001.fastq.gz",
-                   n=1e5,
-                   adapters="adapters.txt",
-                   workDir="D:/Vasily Grinev")
+ad <- findAdapters(
+    fastqDir = "Files_FASTQ",
+    fastq = "2-Galkina-A_S2_L001_R1_001.fastq.gz",
+    n = 1e5,
+    adapters = "adapters.txt",
+    workDir = "D:/Vasily Grinev"
+)
 }
 \author{
 Vasily V. Grinev

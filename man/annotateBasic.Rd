@@ -45,11 +45,13 @@ defines its allegiace to gene.
 }
 \examples{
 genes <- "Ensembl release 114, GRCh38.p14, annotations of genes.txt"
-annoSNVs <- annotateBasic(vcfDir="Files_VCF",
-                             vcfFile="example_seq.vcf",
-                             ref_genes,
-                             output="example_seq, annotated SNVs",
-                             workDir="D:/Vasily Grinev")
+annoSNVs <- annotateBasic(
+    vcfDir = "Files_VCF",
+    vcfFile = "example_seq.vcf",
+    ref_genes,
+    output = "example_seq, annotated SNVs",
+    workDir = "D:/Vasily Grinev"
+)
 }
 \author{
 Ilia M. Ilyushonak, Vasily V. Grinev.

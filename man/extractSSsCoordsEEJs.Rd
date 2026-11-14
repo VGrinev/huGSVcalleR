@@ -42,9 +42,11 @@ Extraction of the genomic coordinates of splice sites using
 experimentally detected exon-exon junctions.
 }
 \examples{
-res <- extractSSsCoordsEEJs(x="EEJs.Kasumi_1.RR_KD.PMC_BSU.txt",
-                            eejDir="Files_EEJs",
-                            workDir="D:/Vasily Grinev")
+res <- extractSSsCoordsEEJs(
+    x = "EEJs.Kasumi_1.RR_KD.PMC_BSU.txt",
+    eejDir = "Files_EEJs",
+    workDir = "D:/Vasily Grinev"
+)
 }
 \author{
 Vasily V. Grinev, Nadzeya A. Boyeva.

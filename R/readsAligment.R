@@ -543,11 +543,11 @@ reportQAlResults <- function(x,
         line = 2.8, cex.lab = 1.2
     )
     p <- log10(x = x$TLENs + 1)
-    tr <- c(0.0, ceiling(x = max(x = p)) / 100 * 1:100)
+    tr <- c(0.0, ceiling(x = max(x = p)) / 100 * seq_len(100))
     per <- data.frame(threshold = tr, percent = 0)
     per[1, 2] <- 100
     L <- length(x = p)
-    for (i in 1:(length(x = tr) - 1)) {
+    for (i in seq_len(length(x = tr) - 1)) {
         per[i + 1, 2] <- length(x = p[p >= tr[i]]) / L * 100
     }
     plot(per,
@@ -559,8 +559,8 @@ reportQAlResults <- function(x,
     )
     axis(
         side = 1,
-        at = c(0.0, ceiling(x = max(x = p)) / 4 * 1:4),
-        labels = c(0.0, ceiling(x = max(x = p)) / 4 * 1:4),
+        at = c(0.0, ceiling(x = max(x = p)) / 4 * seq_len(4)),
+        labels = c(0.0, ceiling(x = max(x = p)) / 4 * seq_len(4)),
         las = 1, lwd = 0.8
     )
     axis(
@@ -671,7 +671,7 @@ sortBamFile <- function(bamDir,
     threads = detectCores(logical = TRUE) - 1,
     workDir = NULL) {
     ### Sorting and indexing of generated BAM file(-s).
-    for (i in 1:length(x = bamFile)) {
+    for (i in seq_along(x = bamFile)) {
         sortedBam <- sortBam(
             file = paste(paste(workDir, bamDir, sep = "/"),
                 bamFile[i],

@@ -27,9 +27,11 @@ which are available at http://hollywood.mit.edu/burgelab/maxent or
 https://github.com/matthdsm/MaxEntScan.
 }
 \examples{
-res <- scoreSSs(x="EEJs.Kasumi_1.RR_KD.PMC_BSU.fiveSSs.fasta",
-                type=5,
-                workDir="D:/Vasily Grinev")
+res <- scoreSSs(
+    x = "EEJs.Kasumi_1.RR_KD.PMC_BSU.fiveSSs.fasta",
+    type = 5,
+    workDir = "D:/Vasily Grinev"
+)
 }
 \author{
 Vasily V. Grinev, Nadzeya A. Boyeva.

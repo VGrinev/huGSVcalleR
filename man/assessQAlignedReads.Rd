@@ -25,9 +25,11 @@ Evaluation of the alignment quality metrics for aligned DAN-Seq
 and/or RNA-Seq short reads.
 }
 \examples{
-qal <- assessQAlignedReads(bamDir="Files_BAM",
-                           bamFile="SRR21721515.bam",
-                           workDir="D:/Vasily Grinev")
+qal <- assessQAlignedReads(
+    bamDir = "Files_BAM",
+    bamFile = "SRR21721515.bam",
+    workDir = "D:/Vasily Grinev"
+)
 }
 \author{
 Vasily V. Grinev

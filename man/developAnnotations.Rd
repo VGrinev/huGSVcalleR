@@ -56,14 +56,16 @@ This function converts a standard GTF/GFF file with experimental
 transcriptome to Ensembl-like annotations.
 }
 \examples{
-anno <- developAnnotations(gtfDir="Files_GTF",
-                           gtfFile="test.data_6.gtf",
-                           orf="test.data_6.txt",
-                           gtf="test.data_6.anno.gtf",
-                           src="StringTie",
-                           organism="Homo sapiens",
-                           sqlite="test.data_6.anno.sqlite",
-                           workDir="D:/Vasily Grinev")
+anno <- developAnnotations(
+    gtfDir = "Files_GTF",
+    gtfFile = "test.data_6.gtf",
+    orf = "test.data_6.txt",
+    gtf = "test.data_6.anno.gtf",
+    src = "StringTie",
+    organism = "Homo sapiens",
+    sqlite = "test.data_6.anno.sqlite",
+    workDir = "D:/Vasily Grinev"
+)
 }
 \author{
 Vasily V. Grinev.

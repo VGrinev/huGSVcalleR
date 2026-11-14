@@ -72,11 +72,13 @@ dbSNP. List of extracted dbSNP fields is fixed for now and cannot be
 changed.
 }
 \examples{
-annotateDbSNP(annoDir="annotation_dir",
-             annoFile="SNVs, basic annotation.txt",
-             dbDir="database_dir", dbFile="GCF_000001405.40.gz",
-             chrToNC=TRUE, chrID="RefSeq Accessions & UCSC chromosomes.txt",
-             workDir="D:/VCF_calling")
+annotateDbSNP(
+    annoDir = "annotation_dir",
+    annoFile = "SNVs, basic annotation.txt",
+    dbDir = "database_dir", dbFile = "GCF_000001405.40.gz",
+    chrToNC = TRUE, chrID = "RefSeq Accessions & UCSC chromosomes.txt",
+    workDir = "D:/VCF_calling"
+)
 }
 \author{
 Ilia M. Ilyushonak, Vasily V. Grinev.

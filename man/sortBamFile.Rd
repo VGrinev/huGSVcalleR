@@ -36,11 +36,13 @@ This is a wrapper function that uses the low-level function
 sortBam() from package Rsamtools to sort and index BAM file(-s).
 }
 \examples{
-sortBamFile(bamDir="Files_BAM",
-            bamFile="SRR21721515.bam",
-            byQname=TRUE,
-            threads=10,
-            workDir="D:/Vasily Grinev")
+sortBamFile(
+    bamDir = "Files_BAM",
+    bamFile = "SRR21721515.bam",
+    byQname = TRUE,
+    threads = 10,
+    workDir = "D:/Vasily Grinev"
+)
 }
 \author{
 Vasily V. Grinev

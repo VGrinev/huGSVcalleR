@@ -50,15 +50,17 @@ Prediction of amino acid coding changes for single nucleotide
 variants.
 }
 \examples{
-vcfFile="test_seq5, fisherCalleR, SNVs.vcf"
-proteins="Ensembl_GRCh38.p14_release.114_proteins.txt"
-intrSNVtoAAs <- introduceSNVtoAAs(vcfDir="Files_VCF",
-                                  vcfFile=vcfFile,
-                                  OrgDb="org.Hs.eg.db",
-                                  TxDb="TxDb.Hsapiens.UCSC.hg38.knownGene",
-                                  genome="BSgenome.Hsapiens.UCSC.hg38",
-                                  proteins=proteins,
-                                  workDir="D:/Vasily Grinev/SNVs")
+vcfFile <- "test_seq5, fisherCalleR, SNVs.vcf"
+proteins <- "Ensembl_GRCh38.p14_release.114_proteins.txt"
+intrSNVtoAAs <- introduceSNVtoAAs(
+    vcfDir = "Files_VCF",
+    vcfFile = vcfFile,
+    OrgDb = "org.Hs.eg.db",
+    TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
+    genome = "BSgenome.Hsapiens.UCSC.hg38",
+    proteins = proteins,
+    workDir = "D:/Vasily Grinev/SNVs"
+)
 }
 \author{
 Vasily V. Grinev.

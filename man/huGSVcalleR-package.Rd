@@ -8,6 +8,14 @@
 \description{
 The package huGSVcalleR incudes over 40 high-level functions written in R and/or C++ programming languages. This package combines all functions into an integrated pipeline aimed at identification and annotation of single nucleotide polymorphism sites in whole genome or targeted sequencing data. The complete pipeline includes six modules: quality control of raw reads, alignment of reads, data preparing for calling, calling of primary variants, filtering of primary variants and annotation of filtered variants. The calling of variants can be done using six different approaches, at the end-user's choice. The main feature of the annotation module (and one of the key tasks solved by this package) is the linking of detected polymorphism sites to splicing machinery.
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/VGrinev/huGSVcalleR}
+  \item Report bugs at \url{https://github.com/VGrinev/huGSVcalleR/issues}
+}
+
+}
 \author{
 \strong{Maintainer}: Dzianis D. Sarnatski \email{denisiussarnatski@gmail.com} (\href{https://orcid.org/0009-0006-4382-1062}{ORCID})
 
@@ -16,8 +24,8 @@ Authors:
   \item Vasiliy V. Grinev \email{Grinev_vv@bsu.by} (\href{https://orcid.org/0000-0001-9981-7333}{ORCID})
   \item Ilia M. Ilyushonak
   \item Liudmila S. Varaniuk
-  \item Mikalai M. Yatskou
-  \item Vasiliy V. Skakun
+  \item Mikalai M. Yatskou \email{Yatskou@bsu.by} (\href{https://orcid.org/0009-0008-9734-2096}{ORCID})
+  \item Viktor V. Skakun \email{skakun@bsu.by}
 }
 
 }

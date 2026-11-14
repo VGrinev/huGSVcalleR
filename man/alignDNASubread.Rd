@@ -65,14 +65,16 @@ fastqDir <- "Files_FASTQ"
 bamDir <- "Files_BAM"
 bam <- "example_seq.bam"
 workDir <- "/mnt/data/grinev"
-al <- alignDNASubread(genome=genome,
-                      fastqDir=fastqDir, fastq1=fastq1, fastq2=fastq2,
-                      bamDir=bamDir,
-                      bamFile=bam,
-                      orientation="fr",
-                      threads=28,
-                      SV=FALSE,
-                      workDir=workDir)
+al <- alignDNASubread(
+    genome = genome,
+    fastqDir = fastqDir, fastq1 = fastq1, fastq2 = fastq2,
+    bamDir = bamDir,
+    bamFile = bam,
+    orientation = "fr",
+    threads = 28,
+    SV = FALSE,
+    workDir = workDir
+)
 }
 \author{
 Vasily V. Grinev

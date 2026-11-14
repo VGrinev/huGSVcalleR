@@ -55,11 +55,13 @@ truth variants of this class were missed.
 }\if{html}{\out{</div>}}
 }
 \examples{
-res <- benchmarkVariants(vcfDir="Files_VCF",
-                         ref_vcf="test_truth.vcf",
-                         query_vcf="test_query.vcf",
-                         featureTable=FALSE,
-                         workDir="D:/Vasily Grinev")
+res <- benchmarkVariants(
+    vcfDir = "Files_VCF",
+    ref_vcf = "test_truth.vcf",
+    query_vcf = "test_query.vcf",
+    featureTable = FALSE,
+    workDir = "D:/Vasily Grinev"
+)
 }
 \author{
 Liudmila S. Varaniuk.

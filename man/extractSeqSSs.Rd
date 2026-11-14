@@ -32,9 +32,11 @@ object of class DNAStringSet containing splice site sequences.
 Extraction of splice site sequences from the reference genome.
 }
 \examples{
-res <- extractSeqSSs(x="EEJs.Kasumi_1.RR_KD.PMC_BSU.fiveSSs.txt",
-                     genome="BSgenome.Hsapiens.UCSC.hg38",
-                     workDir="D:/Vasily Grinev")
+res <- extractSeqSSs(
+    x = "EEJs.Kasumi_1.RR_KD.PMC_BSU.fiveSSs.txt",
+    genome = "BSgenome.Hsapiens.UCSC.hg38",
+    workDir = "D:/Vasily Grinev"
+)
 }
 \author{
 Vasily V. Grinev, Nadzeya A. Boyeva.

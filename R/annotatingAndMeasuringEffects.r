@@ -91,7 +91,7 @@ annotateDbSNP <- function(annoDir = NULL,
     if (isTRUE(chrToNC)) {
         NC <- read.table(file = paste(dbDir, chrID, sep = "/"), header = TRUE, sep = "\t")
         chr.backup <- SNVs$seqnames
-        for (i in 1:nrow(NC)) {
+        for (i in seq_len(nrow(NC))) {
             SNVs$seqnames[SNVs$seqnames == NC[i, 2]] <- NC[i, 1]
         }
     }
@@ -136,7 +136,7 @@ annotateDbSNP <- function(annoDir = NULL,
     )
     ### Pair by pair comparison of ALT alleles
     alt.hits <- c()
-    for (i in 1:length(alt.compare[[1]])) {
+    for (i in seq_along(alt.compare[[1]])) {
         alt.hits <- c(
             alt.hits,
             any(as.character(alt.compare[[1]][[i]]) %in% as.character(alt.compare[[2]][[i]]))
@@ -1294,7 +1294,7 @@ introduceSNVtoSSs <- function(x,
         )
         return(list(annotation = anno, sequences = seqSSs))
     } else {
-        warning("WARNING: No matches were found between splice sites and SNVs.")
+        warning("No matches were found between splice sites and SNVs.")
     }
 }
 

@@ -28,9 +28,11 @@ Extraction of the genomic coordinates of splice sites using
 genomic/transcriptomic annotations.
 }
 \examples{
-res <- extractSSsCoordsGTF(x="Ensembl_GRCh38.p14_release.114.gtf",
-                           gtfDir="Files_GTF",
-                           workDir="D:/Vasily Grinev")
+res <- extractSSsCoordsGTF(
+    x = "Ensembl_GRCh38.p14_release.114.gtf",
+    gtfDir = "Files_GTF",
+    workDir = "D:/Vasily Grinev"
+)
 }
 \author{
 Vasily V. Grinev, Nadzeya A. Boyeva.

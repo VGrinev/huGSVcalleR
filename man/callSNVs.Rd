@@ -154,11 +154,13 @@ variations from NGS data.
 }\if{html}{\out{</div>}}
 }
 \examples{
-res <- callSNVs(fr_data="test_seq.PileupResults.csv",
-                criteria="fisher",
-                vcfDir="Files_VCF",
-                outputVCF="test_seq.fisher",
-                workDir="D:/Vasily Grinev")
+res <- callSNVs(
+    fr_data = "test_seq.PileupResults.csv",
+    criteria = "fisher",
+    vcfDir = "Files_VCF",
+    outputVCF = "test_seq.fisher",
+    workDir = "D:/Vasily Grinev"
+)
 }
 \author{
 Dzianis D. Sarnatski, Mikalai M. Yatskou, Vasily V. Grinev

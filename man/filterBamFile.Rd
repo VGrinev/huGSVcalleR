@@ -72,16 +72,18 @@ with postfix "filtered".
 Multiparameter BAM file filtering.
 }
 \examples{
-filterBamFile(bamDir="Files_BAM",
-              bamFile="SRR21721515.bam",
-              gr="genomic_intervals.txt",
-              flag=scanBamFlag(isPaired=TRUE, isProperPair=TRUE),
-              tlen=300,
-              mapq=20,
-              index=TRUE,
-              threads=10,
-              overwrite=TRUE,
-              workDir="D:/Vasily Grinev")
+filterBamFile(
+    bamDir = "Files_BAM",
+    bamFile = "SRR21721515.bam",
+    gr = "genomic_intervals.txt",
+    flag = scanBamFlag(isPaired = TRUE, isProperPair = TRUE),
+    tlen = 300,
+    mapq = 20,
+    index = TRUE,
+    threads = 10,
+    overwrite = TRUE,
+    workDir = "D:/Vasily Grinev"
+)
 }
 \author{
 Vasily V. Grinev

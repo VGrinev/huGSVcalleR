@@ -26,9 +26,11 @@ results of evaluation of the alignment quality metrics for aligned
 DAN-Seq and/or RNA-Seq short reads.
 }
 \examples{
-report <- reportQAlResults(x=qal,
-                           output=NULL,
-                           workDir="D:/Vasily Grinev")
+report <- reportQAlResults(
+    x = qal,
+    output = NULL,
+    workDir = "D:/Vasily Grinev"
+)
 }
 \author{
 Vasily V. Grinev

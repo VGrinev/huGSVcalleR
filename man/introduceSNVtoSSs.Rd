@@ -48,11 +48,13 @@ site sequence(-s).
 \examples{
 coords <- "EEJs.Kasumi_1.RR_KD.PMC_BSU.fiveSSs.txt"
 vcf <- "test_seq4, fisherCalleR, SNVs.filtered.vcf"
-intrSNVtoSSs <- introduceSNVtoSSs(x=coords,
-                                  vcfDir="Files_VCF",
-                                  vcfFile=vcf,
-                                  genome="BSgenome.Hsapiens.UCSC.hg38",
-                                  workDir="D:/Vasily Grinev")
+intrSNVtoSSs <- introduceSNVtoSSs(
+    x = coords,
+    vcfDir = "Files_VCF",
+    vcfFile = vcf,
+    genome = "BSgenome.Hsapiens.UCSC.hg38",
+    workDir = "D:/Vasily Grinev"
+)
 }
 \author{
 Vasily V. Grinev, Nadzeya A. Boyeva.

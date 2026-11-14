@@ -28,10 +28,12 @@ sequences and PhredQuality object of read quality scores.
 Reading the records from FASTQ-formatted file.
 }
 \examples{
-fq <- readFASTQ(fastqDir="Files_FASTQ",
-                fastq="example_seq.read1.fastq.gz",
-                n=1e5,
-                workDir="D:/Vasily Grinev")
+fq <- readFASTQ(
+    fastqDir = "Files_FASTQ",
+    fastq = "example_seq.read1.fastq.gz",
+    n = 1e5,
+    workDir = "D:/Vasily Grinev"
+)
 }
 \author{
 Vasily V. Grinev
