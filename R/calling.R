@@ -811,14 +811,14 @@ generateVCF <- function(input,
     } else {
         vcf_pre <- fread(file = paste(workDir, input, sep = "/"))
     }
-    tests <- colnames(x = vcf_pre)[-1:-6]
+    tests <- colnames(x = vcf_pre)[-seq_len(6)]
     ### Transformation of data into a frame of the appropriate structure.
-    vcf_pre$DP <- rowSums(x = vcf_pre[, 3:6])
-    A <- vcf_pre[vcf_pre$A > 0 & vcf_pre$reference != "A", c(-4:-6)]
+    vcf_pre$DP <- rowSums(x = vcf_pre[, c(3, 4, 5, 6)])
+    A <- vcf_pre[vcf_pre$A > 0 & vcf_pre$reference != "A", c(-4, -5, -6)]
     A$ALT <- "A"
     A$MM <- A$A
     A <- A[, -3]
-    C <- vcf_pre[vcf_pre$C > 0 & vcf_pre$reference != "C", c(-3, -5:-6)]
+    C <- vcf_pre[vcf_pre$C > 0 & vcf_pre$reference != "C", c(-3, -5, -6)]
     C$ALT <- "C"
     C$MM <- C$C
     C <- C[, -3]
@@ -832,7 +832,7 @@ generateVCF <- function(input,
     T_sub <- T_sub[, -3]
     vcf_pre <- rbind(A, C, G, T_sub)
     if (version == "4.0") {
-        VCF <- unique(vcf_pre[, 1:(ncol(x = vcf_pre) - 2)])
+        VCF <- unique(vcf_pre[, seq_len(ncol(x = vcf_pre) - 2)])
         VCF <- VCF[order(x = VCF$position), ]
         ALT <- vcf_pre[, paste(ALT, collapse = ","), by = position]
         ALT <- ALT[order(x = ALT$position), ]
@@ -885,7 +885,7 @@ generateVCF <- function(input,
         ##  Tests that return a p-value in [0, 1] and must be converted to
         ##  Phred-scaled QUAL (-10 * log10(p)).
         pvalue_tests <- c("binomial", "poisson", "fisher", "entropy")
-        for (i in 1:length(x = tests)) {
+        for (i in seq_along(x = tests)) {
             qual_values <- VCF[, tests[i]]
             if (is.numeric(qual_values) && tests[i] %in% pvalue_tests) {
                 # Phred-scaled QUAL for p-value tests
@@ -913,7 +913,7 @@ generateVCF <- function(input,
             empty_file <- file(description = vcf_name, open = "wt")
             writeLines(text = meta, con = empty_file)
             write.table(
-                x = rbind(VCF[1:6, 1:8], VCF[, 1:8]),
+                x = rbind(VCF[seq_len(6), seq_len(8)], VCF[, seq_len(8)]),
                 file = vcf_name,
                 sep = "\t",
                 quote = FALSE,

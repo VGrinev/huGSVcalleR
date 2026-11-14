@@ -164,7 +164,7 @@ annotateDbSNP <- function(annoDir = NULL,
     ### Making a dataframe with annotations for known variations and NA - for other.
     anno <- as.data.frame(matrix(data = NA, nrow = nrow(SNVs), ncol = ncol(hits.to)))
     colnames(anno) <- colnames(hits.to)
-    for (i in 1:ncol(anno)) {
+    for (i in seq_len(ncol(anno))) {
         class(anno[, i]) <- class(hits.to[, i])
     }
     anno[hits.ref@from[alt.hits], ] <- hits.to
@@ -312,7 +312,7 @@ annotateBasic <- function(vcfDir = NULL,
         "ALT", "DP", "QUAL", "gene_name"
     )]
     colnames(x = SNVs) <- c(
-        colnames(x = SNVs)[1:5],
+        colnames(x = SNVs)[seq_len(5)],
         "ref", "alt",
         "pos_depth",
         "score", "gene_name"
@@ -444,18 +444,18 @@ developAnnotations <- function(gtfDir = NULL,
     )
     coding <- GTFs[GTFs$transcript_biotype == "protein_coding", ]
     coding <- split(x = coding, f = coding$transcript_id)
-    for (i in 1:length(x = coding)) {
+    for (i in seq_along(x = coding)) {
         tr <- coding[[i]]
         orf_start <- ORFs[ORFs$transcript_id == tr$transcript_id[1], ]$orf_start
         orf_end <- ORFs[ORFs$transcript_id == tr$transcript_id[1], ]$orf_end
         if (as.character(x = strand(x = tr))[1] == "+") {
             if (orf_start > width(x = tr)[1]) {
                 m1 <- min(x = which(x = cumsum(x = width(x = tr)) - orf_start > 0))
-                m2 <- max(x = cumsum(x = width(x = tr)[1:(m1 - 1)]))
+                m2 <- max(x = cumsum(x = width(x = tr)[seq_len(m1 - 1)]))
                 start_codon <- start(x = tr)[m1] + orf_start - m2 - 1
                 start_codon <- c(start_codon, start_codon + 2)
                 m1 <- min(x = which(x = cumsum(x = width(x = tr)) - orf_end > 0))
-                m2 <- max(x = cumsum(x = width(x = tr)[1:(m1 - 1)]))
+                m2 <- max(x = cumsum(x = width(x = tr)[seq_len(m1 - 1)]))
                 stop_codon <- start(x = tr)[m1] + orf_end - m2 - 3
                 stop_codon <- c(stop_codon, stop_codon + 2)
             } else {
@@ -470,7 +470,7 @@ developAnnotations <- function(gtfDir = NULL,
                         stop_codon <- start(x = tr)[1] + orf_end - 1
                         stop_codon <- c(stop_codon - 2, stop_codon)
                     } else {
-                        m2 <- max(x = cumsum(x = width(x = tr)[1:(m1 - 1)]))
+                        m2 <- max(x = cumsum(x = width(x = tr)[seq_len(m1 - 1)]))
                         stop_codon <- start(x = tr)[m1] + orf_end - m2 - 3
                         stop_codon <- c(stop_codon, stop_codon + 2)
                     }
@@ -558,11 +558,11 @@ developAnnotations <- function(gtfDir = NULL,
             tr <- sort(x = tr, decreasing = TRUE)
             if (orf_start > width(x = tr)[1]) {
                 m1 <- min(x = which(x = cumsum(x = width(x = tr)) - orf_start > 0))
-                m2 <- max(x = cumsum(x = width(x = tr)[1:(m1 - 1)]))
+                m2 <- max(x = cumsum(x = width(x = tr)[seq_len(m1 - 1)]))
                 start_codon <- end(x = tr)[m1] - (orf_start - m2) + 1
                 start_codon <- c(start_codon - 2, start_codon)
                 m1 <- min(x = which(x = cumsum(x = width(x = tr)) - orf_end > 0))
-                m2 <- max(x = cumsum(x = width(x = tr)[1:(m1 - 1)]))
+                m2 <- max(x = cumsum(x = width(x = tr)[seq_len(m1 - 1)]))
                 stop_codon <- end(x = tr)[m1] - (orf_end - m2) + 1
                 stop_codon <- c(stop_codon, stop_codon + 2)
             } else {
@@ -581,7 +581,7 @@ developAnnotations <- function(gtfDir = NULL,
                             stop_codon <- end(x = tr)[1] - orf_end + 1
                             stop_codon <- c(stop_codon, stop_codon + 2)
                         } else {
-                            m2 <- max(x = cumsum(x = width(x = tr)[1:(m1 - 1)]))
+                            m2 <- max(x = cumsum(x = width(x = tr)[seq_len(m1 - 1)]))
                             stop_codon <- end(x = tr)[m1] - (orf_end - m2) + 1
                             stop_codon <- c(stop_codon, stop_codon + 2)
                         }
@@ -672,7 +672,7 @@ developAnnotations <- function(gtfDir = NULL,
     coding <- unlist(x = coding)
     noncoding <- GTFs[GTFs$transcript_biotype == "noncoding", ]
     noncoding <- split(x = noncoding, f = noncoding$transcript_id)
-    for (i in 1:length(x = noncoding)) {
+    for (i in seq_along(x = noncoding)) {
         tr <- noncoding[[i]]
         if (as.character(x = strand(x = tr))[1] == "+") {
             tr <- sort(x = tr)
@@ -702,7 +702,7 @@ developAnnotations <- function(gtfDir = NULL,
     noncoding <- unlist(x = noncoding)
     GTFs <- c(coding, noncoding)
     GTFs <- split(x = GTFs, f = GTFs$gene_id)
-    for (i in 1:length(x = GTFs)) {
+    for (i in seq_along(x = GTFs)) {
         GTFs[[i]] <- c(
             GTFs[[i]][1],
             GTFs[[i]][GTFs[[i]]$type != "gene", ]
@@ -858,7 +858,7 @@ extractSSsCoordsEEJs <- function(x, eejDir = NULL, thr = 5, workDir = NULL) {
         as.is = TRUE
     )
     if (ncol(x = EEJs) > 7 & !is.null(x = thr)) {
-        EEJs <- EEJs[rowSums(x = EEJs[, -1:-7] >= thr) >= 1, ]
+        EEJs <- EEJs[rowSums(x = EEJs[, -seq_len(7)] >= thr) >= 1, ]
     }
     rownames(x = EEJs) <- NULL
     EEJs <- makeGRangesFromDataFrame(
@@ -965,13 +965,13 @@ extractSSsCoordsGTF <- function(x, gtfDir = NULL, workDir = NULL) {
             EEJs[EEJs$seqnames == "chrMT", ]$seqnames <- "chrM"
         }
         EEJs <- EEJs[EEJs$seqnames %in%
-            c(paste("chr", c(1:22, "X", "Y", "M"), sep = "")), ]
+            c(paste("chr", c(seq_len(22), "X", "Y", "M"), sep = "")), ]
     } else {
         if ("chrMT" %in% EEJs$seqnames == "TRUE") {
             EEJs[EEJs$seqnames == "chrMT", ]$seqnames <- "chrM"
         }
         EEJs <- EEJs[EEJs$seqnames %in%
-            c(paste("chr", c(1:22, "X", "Y", "M"), sep = "")), ]
+            c(paste("chr", c(seq_len(22), "X", "Y", "M"), sep = "")), ]
     }
     EEJs$strand <- as.character(x = EEJs$strand)
     EEJs <- EEJs[!duplicated(x = EEJs), ]
@@ -1081,7 +1081,7 @@ introduceSNVtoAAs <- function(vcfDir = NULL,
     vcf <- readVcf(file = paste(vcfDir, vcfFile, sep = "/"))
     ### Filter to canonical chromosomes to avoid out-of-bound ranges
     #   warnings from predictCoding().
-    canonical <- paste0("chr", c(1:22, "X", "Y", "M"))
+    canonical <- paste0("chr", c(seq_len(22), "X", "Y", "M"))
     vcf <- vcf[seqnames(rowRanges(vcf)) %in% canonical]
     ### Handle multi-allelic ALT.
     ALT <- as.character(x = unlist(x = rowRanges(x = vcf)$ALT))
@@ -1145,7 +1145,7 @@ introduceSNVtoAAs <- function(vcfDir = NULL,
     AAs$SNV_prot_loc <- as.vector(x = unlist(x = AAs$PROTEINLOC))
     AAs$ref_aa <- as.vector(x = as.character(x = AAs$REFAA))
     AAs$alt_aa <- as.vector(x = as.character(x = AAs$VARAA))
-    AAs <- data.frame(AAs)[, c(25:28, 1:5, 29:42)]
+    AAs <- data.frame(AAs)[, c(seq(from = 25, to = 28), seq_len(5), seq(from = 29, to = 42))]
     AAs$seqnames <- as.character(x = AAs$seqnames)
     AAs$strand <- as.character(x = AAs$strand)
     idx <- AAs[, 13] %in% pr[, 1]
@@ -1276,9 +1276,9 @@ introduceSNVtoSSs <- function(x,
         ### Returning the final object.
         anno <- data.frame(spl.sites)
         anno <- anno[, c(
-            1:7,
+            seq_len(7),
             (ncol(x = anno) - 1):ncol(x = anno),
-            8:(ncol(x = anno) - 2)
+            seq(from = 8, to = ncol(x = anno) - 2)
         )]
         seqSSs <- DNAStringSet(x = anno$seq_corrected)
         names(x = seqSSs) <- paste(

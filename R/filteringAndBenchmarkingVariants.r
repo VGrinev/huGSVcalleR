@@ -300,7 +300,7 @@ benchmarkVariants <- function(vcfDir,
                 stop("VCF file contains no variant records: ", input)
             }
             # Rename the first 8 columns to standard VCF names
-            colnames(x = vcf)[1:8] <- c(
+            colnames(x = vcf)[seq_len(8)] <- c(
                 "CHROM", "POS", "ID", "REF",
                 "ALT", "QUAL", "FILTER", "INFO"
             )

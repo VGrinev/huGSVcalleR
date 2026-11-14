@@ -407,9 +407,9 @@ reportQAlResults <- function(x,
     )
     axis(
         side = 2,
-        at = c(0.0, max(x = table(x$MAPQs)) / 3 * 1:3),
+        at = c(0.0, max(x = table(x$MAPQs)) / 3 * c(1, 2, 3)),
         labels = formatC(
-            x = c(0.0, max(x = table(x$MAPQs)) / 3 * 1:3),
+            x = c(0.0, max(x = table(x$MAPQs)) / 3 * c(1, 2, 3)),
             format = "e", digits = 2
         ),
         lwd = 0.8
@@ -420,7 +420,7 @@ reportQAlResults <- function(x,
     per <- data.frame(threshold = 0:40, percent = 0)
     per[1, 2] <- 100
     L <- length(x = x$MAPQs)
-    for (i in 1:40) {
+    for (i in seq_len(40)) {
         per[i + 1, 2] <- length(x = x$MAPQs[x$MAPQs >= i]) / L * 100
     }
     plot(per,
@@ -532,8 +532,8 @@ reportQAlResults <- function(x,
     axis(side = 1, at = c(0, 1, 2), labels = FALSE, lwd = 0.8)
     axis(
         side = 2,
-        at = c(0.0, ceiling(x = max(x = p)) / 4 * 1:4),
-        labels = round(x = c(0.0, ceiling(x = max(x = p)) / 4 * 1:4), digits = 2),
+        at = c(0.0, ceiling(x = max(x = p)) / 4 * seq_len(4)),
+        labels = round(x = c(0.0, ceiling(x = max(x = p)) / 4 * seq_len(4)), digits = 2),
         las = 1, lwd = 0.8
     )
     title(main = "Distribution of template lengths", cex.main = 1.5)

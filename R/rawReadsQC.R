@@ -83,7 +83,7 @@ assessQRawReads <- function(fastqDir = NULL,
     names(x = PERQs) <- NULL
     PERQs <- list(
         means = PERQs,
-        density = do.call(what = cbind, args = density(x = PERQs)[1:2]),
+        density = do.call(what = cbind, args = density(x = PERQs)[seq_len(2)]),
         metrics = quantile(
             x = PERQs,
             probs = c(0.1, 0.25, 0.5, 0.75, 0.9)
@@ -193,22 +193,22 @@ assessQRawReads <- function(fastqDir = NULL,
     GCs <- rowSums(x = GCs) / width(x = reads$reads)
     GCs <- list(
         frequency = GCs,
-        density = do.call(what = cbind, args = density(x = GCs)[1:2]),
+        density = do.call(what = cbind, args = density(x = GCs)[seq_len(2)]),
         metrics = quantile(x = GCs, probs = c(0.1, 0.25, 0.5, 0.75, 0.9))
     )
     ##  Summarization the low-complexity of reads (using dusty scores).
     DSs <- dustyScore(x = reads$reads)
     DSs <- list(
         scores = DSs,
-        density = do.call(what = cbind, args = density(x = log10(x = DSs))[1:2]),
+        density = do.call(what = cbind, args = density(x = log10(x = DSs))[seq_len(2)]),
         metrics = quantile(x = DSs, probs = c(0.1, 0.25, 0.5, 0.75, 0.9))
     )
     ##  Frequency of reads.
-    FRs <- QA[["sequenceDistribution"]][, 1:2]
+    FRs <- QA[["sequenceDistribution"]][, seq_len(2)]
     colnames(x = FRs) <- c("occurrence", "reads")
     FRs$frequency <- FRs$reads / sum(x = FRs$reads)
     ##  Overrepresented reads.
-    ORs <- ShortRead:::.freqSequences(QA, "read")[, 1:2]
+    ORs <- ShortRead:::.freqSequences(QA, "read")[, seq_len(2)]
     ##  Identification of irrelevant sequences.
     #   Identification of adapters.
     ASs <- NA
@@ -783,7 +783,7 @@ cutLeftAdapter <- function(fastqDir = NULL,
         as.is = TRUE
     )
     ### Left-end trimming of adapter sequence(-s).
-    for (i in 1:nrow(x = ADs)) {
+    for (i in seq_len(nrow(x = ADs))) {
         seq_l <- ADs[i, 3]
         if (error > 0) {
             flank_seq <- as.integer(x = seq_len(length.out = nchar(x = seq_l)) *
@@ -916,7 +916,7 @@ cutRigthAdapter <- function(fastqDir = NULL,
         as.is = TRUE
     )
     ### Rigth-end trimming of adapter sequence(-s).
-    for (i in 1:nrow(x = ADs)) {
+    for (i in seq_len(nrow(x = ADs))) {
         seq_l <- ADs[i, 3]
         if (error > 0) {
             flank_seq <- as.integer(x = seq_len(length.out = nchar(x = seq_l)) *
@@ -1025,7 +1025,7 @@ findAdapters <- function(fastqDir = NULL,
         as.is = TRUE
     )
     hits <- list()
-    for (i in 1:nrow(x = ADs)) {
+    for (i in seq_len(nrow(x = ADs))) {
         x <- unlist(x = vmatchPattern(
             pattern = ADs$adapter_sequence[i],
             max.mismatch = 2, subject = reads
@@ -1143,7 +1143,7 @@ findForeignSeqs <- function(fastqDir = NULL,
         as.is = TRUE
     )
     hits <- list()
-    for (i in 1:nrow(x = FSs)) {
+    for (i in seq_len(nrow(x = FSs))) {
         x <- unlist(x = vmatchPattern(
             pattern = FSs$foreign_sequence[i],
             max.mismatch = 2, subject = reads
@@ -1375,7 +1375,7 @@ reportQAResults <- function(x,
     names(x = ORs) <- paste(
         paste("seq",
             formatC(
-                x = 1:length(x = x$ORs$sequence),
+                x = seq_along(x = x$ORs$sequence),
                 width = 4, flag = "0"
             ),
             sep = ""
@@ -1427,7 +1427,7 @@ reportQAResults <- function(x,
         xlim = c(0, 2), ylim = c(0, 40)
     )
     vioplot(
-        x = x$PERQs$means[1:10000],
+        x = x$PERQs$means[seq_len(10000)],
         add = TRUE,
         col = rgb(red = 86, green = 180, blue = 233, maxColorValue = 255),
         rectCol = rgb(red = 0, green = 158, blue = 115, maxColorValue = 255),
@@ -1453,7 +1453,7 @@ reportQAResults <- function(x,
     per <- data.frame(threshold = 0:ceiling(x = max(x = x$PERQs$means)), percent = 0)
     per[1, 2] <- 100
     L <- length(x = x$PERQs$means)
-    for (i in 1:ceiling(x = max(x = x$PERQs$means))) {
+    for (i in seq_len(ceiling(x = max(x = x$PERQs$means)))) {
         p <- length(x = x$PERQs$means[x$PERQs$means > i]) / L * 100
         per[i + 1, 2] <- round(x = p, digits = 1)
     }
@@ -1531,7 +1531,7 @@ reportQAResults <- function(x,
     )
     axis(
         side = 1,
-        at = 1:length(x = x$PCQRs[, 1]),
+        at = seq_along(x = x$PCQRs[, 1]),
         labels = FALSE,
         las = 2, lwd = 0.8
     )
@@ -1610,7 +1610,7 @@ reportQAResults <- function(x,
     )
     axis(
         side = 1,
-        at = 1:length(x = x$PCCBs[, 1]),
+        at = seq_along(x = x$PCCBs[, 1]),
         labels = FALSE,
         las = 2, lwd = 0.8
     )
@@ -1647,7 +1647,7 @@ reportQAResults <- function(x,
             n = length(x = x$GCs$frequency),
             mean = mean(x = x$GCs$frequency),
             sd = sd(x = x$GCs$frequency)
-        ))[1:2],
+        ))[seq_len(2)],
         xlim = c(0, 1),
         lwd = 1,
         col = rgb(red = 213, green = 94, blue = 0, maxColorValue = 255)
@@ -1660,8 +1660,8 @@ reportQAResults <- function(x,
     )
     axis(
         side = 2,
-        at = c(0.0, max(x = x$GCs$density[, 2]) / 4 * 1:4),
-        labels = round(x = c(0.0, max(x = x$GCs$density[, 2]) / 4 * 1:4), digits = 2),
+        at = c(0.0, max(x = x$GCs$density[, 2]) / 4 * seq_len(4)),
+        labels = round(x = c(0.0, max(x = x$GCs$density[, 2]) / 4 * seq_len(4)), digits = 2),
         las = 1, lwd = 0.8
     )
     title(main = "GC composition of reads", cex.main = 1.5)
@@ -1738,8 +1738,8 @@ reportQAResults <- function(x,
     )
     axis(
         side = 2,
-        at = c(0.0, max(x = x$DSs$density[, 2]) / 4 * 1:4),
-        labels = round(x = c(0.0, max(x = x$DSs$density[, 2]) / 4 * 1:4), digits = 2),
+        at = c(0.0, max(x = x$DSs$density[, 2]) / 4 * seq_len(4)),
+        labels = round(x = c(0.0, max(x = x$DSs$density[, 2]) / 4 * seq_len(4)), digits = 2),
         las = 1, lwd = 0.8
     )
     title(main = "Low-complexity of reads", cex.main = 1.5)
@@ -1806,11 +1806,11 @@ reportQAResults <- function(x,
             axes = FALSE,
             ylim = c(0, 0.35),
             type = "l", lty = 1, lwd = 1,
-            col = colrs[1:ncol(x = x$ASs[, -1])]
+            col = colrs[seq_len(ncol(x = x$ASs[, -1]))]
         )
         axis(
             side = 1,
-            at = 1:length(x = x$ASs[, 1]),
+            at = seq_along(x = x$ASs[, 1]),
             labels = FALSE,
             lwd = 0.8
         )
@@ -1834,7 +1834,7 @@ reportQAResults <- function(x,
             legend = colnames(x = x$ASs)[-1],
             cex = 0.8,
             lty = 1, lwd = 1,
-            col = colrs[1:ncol(x = x$ASs[, -1])],
+            col = colrs[seq_len(ncol(x = x$ASs[, -1]))],
             bty = "n"
         )
     }
@@ -1850,11 +1850,11 @@ reportQAResults <- function(x,
             axes = FALSE,
             ylim = c(0, 0.35),
             type = "l", lty = 1, lwd = 1,
-            col = colrs[1:ncol(x = x$FSs[, -1])]
+            col = colrs[seq_len(ncol(x = x$FSs[, -1]))]
         )
         axis(
             side = 1,
-            at = 1:length(x = x$FSs[, 1]),
+            at = seq_along(x = x$FSs[, 1]),
             labels = FALSE,
             lwd = 0.8
         )
@@ -1878,7 +1878,7 @@ reportQAResults <- function(x,
             legend = colnames(x = x$FSs)[-1],
             cex = 0.8,
             lty = 1, lwd = 1,
-            col = colrs[1:ncol(x = x$FSs[, -1])],
+            col = colrs[seq_len(ncol(x = x$FSs[, -1]))],
             bty = "n"
         )
     }

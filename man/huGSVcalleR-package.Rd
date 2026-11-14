@@ -28,5 +28,10 @@ Authors:
   \item Viktor V. Skakun \email{skakun@bsu.by}
 }
 
+Other contributors:
+\itemize{
+  \item Belarusian State University [funder]
+}
+
 }
 \keyword{internal}
