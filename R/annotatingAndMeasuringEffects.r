@@ -1216,7 +1216,7 @@ scoreSSs <- function(x,
   if (file.exists("seqSSs")){
     file.remove("seqSSs")
   }
-  cat(as.character(x=seqSSs), file="seqSSs", sep="\n", append=TRUE)
+  message(as.character(x=seqSSs), file="seqSSs", sep="\n", append=TRUE)
   ### Calculation of the MaxEntScan scores.
   if (type == 3){
     cmd <- paste("score3.pl", "seqSSs")
