@@ -44,12 +44,13 @@
 #' @importFrom methods as is
 #' @importFrom stats density quantile
 #' @importFrom DelayedArray mean
-assessQRawReads <- function(fastqDir = NULL,
-    fastq,
-    n = NULL,
-    adapters = NULL,
-    contaminants = NULL,
-    workDir = NULL) {
+assessQRawReads <- function(
+        fastqDir = NULL,
+        fastq,
+        n = NULL,
+        adapters = NULL,
+        contaminants = NULL,
+        workDir = NULL) {
     ### Setting the working directory.
     if (is.null(x = workDir)) {
         workDir <- getwd()
@@ -745,14 +746,15 @@ cleanRawReads <- function(fastqDir = NULL,
 #' @importFrom Biostrings trimLRPatterns width
 #' @importFrom utils read.table
 #' @importFrom methods is
-cutLeftAdapter <- function(fastqDir = NULL,
-    fastq,
-    adapters,
-    error = 0.2,
-    min_match_flank = 3L,
-    anchored = TRUE,
-    indels = FALSE,
-    workDir = NULL) {
+cutLeftAdapter <- function(
+        fastqDir = NULL,
+        fastq,
+        adapters,
+        error = 0.2,
+        min_match_flank = 3L,
+        anchored = TRUE,
+        indels = FALSE,
+        workDir = NULL) {
     ### Setting the working directory.
     if (is.null(x = workDir)) {
         workDir <- getwd()
@@ -878,14 +880,15 @@ cutLeftAdapter <- function(fastqDir = NULL,
 #' @importFrom Biostrings width
 #' @importFrom methods is
 #' @importFrom utils read.table
-cutRigthAdapter <- function(fastqDir = NULL,
-    fastq,
-    adapters,
-    error = 0.2,
-    min_match_flank = 3L,
-    anchored = TRUE,
-    indels = FALSE,
-    workDir = NULL) {
+cutRigthAdapter <- function(
+        fastqDir = NULL,
+        fastq,
+        adapters,
+        error = 0.2,
+        min_match_flank = 3L,
+        anchored = TRUE,
+        indels = FALSE,
+        workDir = NULL) {
     ### Setting the working directory.
     if (is.null(x = workDir)) {
         workDir <- getwd()
@@ -989,11 +992,12 @@ cutRigthAdapter <- function(fastqDir = NULL,
 #' @importFrom methods is
 #' @importFrom utils read.table
 #' @importFrom tools file_ext
-findAdapters <- function(fastqDir = NULL,
-    fastq,
-    n = NULL,
-    adapters,
-    workDir = NULL) {
+findAdapters <- function(
+        fastqDir = NULL,
+        fastq,
+        n = NULL,
+        adapters,
+        workDir = NULL) {
     ### Setting the working directory.
     if (is.null(x = workDir)) {
         workDir <- getwd()
@@ -1107,11 +1111,12 @@ findAdapters <- function(fastqDir = NULL,
 #' @importFrom utils read.table
 #' @importFrom methods is
 #' @importFrom tools file_ext
-findForeignSeqs <- function(fastqDir = NULL,
-    fastq,
-    n = NULL,
-    contaminants,
-    workDir = NULL) {
+findForeignSeqs <- function(
+        fastqDir = NULL,
+        fastq,
+        n = NULL,
+        contaminants,
+        workDir = NULL) {
     ### Setting the working directory.
     if (is.null(x = workDir)) {
         workDir <- getwd()
@@ -1217,9 +1222,10 @@ findForeignSeqs <- function(fastqDir = NULL,
 #' @importFrom graphics plot axis title rect legend mtext text barplot
 #' @importFrom stats ks.test density
 #' @importFrom grDevices pdf dev.off
-reportQAResults <- function(x,
-    output = NULL,
-    workDir = NULL) {
+reportQAResults <- function(
+        x,
+        output = NULL,
+        workDir = NULL) {
     ### Textual reports.
     ##  Template of textual table.
     tab <- data.frame(
@@ -1677,14 +1683,14 @@ reportQAResults <- function(x,
         lty = 1, lwd = 1, bty = "n"
     )
     ks_p <- tryCatch(
-      ks.test(x = x$GCs$frequency, y = "pnorm")$p.value,
-      error = function(e) NA_real_,
-      warning = function(w) NA_real_
+        ks.test(x = x$GCs$frequency, y = "pnorm")$p.value,
+        error = function(e) NA_real_,
+        warning = function(w) NA_real_
     )
     legend(
-      x = "topright",
-      legend = paste("KS test: p = ", round(ks_p, 4), sep = ""),
-      lty = 0, bty = "n"
+        x = "topright",
+        legend = paste("KS test: p = ", round(ks_p, 4), sep = ""),
+        lty = 0, bty = "n"
     )
     ##  Title, subtitle, sub-subtitle & footnote.
     mtext(

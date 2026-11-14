@@ -66,22 +66,23 @@
 #' @importFrom S4Vectors queryHits
 #' @importFrom SummarizedExperiment rowRanges
 #' @importFrom VariantAnnotation geno info fixed "fixed<-"
-filterVariants <- function(vcfDir = NULL,
-    vcfFile,
-    gr = NULL,
-    depth = 1,
-    vaf = NULL,
-    qd = NULL,
-    mq = NULL,
-    sor = NULL,
-    fs = NULL,
-    mqrs = NULL,
-    rpps = NULL,
-    score = NULL,
-    heterozyg = 0,
-    heterozyg1 = 0,
-    index = FALSE,
-    workDir = NULL) {
+filterVariants <- function(
+        vcfDir = NULL,
+        vcfFile,
+        gr = NULL,
+        depth = 1,
+        vaf = NULL,
+        qd = NULL,
+        mq = NULL,
+        sor = NULL,
+        fs = NULL,
+        mqrs = NULL,
+        rpps = NULL,
+        score = NULL,
+        heterozyg = 0,
+        heterozyg1 = 0,
+        index = FALSE,
+        workDir = NULL) {
     ### Setting the working directory.
     if (is.null(x = workDir)) {
         workDir <- getwd()
@@ -138,14 +139,14 @@ filterVariants <- function(vcfDir = NULL,
     ##  Stage 5: filter by heterozygosity of the first alternative allele
     #   (MM/DP).
     if (heterozyg1 > 0 && "MM" %in% info_fields) {
-      MM <- vapply(
-        strsplit(as.character(info(x = SNVs)$MM), split = ","),
-        function(y) max(as.numeric(y), na.rm = TRUE),
-        numeric(1)
-      )
-      ratio <- MM / info(x = SNVs)$DP
-      keep <- !is.na(ratio) & ratio >= heterozyg1
-      SNVs <- SNVs[keep]
+        MM <- vapply(
+            strsplit(as.character(info(x = SNVs)$MM), split = ","),
+            function(y) max(as.numeric(y), na.rm = TRUE),
+            numeric(1)
+        )
+        ratio <- MM / info(x = SNVs)$DP
+        keep <- !is.na(ratio) & ratio >= heterozyg1
+        SNVs <- SNVs[keep]
     }
     ##  Stage 6: filter by variant allele frequency (AD, GENO).
     if (!is.null(x = vaf) && "AD" %in% geno_fields) {
@@ -259,11 +260,12 @@ filterVariants <- function(vcfDir = NULL,
 #' )
 #' @export
 #' @importFrom data.table fread as.data.table data.table fifelse
-benchmarkVariants <- function(vcfDir,
-    ref_vcf,
-    query_vcf,
-    featureTable = FALSE,
-    workDir = NULL) {
+benchmarkVariants <- function(
+        vcfDir,
+        ref_vcf,
+        query_vcf,
+        featureTable = FALSE,
+        workDir = NULL) {
     ### Setting the working directory.
     if (is.null(x = workDir)) {
         workDir <- getwd()

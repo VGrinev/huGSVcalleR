@@ -231,9 +231,10 @@ buildIndexSubread <- function(ref_genome,
 #' @importFrom grDevices cairo_pdf dev.off rgb
 #' @importFrom graphics hist axis title plot rect text segments par mtext
 #' @importFrom stats quantile median
-reportQAlResults <- function(x,
-    output = NULL,
-    workDir = NULL) {
+reportQAlResults <- function(
+        x,
+        output = NULL,
+        workDir = NULL) {
     ### Textual report.
     ##  Template of textual table.
     tab <- data.frame(
@@ -665,11 +666,12 @@ reportQAlResults <- function(x,
 #' @export
 #' @importFrom Rsamtools sortBam indexBam
 #' @importFrom parallel detectCores
-sortBamFile <- function(bamDir,
-    bamFile,
-    byQname,
-    threads = detectCores(logical = TRUE) - 1,
-    workDir = NULL) {
+sortBamFile <- function(
+        bamDir,
+        bamFile,
+        byQname,
+        threads = detectCores(logical = TRUE) - 1,
+        workDir = NULL) {
     ### Sorting and indexing of generated BAM file(-s).
     for (i in seq_along(x = bamFile)) {
         sortedBam <- sortBam(

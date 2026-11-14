@@ -99,35 +99,36 @@
 #' )
 #' @export
 #' @importFrom data.table data.table
-callSNVs <- function(fr_data,
-    criteria = "entropy",
-    vcfDir = NULL,
-    outputVCF,
-    # common arguments to be passed to "fisherRSubread" and "gatk"
-    bamDir = NULL,
-    bamFile = NA,
-    fastaDir = NULL,
-    faFile = NA,
-    # specific arguments to be passed to "fisherRSubread"
-    baseq = 20,
-    mindepth = 1,
-    maxdepth = 1e6,
-    qvalue = 12,
-    trim = 0,
-    threads = 1,
-    # specific arguments to be passed to "gatk"
-    postfix = NA,
-    intervals = NULL,
-    pcr_model = NA,
-    soft_clip = TRUE,
-    ERC = "NONE",
-    cores = "MAX",
-    SE = TRUE,
-    gatk_path = NULL,
-    workDir = NULL,
-    # specific arguments to be passed to "ml"
-    model = "rpart",
-    pvalue = FALSE) {
+callSNVs <- function(
+        fr_data,
+        criteria = "entropy",
+        vcfDir = NULL,
+        outputVCF,
+        # common arguments to be passed to "fisherRSubread" and "gatk"
+        bamDir = NULL,
+        bamFile = NA,
+        fastaDir = NULL,
+        faFile = NA,
+        # specific arguments to be passed to "fisherRSubread"
+        baseq = 20,
+        mindepth = 1,
+        maxdepth = 1e6,
+        qvalue = 12,
+        trim = 0,
+        threads = 1,
+        # specific arguments to be passed to "gatk"
+        postfix = NA,
+        intervals = NULL,
+        pcr_model = NA,
+        soft_clip = TRUE,
+        ERC = "NONE",
+        cores = "MAX",
+        SE = TRUE,
+        gatk_path = NULL,
+        workDir = NULL,
+        # specific arguments to be passed to "ml"
+        model = "rpart",
+        pvalue = FALSE) {
     ### Validation of the input criteria.
     criteria <- match.arg(arg = criteria, choices = SUPPORTED_CALLERS)
     ### Validation of input arguments depending on the criterion.
@@ -790,11 +791,12 @@ mlCalleR <- function(fr_table,
 #' @keywords internal
 #' @noRd
 #' @importFrom data.table fread
-generateVCF <- function(input,
-    version = "4.0",
-    vcfDir = NULL,
-    outputVCF,
-    workDir = NULL) {
+generateVCF <- function(
+        input,
+        version = "4.0",
+        vcfDir = NULL,
+        outputVCF,
+        workDir = NULL) {
     ### Setting the working directory.
     if (is.null(x = workDir)) {
         workDir <- getwd()
