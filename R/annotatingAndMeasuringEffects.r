@@ -954,7 +954,7 @@ introduceSNVtoAAs <- function(vcfDir=NULL,
   vcf <- vcf[seqnames(rowRanges(vcf)) %in% canonical]
   ### Handle multi-allelic ALT.
   ALT <- as.character(x=unlist(x=rowRanges(x=vcf)$ALT))
-  vcf <- vcf[rep(x=1:length(x=vcf), times=lengths(x=rowRanges(x=vcf)$ALT)), ]
+  vcf <- vcf[rep(x=seq_along(x=vcf), times=lengths(x=rowRanges(x=vcf)$ALT)), ]
   alt(x=vcf) <- DNAStringSetList(strsplit(x=ALT, split=""))
   ### Loading gene models as an object of class TxDb.
   txDb <- get(x=TxDb, envir=asNamespace(TxDb))
@@ -1078,7 +1078,7 @@ introduceSNVtoSSs <- function(x,
   #   GRanges.
   vcf <- rowRanges(x=readVcf(file=paste(vcfDir, vcfFile, sep="/")))[, "ALT"]
   ALT <- as.character(x=unlist(x=vcf$ALT))
-  vcf <- vcf[rep(x=1:length(x=vcf), times=lengths(x=vcf$ALT)), ]
+  vcf <- vcf[rep(x=seq_along(x=vcf), times=lengths(x=vcf$ALT)), ]
   vcf$ALT <- ALT
   ### Loading of the genomic coordinates of splice sites as an object of
   #   class GRanges.
