@@ -155,7 +155,7 @@ callSNVs <- function(fr_data,
                 stop("Invalid format of CSV file")
             }
             if (!file.exists(path)) {
-                stop(paste("File not found:", path))
+                stop("File not found:", path)
             }
             fr_table <- read.csv(file = path, header = TRUE)
         }
@@ -180,7 +180,7 @@ callSNVs <- function(fr_data,
                 }
                 #   Does the file actually exist in the specified location?
                 if (!file.exists(path)) {
-                    stop(paste("File not found:", path))
+                    stop("File not found:", path)
                 }
                 #   Loading of the CSV file as an object of class data.frame.
                 fr_table <- read.csv(file = path, header = TRUE)
