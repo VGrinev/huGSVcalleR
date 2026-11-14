@@ -138,18 +138,14 @@ filterVariants <- function(vcfDir = NULL,
     ##  Stage 5: filter by heterozygosity of the first alternative allele
     #   (MM/DP).
     if (heterozyg1 > 0 && "MM" %in% info_fields) {
-        MM <- suppressWarnings(expr = as.numeric(x = info(x = SNVs)$MM))
-        MM_na <- info(x = SNVs)$MM[is.na(x = MM)]
-        MM_na <- as.numeric(x = unlist(x = lapply(
-            X = MM_na,
-            FUN = function(y) {
-                max(as.numeric(x = strsplit(x = y, split = ",")[[1]]))
-            }
-        )))
-        MM[is.na(x = MM)] <- MM_na
-        ratio <- MM / info(x = SNVs)$DP
-        keep <- !is.na(ratio) & ratio >= heterozyg1
-        SNVs <- SNVs[keep]
+      MM <- vapply(
+        strsplit(as.character(info(x = SNVs)$MM), split = ","),
+        function(y) max(as.numeric(y), na.rm = TRUE),
+        numeric(1)
+      )
+      ratio <- MM / info(x = SNVs)$DP
+      keep <- !is.na(ratio) & ratio >= heterozyg1
+      SNVs <- SNVs[keep]
     }
     ##  Stage 6: filter by variant allele frequency (AD, GENO).
     if (!is.null(x = vaf) && "AD" %in% geno_fields) {
