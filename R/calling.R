@@ -614,7 +614,7 @@ mlCalleR <- function(fr_table,
     if (pvalue){
       pred <- predict(model.obj, newdata=data.features, type="prob")
       prediction <- if (is.list(pred)){
-        sapply(pred, function(x) x[2])
+        vapply(pred, function(x) x[2], numeric(1))
       }else if (is.matrix(pred)){
         pred[, 2]
       }else{
@@ -636,7 +636,7 @@ mlCalleR <- function(fr_table,
     if (pvalue){
       pred <- predict(model.obj, newdata=data.features, type="prob")
       prediction <- if (is.list(pred)){
-        sapply(pred, function(x) x[2])
+        vapply(pred, function(x) x[2], numeric(1))
       }else if (is.matrix(pred)){
         pred[, 2]
       }else{
