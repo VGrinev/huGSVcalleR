@@ -27,8 +27,8 @@ vignette: |
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment  = "#>"
+    collapse = TRUE,
+    comment  = "#>"
 )
 ```
 
@@ -75,10 +75,12 @@ The most important data sets (adapters, contaminants, phred scores, reference ge
 The first step of any analysis is to load the raw FASTQ files and to assess their quality. The function `readFASTQ()` provides low-level access to the sequences and quality scores, while `assessQRawReads()` computes the full set of quality metrics:
 
 ```{r module1-read, eval = FALSE}
-fq <- readFASTQ(fastqDir = "Files_FASTQ",
-                fastq    = "test_seq.R1.fastq.gz",
-                n        = NULL,
-                workDir  = "D:/Vasily Grinev")
+fq <- readFASTQ(
+    fastqDir = "Files_FASTQ",
+    fastq = "test_seq.R1.fastq.gz",
+    n = NULL,
+    workDir = "D:/Vasily Grinev"
+)
 str(fq, max.level = 1)
 #> List of 2
 #>  $ reads  : Formal class 'DNAStringSet' ...
@@ -92,12 +94,14 @@ where the function argument `fastqDir` is the name of the directory containing t
 The function `assessQRawReads()` calculates the full set of quality metrics for a FASTQ file:
 
 ```{r module1-assess, eval = FALSE}
-qa_r1 <- assessQRawReads(fastqDir     = "Files_FASTQ",
-                         fastq        = "test_seq.R1.fastq.gz",
-                         n            = NULL,
-                         adapters     = "adapters.txt",
-                         contaminants = "contaminants.txt",
-                         workDir      = "D:/Vasily Grinev")
+qa_r1 <- assessQRawReads(
+    fastqDir = "Files_FASTQ",
+    fastq = "test_seq.R1.fastq.gz",
+    n = NULL,
+    adapters = "adapters.txt",
+    contaminants = "contaminants.txt",
+    workDir = "D:/Vasily Grinev"
+)
 str(qa_r1, max.level = 1)
 #> List of 15
 #>  $ SN   : chr "test_seq.R1"
@@ -129,9 +133,11 @@ Figure 1. Summary plots of raw read quality: distribution of reads quality, thre
 The function `reportQAResults()` consolidates the results into three files:
 
 ```{r module1-report, eval = FALSE}
-report <- reportQAResults(x       = qa_r1,
-                          output  = NULL,
-                          workDir = "D:/Vasily Grinev")
+report <- reportQAResults(
+    x = qa_r1,
+    output = NULL,
+    workDir = "D:/Vasily Grinev"
+)
 list.files("D:/Vasily Grinev", pattern = "^QA|^Overrepresented")
 #> [1] "QA metrics of test_seq.R1.pdf"
 #> [2] "QA plots of test_seq.R1.pdf"
@@ -150,20 +156,22 @@ Figure 2. Summary plots of raw read quality (continuation): low-complexity of re
 The function `cleanRawReads()` performs up to seven filtering steps: adapter trimming (left and right), fixed or dynamic quality trimming (`trimEnds`, `trimTails`, `trimTailw`), length filter, quality filter, ambiguous nucleotide filter, duplicate filter, and low-complexity filter:
 
 ```{r module1-clean, eval = FALSE}
-cleanRawReads(fastqDir  = "Files_FASTQ",
-              fastq1    = "test_seq.R1.fastq.gz",
-              fastq2    = "test_seq.R2.fastq.gz",
-              adapters  = "adapters.txt",
-              error     = 0.2,
-              tr_score  = 20,
-              phred     = "phred_scores.txt",
-              readl     = 100,
-              readq     = 20,
-              readn     = 3,
-              dustScore = 875,
-              postfix   = "filtered",
-              overwrite = TRUE,
-              workDir   = "D:/Vasily Grinev")
+cleanRawReads(
+    fastqDir = "Files_FASTQ",
+    fastq1 = "test_seq.R1.fastq.gz",
+    fastq2 = "test_seq.R2.fastq.gz",
+    adapters = "adapters.txt",
+    error = 0.2,
+    tr_score = 20,
+    phred = "phred_scores.txt",
+    readl = 100,
+    readq = 20,
+    readn = 3,
+    dustScore = 875,
+    postfix = "filtered",
+    overwrite = TRUE,
+    workDir = "D:/Vasily Grinev"
+)
 ```
 
 where `error` is the error rate for adapter matching, `tr_score` is the quality score at or below which a nucleotide is marked as removable, `phred` is the name of a tab-delimited TXT file with ASCII scores (`phred_scores.txt`), `readl`/`readq`/`readn` are the minimum length, minimum quality, and maximum number of ambiguous nucleotides of reads to be saved, `dustScore` is the maximum dust score, `postfix` is the postfix added to the output file names, and `overwrite` controls whether existing output files are replaced.
@@ -173,12 +181,14 @@ where `error` is the error rate for adapter matching, `tr_score` is the quality 
 The first step of the alignment module is to build a hash table for the reference genome:
 
 ```{r module2-index, eval = FALSE}
-buildIndexSubread(ref_genome = "Reference_Genomes/GRCh38",
-                  ref_fasta  = "Files_FASTA",
-                  index      = "GRCh38",
-                  fa         = "hg38.fa.gz",
-                  memory     = 8000,
-                  workDir    = "D:/Vasily Grinev")
+buildIndexSubread(
+    ref_genome = "Reference_Genomes/GRCh38",
+    ref_fasta = "Files_FASTA",
+    index = "GRCh38",
+    fa = "hg38.fa.gz",
+    memory = 8000,
+    workDir = "D:/Vasily Grinev"
+)
 ```
 
 where `ref_genome` is the folder for storing the index, `ref_fasta` is the folder for storing the reference sequences, `index` is the basename of the created index files, `fa` is the name of the FASTA file, and `memory` is the amount of memory (MB) used for storing the index during read mapping.
@@ -186,16 +196,18 @@ where `ref_genome` is the folder for storing the index, `ref_fasta` is the folde
 The function `alignDNASubread()` aligns short DNA-Seq reads by the seed-and-vote algorithm (via `Rsubread::align()`):
 
 ```{r module2-align, eval = FALSE}
-alignDNASubread(genome      = "Reference_Genomes/GRCh38/GRCh38",
-                fastqDir    = "Files_FASTQ",
-                fastq1      = "test_seq.filtered.R1.fastq.gz",
-                fastq2      = "test_seq.filtered.R2.fastq.gz",
-                bamDir      = "Files_BAM",
-                bamFile     = "test_seq.filtered.bam",
-                orientation = "fr",
-                threads     = 4,
-                SV          = FALSE,
-                workDir     = "D:/Vasily Grinev")
+alignDNASubread(
+    genome = "Reference_Genomes/GRCh38/GRCh38",
+    fastqDir = "Files_FASTQ",
+    fastq1 = "test_seq.filtered.R1.fastq.gz",
+    fastq2 = "test_seq.filtered.R2.fastq.gz",
+    bamDir = "Files_BAM",
+    bamFile = "test_seq.filtered.bam",
+    orientation = "fr",
+    threads = 4,
+    SV = FALSE,
+    workDir = "D:/Vasily Grinev"
+)
 ```
 
 where `orientation` is the orientation of the two reads from the same pair (`"fr"` by default), `threads` is the number of threads used for mapping, and `SV` indicates whether structural variants are detected during mapping.
@@ -203,15 +215,19 @@ where `orientation` is the orientation of the two reads from the same pair (`"fr
 The functions `sortBamFile()`, `assessQAlignedReads()`, and `reportQAlResults()` complete the module:
 
 ```{r module2-post, eval = FALSE}
-sortBamFile(bamDir  = "Files_BAM",
-            bamFile = "test_seq.filtered.bam",
-            byQname = FALSE,
-            threads = 10,
-            workDir = "D:/Vasily Grinev")
+sortBamFile(
+    bamDir = "Files_BAM",
+    bamFile = "test_seq.filtered.bam",
+    byQname = FALSE,
+    threads = 10,
+    workDir = "D:/Vasily Grinev"
+)
 
-qal <- assessQAlignedReads(bamDir  = "Files_BAM",
-                           bamFile = "test_seq.filtered.bam",
-                           workDir = "D:/Vasily Grinev")
+qal <- assessQAlignedReads(
+    bamDir = "Files_BAM",
+    bamFile = "test_seq.filtered.bam",
+    workDir = "D:/Vasily Grinev"
+)
 str(qal, max.level = 1)
 #>  $ SN   : chr "test_seq.filtered"
 #>  $ FN   : chr "test_seq.filtered.bam"
@@ -221,9 +237,11 @@ str(qal, max.level = 1)
 #>  $ FLAGs: Named num [1:12] 20000 19642 287 287 9856 ...
 #>   ..- attr(*, "names")= chr [1:12] "isPaired" "isProperPair" "isUnmappedQuery" "hasUnmappedMate" ...
 
-report <- reportQAlResults(x       = qal,
-                           output  = NULL,
-                           workDir = "D:/Vasily Grinev")
+report <- reportQAlResults(
+    x = qal,
+    output = NULL,
+    workDir = "D:/Vasily Grinev"
+)
 list.files("D:/Vasily Grinev", pattern = "^Mapping quality")
 #> [1] "Mapping quality metrics of test_seq.filtered.pdf"
 #> [2] "Mapping quality plots of test_seq.filtered.pdf"
@@ -241,28 +259,34 @@ Figure 3. Summary plots of alignment quality: distribution of mapping qualities,
 The third module unites seven service functions. For classical statistical tests and machine learning models, the input is a frequency table produced by `collectBasesPileup()`:
 
 ```{r module3-pileup, eval = FALSE}
-filterBamFile(bamDir   = "Files_BAM",
-              bamFile  = "test_seq.filtered.bam",
-              flag     = Rsamtools::scanBamFlag(isPaired = TRUE,
-                                                isProperPair = TRUE),
-              tlen     = 300,
-              mapq     = 20,
-              index    = TRUE,
-              overwrite = TRUE,
-              workDir  = "D:/Vasily Grinev")
+filterBamFile(
+    bamDir = "Files_BAM",
+    bamFile = "test_seq.filtered.bam",
+    flag = Rsamtools::scanBamFlag(
+        isPaired = TRUE,
+        isProperPair = TRUE
+    ),
+    tlen = 300,
+    mapq = 20,
+    index = TRUE,
+    overwrite = TRUE,
+    workDir = "D:/Vasily Grinev"
+)
 
-collectBasesPileup(bamDir   = "Files_BAM",
-                   bamFile  = "test_seq.filtered.bam",
-                   gr       = "aml_genes.txt",
-                   canChr   = TRUE,
-                   depth    = 1e6,
-                   baseq    = 20,
-                   mapq     = 20,
-                   coverage = 10,
-                   threads  = 4,
-                   genome   = "BSgenome.Hsapiens.UCSC.hg38",
-                   postfix  = "PileupResults",
-                   workDir  = "D:/Vasily Grinev")
+collectBasesPileup(
+    bamDir = "Files_BAM",
+    bamFile = "test_seq.filtered.bam",
+    gr = "aml_genes.txt",
+    canChr = TRUE,
+    depth = 1e6,
+    baseq = 20,
+    mapq = 20,
+    coverage = 10,
+    threads = 4,
+    genome = "BSgenome.Hsapiens.UCSC.hg38",
+    postfix = "PileupResults",
+    workDir = "D:/Vasily Grinev"
+)
 frt <- read.csv("D:/Vasily Grinev/test_seq.filtered.PileupResults.csv")
 head(frt)
 #>        position reference  A  C G  T
@@ -276,19 +300,29 @@ where `gr` is the genomic region of interest (a tab-delimited TXT file with `seq
 For GATK-based calling, the BAM file must be pre-processed by the GATK wrappers:
 
 ```{r module3-gatk, eval = FALSE}
-groupReadsGATK(bamDir = "Files_BAM", bamFile = "test_seq3.bam",
-               workDir = "D:/Vasily Grinev")
-markDuplicatesGATK(bamDir = "Files_BAM", bamFile = "test_seq3.RG.bam",
-                   workDir = "D:/Vasily Grinev")
-recalibrateBamGATK(bamDir = "Files_BAM",
-                   bamFile = "test_seq3.markedDuplicates.bam",
-                   vcfDir = "Files_VCF", vcfFile = "known_sites.vcf",
-                   fastaDir = "Files_FASTA", faFile = "hg38.fa",
-                   nameBQSR = NA, workDir = "D:/Vasily Grinev")
-indexGenomeGATK(fastaDir = "Files_FASTA", faFile = "hg38.fa",
-                workDir = "D:/Vasily Grinev")
-indexVcfGATK(vcfDir = "Files_VCF", vcfFile = "known_sites.vcf",
-             workDir = "D:/Vasily Grinev")
+groupReadsGATK(
+    bamDir = "Files_BAM", bamFile = "test_seq3.bam",
+    workDir = "D:/Vasily Grinev"
+)
+markDuplicatesGATK(
+    bamDir = "Files_BAM", bamFile = "test_seq3.RG.bam",
+    workDir = "D:/Vasily Grinev"
+)
+recalibrateBamGATK(
+    bamDir = "Files_BAM",
+    bamFile = "test_seq3.markedDuplicates.bam",
+    vcfDir = "Files_VCF", vcfFile = "known_sites.vcf",
+    fastaDir = "Files_FASTA", faFile = "hg38.fa",
+    nameBQSR = NA, workDir = "D:/Vasily Grinev"
+)
+indexGenomeGATK(
+    fastaDir = "Files_FASTA", faFile = "hg38.fa",
+    workDir = "D:/Vasily Grinev"
+)
+indexVcfGATK(
+    vcfDir = "Files_VCF", vcfFile = "known_sites.vcf",
+    workDir = "D:/Vasily Grinev"
+)
 ```
 
 # Primary variant calling
@@ -299,17 +333,21 @@ All callers are dispatched through a single entry point `callSNVs()`. The functi
 -   **BAM-based** (`"fisherRSubread"`, `"gatk"`) — require `bamFile` and work directly with the BAM file.
 
 ```{r module4-classical, eval = FALSE}
-callSNVs(fr_data   = "test_seq3.PileupResults.csv",
-         criteria  = "fisher",
-         vcfDir    = "Files_VCF",
-         outputVCF = "test_seq.fisher",
-         workDir   = "D:/Vasily Grinev")
+callSNVs(
+    fr_data = "test_seq3.PileupResults.csv",
+    criteria = "fisher",
+    vcfDir = "Files_VCF",
+    outputVCF = "test_seq.fisher",
+    workDir = "D:/Vasily Grinev"
+)
 
-callSNVs(fr_data   = "test_seq3.PileupResults.csv",
-         criteria  = "entropy",
-         vcfDir    = "Files_VCF",
-         outputVCF = "test_seq.entropy",
-         workDir   = "D:/Vasily Grinev")
+callSNVs(
+    fr_data = "test_seq3.PileupResults.csv",
+    criteria = "entropy",
+    vcfDir = "Files_VCF",
+    outputVCF = "test_seq.entropy",
+    workDir = "D:/Vasily Grinev"
+)
 
 list.files("D:/Vasily Grinev/Files_VCF", pattern = "^test_seq\\.(fisher|entropy)")
 #> [1] "test_seq.fisher.fisher.vcf"
@@ -319,27 +357,30 @@ list.files("D:/Vasily Grinev/Files_VCF", pattern = "^test_seq\\.(fisher|entropy)
 For machine learning models (`"log_reg"`, `"rand_forest"`, `"rpart"`, `"SVM"`, `"xgboost"`), `pvalue = TRUE` returns class probabilities instead of hard labels:
 
 ```{r module4-ml, eval = FALSE}
-callSNVs(fr_data   = "test_seq3.PileupResults.csv",
-         criteria  = "ml",
-         model     = "log_reg",
-         pvalue    = TRUE,
-         vcfDir    = "Files_VCF",
-         outputVCF = "test_seq.ml_logreg_prob",
-         workDir   = "D:/Vasily Grinev")
+callSNVs(
+    fr_data = "test_seq3.PileupResults.csv",
+    criteria = "ml",
+    model = "log_reg",
+    pvalue = TRUE,
+    vcfDir = "Files_VCF",
+    outputVCF = "test_seq.ml_logreg_prob",
+    workDir = "D:/Vasily Grinev"
+)
 
 # The VCF contains the probability of the positive class in the QUAL
 # field (0–1). QUAL is a slot of rowRanges().
 ml_vcf <- VariantAnnotation::readVcf(
-  "D:/Vasily Grinev/Files_VCF/test_seq.ml_logreg_prob.ML_Prediction.vcf")
+    "D:/Vasily Grinev/Files_VCF/test_seq.ml_logreg_prob.ML_Prediction.vcf"
+)
 
 r <- rowRanges(ml_vcf)
 n_alt <- lengths(r$ALT)
 head(data.frame(
-  CHROM = rep(as.character(seqnames(r)), n_alt),
-  POS   = rep(start(r), n_alt),
-  REF   = rep(as.character(r$REF), n_alt),
-  ALT   = as.character(unlist(r$ALT)),
-  QUAL  = rep(r$QUAL, n_alt)
+    CHROM = rep(as.character(seqnames(r)), n_alt),
+    POS   = rep(start(r), n_alt),
+    REF   = rep(as.character(r$REF), n_alt),
+    ALT   = as.character(unlist(r$ALT)),
+    QUAL  = rep(r$QUAL, n_alt)
 ))
 #>   CHROM      POS REF ALT   QUAL
 #> 1 chr10 88990528   C   A 0.0023
@@ -353,20 +394,24 @@ head(data.frame(
 For BAM-based criteria:
 
 ```{r module4-bam, eval = FALSE}
-callSNVs(criteria = "fisherRSubread",
-         bamDir   = "Files_BAM",
-         bamFile  = "test_seq3.bam",
-         fastaDir = "Files_FASTA",
-         faFile   = "hg38.fa",
-         workDir  = "D:/Vasily Grinev")
+callSNVs(
+    criteria = "fisherRSubread",
+    bamDir = "Files_BAM",
+    bamFile = "test_seq3.bam",
+    fastaDir = "Files_FASTA",
+    faFile = "hg38.fa",
+    workDir = "D:/Vasily Grinev"
+)
 
-callSNVs(criteria  = "gatk",
-         bamDir    = "Files_BAM",
-         bamFile   = "test_seq3.bam",
-         fastaDir  = "Files_FASTA",
-         faFile    = "hg38.fa",
-         gatk_path = "gatk",
-         workDir   = "D:/Vasily Grinev")
+callSNVs(
+    criteria = "gatk",
+    bamDir = "Files_BAM",
+    bamFile = "test_seq3.bam",
+    fastaDir = "Files_FASTA",
+    faFile = "hg38.fa",
+    gatk_path = "gatk",
+    workDir = "D:/Vasily Grinev"
+)
 ```
 
 The output is a VCF file (version 4.0) with primary candidates for SNV sites. For tests that return a p-value (`"binomial"`, `"poisson"`, `"fisher"`, `"entropy"`), the QUAL field is written as a Phred-scaled score `-10 * log10(p)`. For `"counting"` the QUAL field contains the raw ratio of reference reads (0–1), and for `"ml"` the probability of the positive class (0–1).
@@ -376,15 +421,17 @@ The output is a VCF file (version 4.0) with primary candidates for SNV sites. Fo
 The list of primary candidates can be filtered using `filterVariants()`:
 
 ```{r module5-filter, eval = FALSE}
-SNVs_filter <- filterVariants(vcfDir     = "Files_VCF",
-                              vcfFile    = "test_seq3, fisherCalleR, SNVs.vcf",
-                              gr         = "aml_genes.subset.txt",
-                              depth      = 10,
-                              score      = 5,
-                              heterozyg  = 0.2,
-                              heterozyg1 = 0.2,
-                              index      = TRUE,
-                              workDir    = "D:/Vasily Grinev")
+SNVs_filter <- filterVariants(
+    vcfDir = "Files_VCF",
+    vcfFile = "test_seq3, fisherCalleR, SNVs.vcf",
+    gr = "aml_genes.subset.txt",
+    depth = 10,
+    score = 5,
+    heterozyg = 0.2,
+    heterozyg1 = 0.2,
+    index = TRUE,
+    workDir = "D:/Vasily Grinev"
+)
 length(SNVs_filter)
 #> [1] 19
 ```
@@ -394,11 +441,13 @@ where `gr` is the genomic region of interest, `depth` is the minimal sequencing 
 The benchmarking function `benchmarkVariants()` compares called variants against reference variants (the "gold standard"):
 
 ```{r module5-benchmark, eval = FALSE}
-metrics <- benchmarkVariants(vcfDir       = "Files_VCF",
-                             ref_vcf      = "test_truth.vcf",
-                             query_vcf    = "test_seq.fisher.fisher.vcf",
-                             featureTable = TRUE,
-                             workDir      = "D:/Vasily Grinev")
+metrics <- benchmarkVariants(
+    vcfDir = "Files_VCF",
+    ref_vcf = "test_truth.vcf",
+    query_vcf = "test_seq.fisher.fisher.vcf",
+    featureTable = TRUE,
+    workDir = "D:/Vasily Grinev"
+)
 print(metrics)
 #>        TP   FP  FN Precision Recall     F1
 #> SNPs  410   12   8    0.9716  0.9809 0.9762
@@ -423,11 +472,13 @@ where TP is a true positive, FN is a false negative, FP is a false positive, and
 Basic annotation of the detected SNVs with gene names is done by the function `annotateBasic()`:
 
 ```{r module6-basic, eval = FALSE}
-annoSNVs <- annotateBasic(vcfDir    = "Files_VCF",
-                          vcfFile   = "test_seq3, fisherCalleR, SNVs.filtered.vcf",
-                          ref_genes = "Ensembl release 114, GRCh38.p14, annotations of genes.txt",
-                          output    = "test_seq3, fisherCalleR, annotated SNVs",
-                          workDir   = "D:/Vasily Grinev")
+annoSNVs <- annotateBasic(
+    vcfDir = "Files_VCF",
+    vcfFile = "test_seq3, fisherCalleR, SNVs.filtered.vcf",
+    ref_genes = "Ensembl release 114, GRCh38.p14, annotations of genes.txt",
+    output = "test_seq3, fisherCalleR, annotated SNVs",
+    workDir = "D:/Vasily Grinev"
+)
 
 # annotateBasic() writes the annotation to a TXT file; read it back
 # to inspect the result.
@@ -447,15 +498,17 @@ where `ref_genes` is a tab-delimited TXT file with basic annotations of referenc
 The function `annotateDbSNP()` compares the basic annotation with the current dbSNP release:
 
 ```{r module6-dbsnp, eval = FALSE}
-annotateDbSNP(annoDir  = "",
-              annoFile = "test_seq3, fisherCalleR, annotated SNVs.basic annotation.txt",
-              output   = "test_seq3, fisherCalleR, dbSNP",
-              dbDir    = "Files_dbSNP",
-              dbFile   = "GCF_000001405.40.gz",
-              genome   = "hg38",
-              chrToNC  = FALSE,
-              chrID    = "RefSeq Accessions & UCSC chromosomes.txt",
-              workDir  = "D:/Vasily Grinev")
+annotateDbSNP(
+    annoDir = "",
+    annoFile = "test_seq3, fisherCalleR, annotated SNVs.basic annotation.txt",
+    output = "test_seq3, fisherCalleR, dbSNP",
+    dbDir = "Files_dbSNP",
+    dbFile = "GCF_000001405.40.gz",
+    genome = "hg38",
+    chrToNC = FALSE,
+    chrID = "RefSeq Accessions & UCSC chromosomes.txt",
+    workDir = "D:/Vasily Grinev"
+)
 ```
 
 where `dbFile` is the dbSNP VCF file (`GCF_000001405.40.gz` by default), `genome` is the version of the genome (hg38 by default), `chrToNC` indicates whether the UCSC-style sequence names should be converted to the NCBI-style, and `chrID` is a tab-delimited TXT file with the correspondence between NCBI-RefSeq and UCSC chromosome names. The function extracts 14 dbSNP fields: `RS`, `dbSNPBuildID`, `SAO`, `PM`, `FREQ`, `COMMON`, `CLNHGVS`, `CLNVI`, `CLNORIGIN`, `CLNSIG`, `CLNDISDB`, `CLNDN`, `CLNREVSTAT`, `CLNACC`.
@@ -466,13 +519,14 @@ The function `introduceSNVtoAAs()` predicts amino acid coding changes for non-sy
 
 ```{r module6-aa, eval = FALSE}
 intrSNVtoAAs <- introduceSNVtoAAs(
-  vcfDir   = "Files_VCF",
-  vcfFile  = "test_seq3, fisherCalleR, SNVs.filtered.vcf",
-  OrgDb    = "org.Hs.eg.db",
-  TxDb     = "TxDb.Hsapiens.UCSC.hg38.knownGene",
-  genome   = "BSgenome.Hsapiens.UCSC.hg38",
-  proteins = "Ensembl_GRCh38.p14_release.114_proteins.txt",
-  workDir  = "D:/Vasily Grinev")
+    vcfDir   = "Files_VCF",
+    vcfFile  = "test_seq3, fisherCalleR, SNVs.filtered.vcf",
+    OrgDb    = "org.Hs.eg.db",
+    TxDb     = "TxDb.Hsapiens.UCSC.hg38.knownGene",
+    genome   = "BSgenome.Hsapiens.UCSC.hg38",
+    proteins = "Ensembl_GRCh38.p14_release.114_proteins.txt",
+    workDir  = "D:/Vasily Grinev"
+)
 head(intrSNVtoAAs[, c("snv_id", "ref_aa", "alt_aa", "SNV_prot_loc")])
 #>             snv_id ref_aa alt_aa SNV_prot_loc
 #> 1 chr9:5126343_G/A      R      H         1063
@@ -485,9 +539,11 @@ where `OrgDb` is the name of the OrgDb data package with genome-wide annotations
 ### Extraction of splice site coordinates from GTF
 
 ```{r module6-ss-gtf, eval = FALSE}
-SSs <- extractSSsCoordsGTF(x      = "Ensembl_GRCh38.p14_release.114.gtf.gz",
-                           gtfDir = "Files_GTF",
-                           workDir = "D:/Vasily Grinev")
+SSs <- extractSSsCoordsGTF(
+    x = "Ensembl_GRCh38.p14_release.114.gtf.gz",
+    gtfDir = "Files_GTF",
+    workDir = "D:/Vasily Grinev"
+)
 length(SSs$fiveSSs)
 #> [1] 1770022
 ```
@@ -497,10 +553,12 @@ where `x` is the name of the GTF/GFF file (accepted formats: GFF2.5/GTF or GFF3,
 ### Extraction of splice site coordinates from exon-exon junctions
 
 ```{r module6-ss-eejs, eval = FALSE}
-SSs <- extractSSsCoordsEEJs(x      = "EEJs.Kasumi_1.RR_KD.PMC_BSU.txt",
-                            eejDir = "Files_EEJs",
-                            thr    = 5,
-                            workDir = "D:/Vasily Grinev")
+SSs <- extractSSsCoordsEEJs(
+    x = "EEJs.Kasumi_1.RR_KD.PMC_BSU.txt",
+    eejDir = "Files_EEJs",
+    thr = 5,
+    workDir = "D:/Vasily Grinev"
+)
 ```
 
 where `x` is the name of a tab-delimited TXT file with experimentally detected exon-exon junctions (`eej_id`, `gene_id`, `seqnames`, `start`, `end`, `strand`, and one or more samples with raw RNA-Seq reads spanning the junction), and `thr` is the threshold for the minimal coverage of the junction.
@@ -508,9 +566,11 @@ where `x` is the name of a tab-delimited TXT file with experimentally detected e
 ### Extraction of splice site sequences
 
 ```{r module6-ss-seq, eval = FALSE}
-seqSSs <- extractSeqSSs(x       = SSs$fiveSSs,
-                        genome  = "BSgenome.Hsapiens.UCSC.hg38",
-                        workDir = "D:/Vasily Grinev")
+seqSSs <- extractSeqSSs(
+    x = SSs$fiveSSs,
+    genome = "BSgenome.Hsapiens.UCSC.hg38",
+    workDir = "D:/Vasily Grinev"
+)
 head(seqSSs)
 #> DNAStringSet object of length 6:
 #>     width seq
@@ -526,11 +586,12 @@ where `x` is either a `GRanges` object (as returned by `extractSSsCoordsEEJs()` 
 
 ```{r module6-ss-intr, eval = FALSE}
 intrSNVtoSSs <- introduceSNVtoSSs(
-  x       = SSs$fiveSSs,
-  vcfDir  = "Files_VCF",
-  vcfFile = "test_seq4, fisherCalleR, SNVs.filtered.vcf",
-  genome  = "BSgenome.Hsapiens.UCSC.hg38",
-  workDir = "D:/Vasily Grinev")
+    x       = SSs$fiveSSs,
+    vcfDir  = "Files_VCF",
+    vcfFile = "test_seq4, fisherCalleR, SNVs.filtered.vcf",
+    genome  = "BSgenome.Hsapiens.UCSC.hg38",
+    workDir = "D:/Vasily Grinev"
+)
 head(intrSNVtoSSs$annotation[, c("seqnames", "start", "end", "seq_original", "seq_corrected")])
 #>   seqnames   start     end seq_original seq_corrected
 #> 1    chr19 7643046 7643054    AAGGTGTGC     AAGGTCTGC
@@ -543,9 +604,11 @@ The function returns a list with two elements: `annotation` (a data frame with t
 ### Scoring of splice sites
 
 ```{r module6-ss-score, eval = FALSE}
-scores <- scoreSSs(x       = "EEJs.Kasumi_1.RR_KD.PMC_BSU.fiveSSs.fasta",
-                   type    = 5,
-                   workDir = "D:/Vasily Grinev")
+scores <- scoreSSs(
+    x = "EEJs.Kasumi_1.RR_KD.PMC_BSU.fiveSSs.fasta",
+    type = 5,
+    workDir = "D:/Vasily Grinev"
+)
 head(scores)
 #>                          ss_id    ss_seq max.ent_score
 #> 1 chr20:50936142-50936150_str- GAGGTATGC          9.12
@@ -558,14 +621,16 @@ where `x` is a `DNAStringSet` object or a FASTA file with splice site sequences,
 ### Development of Ensembl-like annotations
 
 ```{r module6-develop, eval = FALSE}
-anno <- developAnnotations(gtfDir   = "Files_GTF",
-                           gtfFile  = "test.data_6.gtf",
-                           orf      = "test.data_6.txt",
-                           gtf      = "test.data_6.anno.gtf",
-                           src      = "StringTie",
-                           organism = "Homo sapiens",
-                           sqlite   = "test.data_6.anno.sqlite",
-                           workDir  = "D:/Vasily Grinev")
+anno <- developAnnotations(
+    gtfDir = "Files_GTF",
+    gtfFile = "test.data_6.gtf",
+    orf = "test.data_6.txt",
+    gtf = "test.data_6.anno.gtf",
+    src = "StringTie",
+    organism = "Homo sapiens",
+    sqlite = "test.data_6.anno.sqlite",
+    workDir = "D:/Vasily Grinev"
+)
 ```
 
 where `gtfFile` is the input GTF/GFF file (typically StringTie output), `orf` is a tab-delimited TXT file with coordinates of open reading frames, `gtf` is the output Ensembl-like GTF file, `src` is the origin of the GTF/GFF file, and `sqlite` is the name of the output SQLite database.
@@ -577,44 +642,54 @@ Putting everything together, a minimal end-to-end pipeline looks like this:
 ```{r pipeline, eval = FALSE}
 # Module 1: raw reads quality control
 qa_r1 <- assessQRawReads("Files_FASTQ", "test_seq.R1.fastq.gz",
-                         adapters = "adapters.txt",
-                         contaminants = "contaminants.txt",
-                         workDir = "D:/Vasily Grinev")
+    adapters = "adapters.txt",
+    contaminants = "contaminants.txt",
+    workDir = "D:/Vasily Grinev"
+)
 cleanRawReads("Files_FASTQ", "test_seq.R1.fastq.gz",
-              fastq2 = "test_seq.R2.fastq.gz",
-              postfix = "filtered", overwrite = TRUE,
-              workDir = "D:/Vasily Grinev")
+    fastq2 = "test_seq.R2.fastq.gz",
+    postfix = "filtered", overwrite = TRUE,
+    workDir = "D:/Vasily Grinev"
+)
 
 # Module 2: alignment
 buildIndexSubread("Reference_Genomes/GRCh38", "Files_FASTA",
-                  "GRCh38", "hg38.fa.gz", workDir = "D:/Vasily Grinev")
+    "GRCh38", "hg38.fa.gz",
+    workDir = "D:/Vasily Grinev"
+)
 alignDNASubread("Reference_Genomes/GRCh38/GRCh38", "Files_FASTQ",
-                "test_seq.filtered.R1.fastq.gz",
-                "test_seq.filtered.R2.fastq.gz",
-                "Files_BAM", "test_seq.filtered.bam",
-                workDir = "D:/Vasily Grinev")
+    "test_seq.filtered.R1.fastq.gz",
+    "test_seq.filtered.R2.fastq.gz",
+    "Files_BAM", "test_seq.filtered.bam",
+    workDir = "D:/Vasily Grinev"
+)
 sortBamFile("Files_BAM", "test_seq.filtered.bam",
-            byQname = FALSE, workDir = "D:/Vasily Grinev")
+    byQname = FALSE, workDir = "D:/Vasily Grinev"
+)
 
 # Module 3: data preparation for calling
 collectBasesPileup("Files_BAM", "test_seq.filtered.bam",
-                   gr = "aml_genes.txt", threads = 4,
-                   workDir = "D:/Vasily Grinev")
+    gr = "aml_genes.txt", threads = 4,
+    workDir = "D:/Vasily Grinev"
+)
 
 # Module 4: primary variant calling
 callSNVs("test_seq.filtered.PileupResults.csv", "fisher",
-         vcfDir = "Files_VCF", outputVCF = "test_seq.fisher",
-         workDir = "D:/Vasily Grinev")
+    vcfDir = "Files_VCF", outputVCF = "test_seq.fisher",
+    workDir = "D:/Vasily Grinev"
+)
 
 # Module 5: filtering and benchmarking
 filterVariants("Files_VCF", "test_seq.fisher.fisher.vcf",
-               depth = 10, score = 5,
-               workDir = "D:/Vasily Grinev")
+    depth = 10, score = 5,
+    workDir = "D:/Vasily Grinev"
+)
 
 # Module 6: annotation
 annotateBasic("Files_VCF", "test_seq.fisher.fisher.filtered.vcf",
-              "Ensembl release 114, GRCh38.p14, annotations of genes.txt",
-              workDir = "D:/Vasily Grinev")
+    "Ensembl release 114, GRCh38.p14, annotations of genes.txt",
+    workDir = "D:/Vasily Grinev"
+)
 ```
 
 # Session info

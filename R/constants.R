@@ -1,6 +1,8 @@
 # Supported classical statistical tests for SNV calling.
-SUPPORTED_CLASSICAL_TESTS <- c("binomial", "counting", "entropy",
-                               "fisher", "poisson")
+SUPPORTED_CLASSICAL_TESTS <- c(
+    "binomial", "counting", "entropy",
+    "fisher", "poisson"
+)
 
 # All supported criteria for callSNVs().
 SUPPORTED_CALLERS <- c(SUPPORTED_CLASSICAL_TESTS, "fisherRSubread", "gatk", "ml")

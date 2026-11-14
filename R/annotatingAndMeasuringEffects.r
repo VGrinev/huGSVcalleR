@@ -42,127 +42,159 @@
 #'     for variations that were found into dbSNP (for others columns will contain NA).
 #' @author Ilia M. Ilyushonak, Vasily V. Grinev.
 #' @examples
-#' annotateDbSNP(annoDir="annotation_dir",
-#'              annoFile="SNVs, basic annotation.txt",
-#'              dbDir="database_dir", dbFile="GCF_000001405.40.gz",
-#'              chrToNC=TRUE, chrID="RefSeq Accessions & UCSC chromosomes.txt",
-#'              workDir="D:/VCF_calling")
+#' annotateDbSNP(
+#'     annoDir = "annotation_dir",
+#'     annoFile = "SNVs, basic annotation.txt",
+#'     dbDir = "database_dir", dbFile = "GCF_000001405.40.gz",
+#'     chrToNC = TRUE, chrID = "RefSeq Accessions & UCSC chromosomes.txt",
+#'     workDir = "D:/VCF_calling"
+#' )
 #' @export
 #' @importFrom data.table data.table
 #' @importFrom VariantAnnotation readVcf info ScanVcfParam fixed
 #' @importFrom SparseArray rowRanges
 #' @importFrom GenomicRanges makeGRangesFromDataFrame findOverlaps GRanges
 #' @importFrom IRanges IRanges
-annotateDbSNP <- function(annoDir=NULL,
-                          annoFile,
-                          output=NULL,
-                          dbDir=NULL,
-                          dbFile="GCF_000001405.40.gz",
-                          genome="hg38",
-                          chrToNC=FALSE,
-                          chrID,
-                          workDir=NULL){
-  ### Setting the working directory.
-  if (is.null(x=workDir)){
-    workDir <- getwd()
-  }
-  ### Setting the annotation directory.
-  if (is.null(x=annoDir)){
-    annoDir <- workDir
-  }else{
-    annoDir <- paste(workDir, annoDir, sep="/")
-  }
-
-  ### Setting the database directory.
-  if (is.null(x=dbDir)){
-    dbDir <- workDir
-  }else{
-    dbDir <- paste(workDir, dbDir, sep="/")
-  }
-
-  ### Loading of basic SNVs annotation from basicAnnotation()
-  SNVs <- read.table(file = paste(annoDir, annoFile, sep = "/"), header = TRUE,
-                     sep = "\t")
-  ### Convertion chr to NCBI chromosome ID (if requested)
-  if (isTRUE(chrToNC)){
-    NC <- read.table(file = paste(dbDir, chrID, sep = "/"), header = TRUE, sep = "\t")
-    chr.backup <- SNVs$seqnames
-    for (i in 1:nrow(NC)){
-      SNVs$seqnames[SNVs$seqnames == NC[i,2]] <- NC[i,1]
+annotateDbSNP <- function(annoDir = NULL,
+    annoFile,
+    output = NULL,
+    dbDir = NULL,
+    dbFile = "GCF_000001405.40.gz",
+    genome = "hg38",
+    chrToNC = FALSE,
+    chrID,
+    workDir = NULL) {
+    ### Setting the working directory.
+    if (is.null(x = workDir)) {
+        workDir <- getwd()
     }
-  }
-  ### Loading of dbSNP annotation and finding overlaps with SNVs
-  #   from previous steps by coordinats
-  fields <- c("RS", "dbSNPBuildID", "SAO",
-              "PM", "FREQ", "COMMON", "CLNHGVS", "CLNVI",
-              "CLNORIGIN", "CLNSIG", "CLNDISDB", "CLNDN",
-              "CLNREVSTAT", "CLNACC")
-  ref.snp <- readVcf(file = paste(dbDir, dbFile, sep = "/"), genome = genome,
-                     param = ScanVcfParam(info = fields,
-                                          which = GRanges(seqnames = SNVs$seqnames,
-                                                          ranges = IRanges(start = SNVs$start,
-                                                                           end = SNVs$end),
-                                                          strand = SNVs$strand)))
-  gc()
-  ### Finding overlaps between called SNVs and dbSNP by genomic coordinates
-  hits.ref <- findOverlaps(query = GRanges(seqnames = SNVs$seqnames,
-                                           ranges = IRanges(start = SNVs$start,
-                                                            end = SNVs$end), strand = SNVs$strand),
-                           subject = rowRanges(ref.snp), type = "equal")
-  ### Creation an object with ALT alleles from two sets of SNVs
-  alt.compare <- list(experimental = strsplit(SNVs$alt[hits.ref@from], ","),
-                      reference = fixed(ref.snp)[hits.ref@to, c("ALT")])
-  ### Pair by pair comparison of ALT alleles
-  alt.hits <- c()
-  for (i in 1:length(alt.compare[[1]])) {
-    alt.hits <- c(alt.hits,
-                  any(as.character(alt.compare[[1]][[i]]) %in% as.character(alt.compare[[2]][[i]])))
-  }
-  ### Making an object with annotation of known SNVs
-  refalt <- data.table(unlist(x=lapply(X=rowRanges(ref.snp)$REF[hits.ref@to[which(alt.hits)]], paste0, collapse=",")),
-                       unlist(x=lapply(X=rowRanges(ref.snp)$ALT[hits.ref@to[which(alt.hits)]], paste0, collapse=",")))
-  colnames(refalt) <- c("dbSNP.ref", "dbSNP.alt")
-  info.db <- info(ref.snp)[hits.ref@to[which(alt.hits)],fields]
-  info.db$FREQ <- unlist(lapply(info.db$FREQ, paste, collapse = " "))
-  info.db$CLNHGVS <- unlist(x=lapply(X=info.db$CLNHGVS, paste0, collapse=","))
-  info.db$CLNVI <- unlist(x=lapply(X=info.db$CLNVI, paste0, collapse=","))
-  info.db$CLNORIGIN <- unlist(x=lapply(X=info.db$CLNORIGIN, paste0, collapse=","))
-  info.db$CLNSIG <- unlist(x=lapply(X=info.db$CLNSIG, paste0, collapse=","))
-  info.db$CLNDISDB <- unlist(x=lapply(X=info.db$CLNDISDB, paste0, collapse=","))
-  info.db$CLNDN <- unlist(x=lapply(X=info.db$CLNDN, paste0, collapse=","))
-  info.db$CLNREVSTAT <- unlist(x=lapply(X=info.db$CLNREVSTAT, paste0, collapse=","))
-  info.db$CLNACC <- unlist(x=lapply(X=info.db$CLNACC, paste0, collapse=","))
-  hits.to <- as.data.frame(cbind(refalt, as.data.frame(info.db)))
-  rm(refalt, info.db)
-  gc()
-  ### Making a dataframe with annotations for known variations and NA - for other.
-  anno <- as.data.frame(matrix(data = NA, nrow = nrow(SNVs), ncol = ncol(hits.to)))
-  colnames(anno) <- colnames(hits.to)
-  for (i in 1:ncol(anno)){
-    class(anno[,i]) <- class(hits.to[,i])
-  }
-  anno[hits.ref@from[alt.hits],] <- hits.to
-  ### Merging basic annotation with dbSNP annotation into final dataframe
-  anno <- cbind(SNVs, anno)
-  ### This step restores chromosome names from NCBI to UCSC format
-  if (isTRUE(chrToNC)){
-    anno$seqnames <- chr.backup
-  }
-  ### Writing output file
-  if (is.null(x=output)){
-    outputFile <- paste(workDir,
-                        sub(pattern=".txt",
-                            replacement=", dbSNP annotation.txt",
-                            x=annoFile), sep="/")
-  }else{
-    outputFile <- paste(workDir, paste(output, "dbSNP annotation", "txt", sep="."), sep="/")
-  }
-  write.table(x=anno,
-              file=outputFile,
-              sep="\t",
-              quote=FALSE,
-              col.names=TRUE,
-              row.names=FALSE)
+    ### Setting the annotation directory.
+    if (is.null(x = annoDir)) {
+        annoDir <- workDir
+    } else {
+        annoDir <- paste(workDir, annoDir, sep = "/")
+    }
+
+    ### Setting the database directory.
+    if (is.null(x = dbDir)) {
+        dbDir <- workDir
+    } else {
+        dbDir <- paste(workDir, dbDir, sep = "/")
+    }
+
+    ### Loading of basic SNVs annotation from basicAnnotation()
+    SNVs <- read.table(
+        file = paste(annoDir, annoFile, sep = "/"), header = TRUE,
+        sep = "\t"
+    )
+    ### Convertion chr to NCBI chromosome ID (if requested)
+    if (isTRUE(chrToNC)) {
+        NC <- read.table(file = paste(dbDir, chrID, sep = "/"), header = TRUE, sep = "\t")
+        chr.backup <- SNVs$seqnames
+        for (i in 1:nrow(NC)) {
+            SNVs$seqnames[SNVs$seqnames == NC[i, 2]] <- NC[i, 1]
+        }
+    }
+    ### Loading of dbSNP annotation and finding overlaps with SNVs
+    #   from previous steps by coordinats
+    fields <- c(
+        "RS", "dbSNPBuildID", "SAO",
+        "PM", "FREQ", "COMMON", "CLNHGVS", "CLNVI",
+        "CLNORIGIN", "CLNSIG", "CLNDISDB", "CLNDN",
+        "CLNREVSTAT", "CLNACC"
+    )
+    ref.snp <- readVcf(
+        file = paste(dbDir, dbFile, sep = "/"), genome = genome,
+        param = ScanVcfParam(
+            info = fields,
+            which = GRanges(
+                seqnames = SNVs$seqnames,
+                ranges = IRanges(
+                    start = SNVs$start,
+                    end = SNVs$end
+                ),
+                strand = SNVs$strand
+            )
+        )
+    )
+    gc()
+    ### Finding overlaps between called SNVs and dbSNP by genomic coordinates
+    hits.ref <- findOverlaps(
+        query = GRanges(
+            seqnames = SNVs$seqnames,
+            ranges = IRanges(
+                start = SNVs$start,
+                end = SNVs$end
+            ), strand = SNVs$strand
+        ),
+        subject = rowRanges(ref.snp), type = "equal"
+    )
+    ### Creation an object with ALT alleles from two sets of SNVs
+    alt.compare <- list(
+        experimental = strsplit(SNVs$alt[hits.ref@from], ","),
+        reference = fixed(ref.snp)[hits.ref@to, c("ALT")]
+    )
+    ### Pair by pair comparison of ALT alleles
+    alt.hits <- c()
+    for (i in 1:length(alt.compare[[1]])) {
+        alt.hits <- c(
+            alt.hits,
+            any(as.character(alt.compare[[1]][[i]]) %in% as.character(alt.compare[[2]][[i]]))
+        )
+    }
+    ### Making an object with annotation of known SNVs
+    refalt <- data.table(
+        unlist(x = lapply(X = rowRanges(ref.snp)$REF[hits.ref@to[which(alt.hits)]], paste0, collapse = ",")),
+        unlist(x = lapply(X = rowRanges(ref.snp)$ALT[hits.ref@to[which(alt.hits)]], paste0, collapse = ","))
+    )
+    colnames(refalt) <- c("dbSNP.ref", "dbSNP.alt")
+    info.db <- info(ref.snp)[hits.ref@to[which(alt.hits)], fields]
+    info.db$FREQ <- unlist(lapply(info.db$FREQ, paste, collapse = " "))
+    info.db$CLNHGVS <- unlist(x = lapply(X = info.db$CLNHGVS, paste0, collapse = ","))
+    info.db$CLNVI <- unlist(x = lapply(X = info.db$CLNVI, paste0, collapse = ","))
+    info.db$CLNORIGIN <- unlist(x = lapply(X = info.db$CLNORIGIN, paste0, collapse = ","))
+    info.db$CLNSIG <- unlist(x = lapply(X = info.db$CLNSIG, paste0, collapse = ","))
+    info.db$CLNDISDB <- unlist(x = lapply(X = info.db$CLNDISDB, paste0, collapse = ","))
+    info.db$CLNDN <- unlist(x = lapply(X = info.db$CLNDN, paste0, collapse = ","))
+    info.db$CLNREVSTAT <- unlist(x = lapply(X = info.db$CLNREVSTAT, paste0, collapse = ","))
+    info.db$CLNACC <- unlist(x = lapply(X = info.db$CLNACC, paste0, collapse = ","))
+    hits.to <- as.data.frame(cbind(refalt, as.data.frame(info.db)))
+    rm(refalt, info.db)
+    gc()
+    ### Making a dataframe with annotations for known variations and NA - for other.
+    anno <- as.data.frame(matrix(data = NA, nrow = nrow(SNVs), ncol = ncol(hits.to)))
+    colnames(anno) <- colnames(hits.to)
+    for (i in 1:ncol(anno)) {
+        class(anno[, i]) <- class(hits.to[, i])
+    }
+    anno[hits.ref@from[alt.hits], ] <- hits.to
+    ### Merging basic annotation with dbSNP annotation into final dataframe
+    anno <- cbind(SNVs, anno)
+    ### This step restores chromosome names from NCBI to UCSC format
+    if (isTRUE(chrToNC)) {
+        anno$seqnames <- chr.backup
+    }
+    ### Writing output file
+    if (is.null(x = output)) {
+        outputFile <- paste(workDir,
+            sub(
+                pattern = ".txt",
+                replacement = ", dbSNP annotation.txt",
+                x = annoFile
+            ),
+            sep = "/"
+        )
+    } else {
+        outputFile <- paste(workDir, paste(output, "dbSNP annotation", "txt", sep = "."), sep = "/")
+    }
+    write.table(
+        x = anno,
+        file = outputFile,
+        sep = "\t",
+        quote = FALSE,
+        col.names = TRUE,
+        row.names = FALSE
+    )
 }
 
 #' Annotate of single nucleotide variations
@@ -196,88 +228,118 @@ annotateDbSNP <- function(annoDir=NULL,
 #' @author Ilia M. Ilyushonak, Vasily V. Grinev.
 #' @examples
 #' genes <- "Ensembl release 114, GRCh38.p14, annotations of genes.txt"
-#' annoSNVs <- annotateBasic(vcfDir="Files_VCF",
-#'                              vcfFile="example_seq.vcf",
-#'                              ref_genes,
-#'                              output="example_seq, annotated SNVs",
-#'                              workDir="D:/Vasily Grinev")
+#' annoSNVs <- annotateBasic(
+#'     vcfDir = "Files_VCF",
+#'     vcfFile = "example_seq.vcf",
+#'     ref_genes,
+#'     output = "example_seq, annotated SNVs",
+#'     workDir = "D:/Vasily Grinev"
+#' )
 #' @export
 #' @importFrom data.table data.table
 #' @importFrom VariantAnnotation readVcf info
 #' @importFrom SparseArray rowRanges
 #' @importFrom SummarizedExperiment "rowRanges<-"
 #' @importFrom GenomicRanges makeGRangesFromDataFrame findOverlaps
-annotateBasic <- function(vcfDir=NULL,
-                          vcfFile,
-                          ref_genes,
-                          output=NULL,
-                          workDir=NULL){
-  ### Setting the working directory.
-  if (is.null(x=workDir)){
-    workDir <- getwd()
-  }
-  ### Setting the VCF directory.
-  if (is.null(x=vcfDir)){
-    vcfDir <- workDir
-  }else{
-    vcfDir <- paste(workDir, vcfDir, sep="/")
-  }
-  ### Loading of the single nucleotide variations as an object of class
-  #   CollapsedVCF.
-  vcf <- readVcf(file=paste(vcfDir, vcfFile, sep="/"))
-  ### Loading of the reference genes as an object of class GRanges.
-  genes <- read.table(file=paste(workDir, ref_genes, sep="/"),
-                      sep="\t",
-                      header=TRUE,
-                      quote="\"",
-                      as.is=TRUE)
-  genes <- makeGRangesFromDataFrame(df=genes, keep.extra.columns=TRUE)
-  ### Annotation of the single nucleotide variations with gene names.
-  mcols(x=rowRanges(x=vcf))$gene_name <- ""
-  hits <- findOverlaps(query=rowRanges(x=vcf),
-                       subject=genes[!is.na(x=genes$gene_name)],
-                       type="within",
-                       ignore.strand=TRUE)
-  hits <- data.table(cbind(hits@from,
-                           genes[!is.na(x=genes$gene_name)][hits@to, ]$gene_name))
-  hits <- hits[, paste(V2, collapse=","), by=V1]
-  colnames(x=hits) <- c("V1", "V2")
-  hits$V1 <- as.numeric(x=hits$V1)
-  hits$V2 <- unlist(x=lapply(X=hits$V2,
-                             FUN=function(y){paste0(sort(x=unique(x=strsplit(x=y,
-                                                                             split=",")[[1]])),
-                                                    collapse=",")}))
-  rowRanges(x=vcf)[hits$V1, ]$gene_name <- as.vector(x=hits$V2)
-  ### Building an object with basic annotation
-  SNVs <- cbind(data.frame(rowRanges(x=vcf)), info(x=vcf))
-  SNVs$ALT <- unlist(x=lapply(X=SNVs$ALT, paste0, collapse=","))
-  SNVs$snv_id <- paste(paste(paste(SNVs$seqnames, SNVs$start, sep=":"),
-                             SNVs$REF, sep="_"),
-                       SNVs$ALT, sep="/")
-  SNVs <- SNVs[, c("snv_id", "seqnames", "start", "end", "strand", "REF",
-                   "ALT", "DP", "QUAL", "gene_name")]
-  colnames(x=SNVs) <- c(colnames(x=SNVs)[1:5],
-                        "ref", "alt",
-                        "pos_depth",
-                        "score", "gene_name")
-  SNVs$seqnames <- as.character(x=SNVs$seqnames)
-  SNVs$strand <- as.character(x=SNVs$strand)
-  ###Writing output files
-  if (is.null(x=output)){
-    output_file <- paste(workDir,
-                         sub(pattern=".vcf.bgz",
-                             replacement=", basic annotation.txt",
-                             x=vcfFile),
-                         sep="/")
-  }else{
-    output_file <- paste(workDir, paste(output, "basic annotation", "txt", sep="."), sep="/")
-  }
-  write.table(x=SNVs,
-              file=output_file,
-              sep="\t",
-              quote=FALSE,
-              col.names=TRUE,
-              row.names=FALSE)
+annotateBasic <- function(vcfDir = NULL,
+    vcfFile,
+    ref_genes,
+    output = NULL,
+    workDir = NULL) {
+    ### Setting the working directory.
+    if (is.null(x = workDir)) {
+        workDir <- getwd()
+    }
+    ### Setting the VCF directory.
+    if (is.null(x = vcfDir)) {
+        vcfDir <- workDir
+    } else {
+        vcfDir <- paste(workDir, vcfDir, sep = "/")
+    }
+    ### Loading of the single nucleotide variations as an object of class
+    #   CollapsedVCF.
+    vcf <- readVcf(file = paste(vcfDir, vcfFile, sep = "/"))
+    ### Loading of the reference genes as an object of class GRanges.
+    genes <- read.table(
+        file = paste(workDir, ref_genes, sep = "/"),
+        sep = "\t",
+        header = TRUE,
+        quote = "\"",
+        as.is = TRUE
+    )
+    genes <- makeGRangesFromDataFrame(df = genes, keep.extra.columns = TRUE)
+    ### Annotation of the single nucleotide variations with gene names.
+    mcols(x = rowRanges(x = vcf))$gene_name <- ""
+    hits <- findOverlaps(
+        query = rowRanges(x = vcf),
+        subject = genes[!is.na(x = genes$gene_name)],
+        type = "within",
+        ignore.strand = TRUE
+    )
+    hits <- data.table(cbind(
+        hits@from,
+        genes[!is.na(x = genes$gene_name)][hits@to, ]$gene_name
+    ))
+    hits <- hits[, paste(V2, collapse = ","), by = V1]
+    colnames(x = hits) <- c("V1", "V2")
+    hits$V1 <- as.numeric(x = hits$V1)
+    hits$V2 <- unlist(x = lapply(
+        X = hits$V2,
+        FUN = function(y) {
+            paste0(
+                sort(x = unique(x = strsplit(
+                    x = y,
+                    split = ","
+                )[[1]])),
+                collapse = ","
+            )
+        }
+    ))
+    rowRanges(x = vcf)[hits$V1, ]$gene_name <- as.vector(x = hits$V2)
+    ### Building an object with basic annotation
+    SNVs <- cbind(data.frame(rowRanges(x = vcf)), info(x = vcf))
+    SNVs$ALT <- unlist(x = lapply(X = SNVs$ALT, paste0, collapse = ","))
+    SNVs$snv_id <- paste(
+        paste(paste(SNVs$seqnames, SNVs$start, sep = ":"),
+            SNVs$REF,
+            sep = "_"
+        ),
+        SNVs$ALT,
+        sep = "/"
+    )
+    SNVs <- SNVs[, c(
+        "snv_id", "seqnames", "start", "end", "strand", "REF",
+        "ALT", "DP", "QUAL", "gene_name"
+    )]
+    colnames(x = SNVs) <- c(
+        colnames(x = SNVs)[1:5],
+        "ref", "alt",
+        "pos_depth",
+        "score", "gene_name"
+    )
+    SNVs$seqnames <- as.character(x = SNVs$seqnames)
+    SNVs$strand <- as.character(x = SNVs$strand)
+    ### Writing output files
+    if (is.null(x = output)) {
+        output_file <- paste(workDir,
+            sub(
+                pattern = ".vcf.bgz",
+                replacement = ", basic annotation.txt",
+                x = vcfFile
+            ),
+            sep = "/"
+        )
+    } else {
+        output_file <- paste(workDir, paste(output, "basic annotation", "txt", sep = "."), sep = "/")
+    }
+    write.table(
+        x = SNVs,
+        file = output_file,
+        sep = "\t",
+        quote = FALSE,
+        col.names = TRUE,
+        row.names = FALSE
+    )
 }
 
 #' Develop Ensembl-like annotations of experimental transcriptome
@@ -310,14 +372,16 @@ annotateBasic <- function(vcfDir=NULL,
 #'     of the experimental transcriptome.
 #' @author Vasily V. Grinev.
 #' @examples
-#' anno <- developAnnotations(gtfDir="Files_GTF",
-#'                            gtfFile="test.data_6.gtf",
-#'                            orf="test.data_6.txt",
-#'                            gtf="test.data_6.anno.gtf",
-#'                            src="StringTie",
-#'                            organism="Homo sapiens",
-#'                            sqlite="test.data_6.anno.sqlite",
-#'                            workDir="D:/Vasily Grinev")
+#' anno <- developAnnotations(
+#'     gtfDir = "Files_GTF",
+#'     gtfFile = "test.data_6.gtf",
+#'     orf = "test.data_6.txt",
+#'     gtf = "test.data_6.anno.gtf",
+#'     src = "StringTie",
+#'     organism = "Homo sapiens",
+#'     sqlite = "test.data_6.anno.sqlite",
+#'     workDir = "D:/Vasily Grinev"
+#' )
 #' @export
 #' @importFrom rtracklayer import export
 #' @importFrom txdbmaker makeTxDbFromGFF
@@ -326,297 +390,336 @@ annotateBasic <- function(vcfDir=NULL,
 #' @importFrom IRanges disjoin
 #' @importFrom S4Vectors queryHits subjectHits mcols mcols<- split
 #' @importFrom methods as
-developAnnotations <- function(gtfDir=NULL,
-                               gtfFile,
-                               orf,
-                               gtf,
-                               src,
-                               organism,
-                               sqlite,
-                               workDir=NULL){
-  ### Setting the working directory.
-  if (is.null(x=workDir)){
-    workDir <- getwd()
-  }
-  ### Setting the GTF directory.
-  if (is.null(x=gtfDir)){
-    gtfDir <- workDir
-  }else{
-    gtfDir <- paste(workDir, gtfDir, sep="/")
-  }
-  ### Loading of the experimental annotations as an object of class GRanges.
-  GTFs <- import(con=paste(gtfDir, gtfFile, sep="/"))
-  ### Loading of the ORF coordinates as an object of class data frame.
-  ORFs <- read.table(file=paste(workDir, orf, sep="/"),
-                     sep="\t",
-                     header=TRUE,
-                     quote="\"",
-                     as.is=TRUE)
-  ### Development of the Ensembl-like annotations.
-  GTFs$gene_biotype <- "noncoding"
-  GTFs$transcript_biotype <- "noncoding"
-  GTFs[GTFs$transcript_id %in% ORFs$transcript_id, ]$transcript_biotype <-
-    "protein_coding"
-  GTFs[GTFs$gene_id %in%
-         GTFs[GTFs$transcript_biotype == "protein_coding", ]$gene_id,
-  ]$gene_biotype <- "protein_coding"
-  genes <- split(x=GTFs, f=GTFs$gene_id)
-  genes <- lapply(X=genes,
-                  FUN=function(y){start(x=y) <- min(x=start(x=y))
-                  end(x=y) <- max(x=end(x=y))
-                  y <- y[1]
-                  y$type <- "gene"
-                  mcols(x=y) <-
-                    mcols(x=y)[!names(x=mcols(x=y)) %in%
-                                 c("transcript_id", "exon_number",
-                                   "transcript_biotype")]
-                  return(y)})
-  coding <- GTFs[GTFs$transcript_biotype == "protein_coding", ]
-  coding <- split(x=coding, f=coding$transcript_id)
-  for (i in 1:length(x=coding)){
-    tr <- coding[[i]]
-    orf_start <- ORFs[ORFs$transcript_id == tr$transcript_id[1], ]$orf_start
-    orf_end <- ORFs[ORFs$transcript_id == tr$transcript_id[1], ]$orf_end
-    if (as.character(x=strand(x=tr))[1] == "+"){
-      if (orf_start > width(x=tr)[1]){
-        m1 <- min(x=which(x=cumsum(x=width(x=tr)) - orf_start > 0))
-        m2 <- max(x=cumsum(x=width(x=tr)[1:(m1 - 1)]))
-        start_codon <- start(x=tr)[m1] + orf_start - m2 - 1
-        start_codon <- c(start_codon, start_codon + 2)
-        m1 <- min(x=which(x=cumsum(x=width(x=tr)) - orf_end > 0))
-        m2 <- max(x=cumsum(x=width(x=tr)[1:(m1 - 1)]))
-        stop_codon <- start(x=tr)[m1] + orf_end - m2 - 3
-        stop_codon <- c(stop_codon, stop_codon + 2)
-      }else{
-        start_codon <- start(x=tr)[1] + orf_start - 1
-        start_codon <- c(start_codon, start_codon + 2)
-        if (length(x=tr) == 1){
-          stop_codon <- start(x=tr)[1] + orf_end - 1
-          stop_codon <- c(stop_codon - 2, stop_codon)
-        }else{
-          m1 <- min(x=which(x=cumsum(x=width(x=tr)) - orf_end > 0))
-          if (m1 == 1){
-            stop_codon <- start(x=tr)[1] + orf_end - 1
-            stop_codon <- c(stop_codon - 2, stop_codon)
-          }else{
-            m2 <- max(x=cumsum(x=width(x=tr)[1:(m1 - 1)]))
-            stop_codon <- start(x=tr)[m1] + orf_end - m2 - 3
-            stop_codon <- c(stop_codon, stop_codon + 2)
-          }
-        }
-      }
-      tr <- sort(x=tr)
-      CDS <- c(min(x=start_codon), min(x=stop_codon) - 1)
-      CDS <- data.frame(seqnames=as.character(x=seqnames(x=tr))[1],
-                        start=CDS[1],
-                        end=CDS[2],
-                        strand=as.character(x=strand(x=tr))[1])
-      CDS <- makeGRangesFromDataFrame(df=CDS)
-      hits <- findOverlaps(query=CDS, subject=tr, type="any")
-      CDS_exons <- tr[subjectHits(x=hits)]
-      CDS_exons$type <- "CDS"
-      start(x=CDS_exons)[1] <- start(x=CDS)
-      end(x=CDS_exons)[length(x=CDS_exons)] <- end(x=CDS)
-      start <- data.frame(seqnames=as.character(x=seqnames(x=tr))[1],
-                          start=start_codon[1],
-                          end=start_codon[2],
-                          strand=as.character(x=strand(x=tr))[1])
-      start <- makeGRangesFromDataFrame(df=start)
-      hits <- findOverlaps(query=start, subject=tr, type="any")
-      start_codon <- tr[subjectHits(x=hits)]
-      start_codon$type <- "start_codon"
-      start(x=start_codon)[1] <- start(x=start)
-      end(x=start_codon)[1] <- end(x=start)
-      stop <- data.frame(seqnames=as.character(x=seqnames(x=tr))[1],
-                         start=stop_codon[1],
-                         end=stop_codon[2],
-                         strand=as.character(x=strand(x=tr))[1])
-      stop <- makeGRangesFromDataFrame(df=stop)
-      hits <- findOverlaps(query=stop, subject=tr, type="any")
-      stop_codon <- tr[subjectHits(x=hits)]
-      stop_codon$type <- "stop_codon"
-      start(x=stop_codon)[1] <- start(x=stop)
-      end(x=stop_codon)[1] <- end(x=stop)
-      UTRs <- disjoin(c(tr, CDS))
-      hits <- findOverlaps(query=UTRs, subject=CDS, type="any")
-      UTRs <- UTRs[-queryHits(x=hits)]
-      five_prime_utr <- UTRs[!UTRs > CDS]
-      if (length(x=five_prime_utr) > 0){
-        hits <- findOverlaps(query=five_prime_utr,
-                             subject=tr,
-                             type="any")
-        mcols(x=five_prime_utr) <- mcols(x=tr[subjectHits(x=hits)])
-        five_prime_utr$type <- "five_prime_utr"
-      }
-      three_prime_utr <- UTRs[UTRs > CDS]
-      if (length(x=three_prime_utr) > 0){
-        hits <- findOverlaps(query=three_prime_utr,
-                             subject=tr,
-                             type="any")
-        mcols(x=three_prime_utr) <- mcols(x=tr[subjectHits(x=hits)])
-        three_prime_utr$type <- "three_prime_utr"
-        start(x=three_prime_utr) <- start(x=three_prime_utr) + 3
-      }
-      transcript <- tr[1]
-      mcols(x=transcript) <-
-        mcols(x=transcript)[names(x=mcols(x=transcript)) != "exon_number"]
-      transcript$type <- "transcript"
-      start(x=transcript) <- min(x=start(x=tr))
-      end(x=transcript) <- max(x=end(x=tr))
-      gene <- genes[names(x=genes) == unique(x=tr$gene_id)][[1]]
-      tr <- c(gene,
-              transcript,
-              sort(c(tr, five_prime_utr, start_codon, CDS_exons,
-                     stop_codon, three_prime_utr)))
+developAnnotations <- function(gtfDir = NULL,
+    gtfFile,
+    orf,
+    gtf,
+    src,
+    organism,
+    sqlite,
+    workDir = NULL) {
+    ### Setting the working directory.
+    if (is.null(x = workDir)) {
+        workDir <- getwd()
     }
-    if (as.character(x=strand(x=tr))[1] == "-"){
-      tr <- sort(x=tr, decreasing=TRUE)
-      if (orf_start > width(x=tr)[1]){
-        m1 <- min(x=which(x=cumsum(x=width(x=tr)) - orf_start > 0))
-        m2 <- max(x=cumsum(x=width(x=tr)[1:(m1 - 1)]))
-        start_codon <- end(x=tr)[m1] - (orf_start - m2) + 1
-        start_codon <- c(start_codon - 2, start_codon)
-        m1 <- min(x=which(x=cumsum(x=width(x=tr)) - orf_end > 0))
-        m2 <- max(x=cumsum(x=width(x=tr)[1:(m1 - 1)]))
-        stop_codon <- end(x=tr)[m1] - (orf_end - m2) + 1
-        stop_codon <- c(stop_codon, stop_codon + 2)
-      }else{
-        start_codon <- end(x=tr)[1] - orf_start + 1
-        start_codon <- c(start_codon - 2, start_codon)
-        if (length(x=tr) == 1){
-          stop_codon <- end(x=tr)[1] - orf_end + 1
-          stop_codon <- c(stop_codon, stop_codon + 2)
-        }else{
-          if (tail(x=cumsum(x=width(x=tr)), n=1) == orf_end){
-            stop_codon <- start(x=tail(x=tr, n=1))
-            stop_codon <- c(stop_codon, stop_codon + 2)
-          }else{
-            m1 <- min(x=which(x=cumsum(x=width(x=tr)) - orf_end > 0))
-            if (m1 == 1){
-              stop_codon <- end(x=tr)[1] - orf_end + 1
-              stop_codon <- c(stop_codon, stop_codon + 2)
-            }else{
-              m2 <- max(x=cumsum(x=width(x=tr)[1:(m1 - 1)]))
-              stop_codon <- end(x=tr)[m1] - (orf_end - m2) + 1
-              stop_codon <- c(stop_codon, stop_codon + 2)
+    ### Setting the GTF directory.
+    if (is.null(x = gtfDir)) {
+        gtfDir <- workDir
+    } else {
+        gtfDir <- paste(workDir, gtfDir, sep = "/")
+    }
+    ### Loading of the experimental annotations as an object of class GRanges.
+    GTFs <- import(con = paste(gtfDir, gtfFile, sep = "/"))
+    ### Loading of the ORF coordinates as an object of class data frame.
+    ORFs <- read.table(
+        file = paste(workDir, orf, sep = "/"),
+        sep = "\t",
+        header = TRUE,
+        quote = "\"",
+        as.is = TRUE
+    )
+    ### Development of the Ensembl-like annotations.
+    GTFs$gene_biotype <- "noncoding"
+    GTFs$transcript_biotype <- "noncoding"
+    GTFs[GTFs$transcript_id %in% ORFs$transcript_id, ]$transcript_biotype <-
+        "protein_coding"
+    GTFs[GTFs$gene_id %in%
+        GTFs[GTFs$transcript_biotype == "protein_coding", ]$gene_id, ]$gene_biotype <- "protein_coding"
+    genes <- split(x = GTFs, f = GTFs$gene_id)
+    genes <- lapply(
+        X = genes,
+        FUN = function(y) {
+            start(x = y) <- min(x = start(x = y))
+            end(x = y) <- max(x = end(x = y))
+            y <- y[1]
+            y$type <- "gene"
+            mcols(x = y) <-
+                mcols(x = y)[!names(x = mcols(x = y)) %in%
+                    c(
+                        "transcript_id", "exon_number",
+                        "transcript_biotype"
+                    )]
+            return(y)
+        }
+    )
+    coding <- GTFs[GTFs$transcript_biotype == "protein_coding", ]
+    coding <- split(x = coding, f = coding$transcript_id)
+    for (i in 1:length(x = coding)) {
+        tr <- coding[[i]]
+        orf_start <- ORFs[ORFs$transcript_id == tr$transcript_id[1], ]$orf_start
+        orf_end <- ORFs[ORFs$transcript_id == tr$transcript_id[1], ]$orf_end
+        if (as.character(x = strand(x = tr))[1] == "+") {
+            if (orf_start > width(x = tr)[1]) {
+                m1 <- min(x = which(x = cumsum(x = width(x = tr)) - orf_start > 0))
+                m2 <- max(x = cumsum(x = width(x = tr)[1:(m1 - 1)]))
+                start_codon <- start(x = tr)[m1] + orf_start - m2 - 1
+                start_codon <- c(start_codon, start_codon + 2)
+                m1 <- min(x = which(x = cumsum(x = width(x = tr)) - orf_end > 0))
+                m2 <- max(x = cumsum(x = width(x = tr)[1:(m1 - 1)]))
+                stop_codon <- start(x = tr)[m1] + orf_end - m2 - 3
+                stop_codon <- c(stop_codon, stop_codon + 2)
+            } else {
+                start_codon <- start(x = tr)[1] + orf_start - 1
+                start_codon <- c(start_codon, start_codon + 2)
+                if (length(x = tr) == 1) {
+                    stop_codon <- start(x = tr)[1] + orf_end - 1
+                    stop_codon <- c(stop_codon - 2, stop_codon)
+                } else {
+                    m1 <- min(x = which(x = cumsum(x = width(x = tr)) - orf_end > 0))
+                    if (m1 == 1) {
+                        stop_codon <- start(x = tr)[1] + orf_end - 1
+                        stop_codon <- c(stop_codon - 2, stop_codon)
+                    } else {
+                        m2 <- max(x = cumsum(x = width(x = tr)[1:(m1 - 1)]))
+                        stop_codon <- start(x = tr)[m1] + orf_end - m2 - 3
+                        stop_codon <- c(stop_codon, stop_codon + 2)
+                    }
+                }
             }
-          }
+            tr <- sort(x = tr)
+            CDS <- c(min(x = start_codon), min(x = stop_codon) - 1)
+            CDS <- data.frame(
+                seqnames = as.character(x = seqnames(x = tr))[1],
+                start = CDS[1],
+                end = CDS[2],
+                strand = as.character(x = strand(x = tr))[1]
+            )
+            CDS <- makeGRangesFromDataFrame(df = CDS)
+            hits <- findOverlaps(query = CDS, subject = tr, type = "any")
+            CDS_exons <- tr[subjectHits(x = hits)]
+            CDS_exons$type <- "CDS"
+            start(x = CDS_exons)[1] <- start(x = CDS)
+            end(x = CDS_exons)[length(x = CDS_exons)] <- end(x = CDS)
+            start <- data.frame(
+                seqnames = as.character(x = seqnames(x = tr))[1],
+                start = start_codon[1],
+                end = start_codon[2],
+                strand = as.character(x = strand(x = tr))[1]
+            )
+            start <- makeGRangesFromDataFrame(df = start)
+            hits <- findOverlaps(query = start, subject = tr, type = "any")
+            start_codon <- tr[subjectHits(x = hits)]
+            start_codon$type <- "start_codon"
+            start(x = start_codon)[1] <- start(x = start)
+            end(x = start_codon)[1] <- end(x = start)
+            stop <- data.frame(
+                seqnames = as.character(x = seqnames(x = tr))[1],
+                start = stop_codon[1],
+                end = stop_codon[2],
+                strand = as.character(x = strand(x = tr))[1]
+            )
+            stop <- makeGRangesFromDataFrame(df = stop)
+            hits <- findOverlaps(query = stop, subject = tr, type = "any")
+            stop_codon <- tr[subjectHits(x = hits)]
+            stop_codon$type <- "stop_codon"
+            start(x = stop_codon)[1] <- start(x = stop)
+            end(x = stop_codon)[1] <- end(x = stop)
+            UTRs <- disjoin(c(tr, CDS))
+            hits <- findOverlaps(query = UTRs, subject = CDS, type = "any")
+            UTRs <- UTRs[-queryHits(x = hits)]
+            five_prime_utr <- UTRs[!UTRs > CDS]
+            if (length(x = five_prime_utr) > 0) {
+                hits <- findOverlaps(
+                    query = five_prime_utr,
+                    subject = tr,
+                    type = "any"
+                )
+                mcols(x = five_prime_utr) <- mcols(x = tr[subjectHits(x = hits)])
+                five_prime_utr$type <- "five_prime_utr"
+            }
+            three_prime_utr <- UTRs[UTRs > CDS]
+            if (length(x = three_prime_utr) > 0) {
+                hits <- findOverlaps(
+                    query = three_prime_utr,
+                    subject = tr,
+                    type = "any"
+                )
+                mcols(x = three_prime_utr) <- mcols(x = tr[subjectHits(x = hits)])
+                three_prime_utr$type <- "three_prime_utr"
+                start(x = three_prime_utr) <- start(x = three_prime_utr) + 3
+            }
+            transcript <- tr[1]
+            mcols(x = transcript) <-
+                mcols(x = transcript)[names(x = mcols(x = transcript)) != "exon_number"]
+            transcript$type <- "transcript"
+            start(x = transcript) <- min(x = start(x = tr))
+            end(x = transcript) <- max(x = end(x = tr))
+            gene <- genes[names(x = genes) == unique(x = tr$gene_id)][[1]]
+            tr <- c(
+                gene,
+                transcript,
+                sort(c(
+                    tr, five_prime_utr, start_codon, CDS_exons,
+                    stop_codon, three_prime_utr
+                ))
+            )
         }
-      }
-      tr <- sort(x=tr)
-      tr$exon_number <- rev(x=tr$exon_number)
-      CDS <- c(max(x=stop_codon) + 1, max(x=start_codon))
-      CDS <- data.frame(seqnames=as.character(x=seqnames(x=tr))[1],
-                        start=CDS[1],
-                        end=CDS[2],
-                        strand=as.character(x=strand(x=tr))[1])
-      CDS <- makeGRangesFromDataFrame(df=CDS)
-      hits <- findOverlaps(query=CDS, subject=tr, type="any")
-      CDS_exons <- tr[subjectHits(x=hits)]
-      CDS_exons$type <- "CDS"
-      start(x=CDS_exons)[1] <- start(x=CDS)
-      end(x=CDS_exons)[length(x=CDS_exons)] <- end(x=CDS)
-      start <- data.frame(seqnames=as.character(x=seqnames(x=tr))[1],
-                          start=start_codon[1],
-                          end=start_codon[2],
-                          strand=as.character(x=strand(x=tr))[1])
-      start <- makeGRangesFromDataFrame(df=start)
-      hits <- findOverlaps(query=start, subject=tr, type="any")
-      start_codon <- tr[subjectHits(x=hits)]
-      start_codon$type <- "start_codon"
-      start(x=start_codon)[1] <- start(x=start)
-      end(x=start_codon)[1] <- end(x=start)
-      stop <- data.frame(seqnames=as.character(x=seqnames(x=tr))[1],
-                         start=stop_codon[1],
-                         end=stop_codon[2],
-                         strand=as.character(x=strand(x=tr))[1])
-      stop <- makeGRangesFromDataFrame(df=stop)
-      hits <- findOverlaps(query=stop, subject=tr, type="any")
-      stop_codon <- tr[subjectHits(x=hits)]
-      stop_codon$type <- "stop_codon"
-      start(x=stop_codon)[1] <- start(x=stop)
-      end(x=stop_codon)[1] <- end(x=stop)
-      UTRs <- disjoin(c(tr, CDS))
-      hits <- findOverlaps(query=UTRs, subject=CDS, type="any")
-      UTRs <- UTRs[-queryHits(x=hits)]
-      five_prime_utr <- UTRs[UTRs > CDS]
-      if (length(x=five_prime_utr) > 0){
-        hits <- findOverlaps(query=five_prime_utr,
-                             subject=tr,
-                             type="any")
-        mcols(x=five_prime_utr) <- mcols(x=tr[subjectHits(x=hits)])
-        five_prime_utr$type <- "five_prime_utr"
-      }
-      three_prime_utr <- UTRs[!UTRs > CDS]
-      if (length(x=three_prime_utr) > 0){
-        hits <- findOverlaps(query=three_prime_utr,
-                             subject=tr,
-                             type="any")
-        mcols(x=three_prime_utr) <- mcols(x=tr[subjectHits(x=hits)])
-        three_prime_utr$type <- "three_prime_utr"
-        end(x=three_prime_utr) <- end(x=three_prime_utr) - 3
-      }
-      transcript <- tr[1]
-      mcols(x=transcript) <-
-        mcols(x=transcript)[names(x=mcols(x=transcript)) != "exon_number"]
-      transcript$type <- "transcript"
-      start(x=transcript) <- min(x=start(x=tr))
-      end(x=transcript) <- max(x=end(x=tr))
-      gene <- genes[names(x=genes) == unique(x=tr$gene_id)][[1]]
-      tr <- c(gene,
-              transcript,
-              sort(c(tr, five_prime_utr, start_codon, CDS_exons,
-                     stop_codon, three_prime_utr), decreasing=TRUE))
+        if (as.character(x = strand(x = tr))[1] == "-") {
+            tr <- sort(x = tr, decreasing = TRUE)
+            if (orf_start > width(x = tr)[1]) {
+                m1 <- min(x = which(x = cumsum(x = width(x = tr)) - orf_start > 0))
+                m2 <- max(x = cumsum(x = width(x = tr)[1:(m1 - 1)]))
+                start_codon <- end(x = tr)[m1] - (orf_start - m2) + 1
+                start_codon <- c(start_codon - 2, start_codon)
+                m1 <- min(x = which(x = cumsum(x = width(x = tr)) - orf_end > 0))
+                m2 <- max(x = cumsum(x = width(x = tr)[1:(m1 - 1)]))
+                stop_codon <- end(x = tr)[m1] - (orf_end - m2) + 1
+                stop_codon <- c(stop_codon, stop_codon + 2)
+            } else {
+                start_codon <- end(x = tr)[1] - orf_start + 1
+                start_codon <- c(start_codon - 2, start_codon)
+                if (length(x = tr) == 1) {
+                    stop_codon <- end(x = tr)[1] - orf_end + 1
+                    stop_codon <- c(stop_codon, stop_codon + 2)
+                } else {
+                    if (tail(x = cumsum(x = width(x = tr)), n = 1) == orf_end) {
+                        stop_codon <- start(x = tail(x = tr, n = 1))
+                        stop_codon <- c(stop_codon, stop_codon + 2)
+                    } else {
+                        m1 <- min(x = which(x = cumsum(x = width(x = tr)) - orf_end > 0))
+                        if (m1 == 1) {
+                            stop_codon <- end(x = tr)[1] - orf_end + 1
+                            stop_codon <- c(stop_codon, stop_codon + 2)
+                        } else {
+                            m2 <- max(x = cumsum(x = width(x = tr)[1:(m1 - 1)]))
+                            stop_codon <- end(x = tr)[m1] - (orf_end - m2) + 1
+                            stop_codon <- c(stop_codon, stop_codon + 2)
+                        }
+                    }
+                }
+            }
+            tr <- sort(x = tr)
+            tr$exon_number <- rev(x = tr$exon_number)
+            CDS <- c(max(x = stop_codon) + 1, max(x = start_codon))
+            CDS <- data.frame(
+                seqnames = as.character(x = seqnames(x = tr))[1],
+                start = CDS[1],
+                end = CDS[2],
+                strand = as.character(x = strand(x = tr))[1]
+            )
+            CDS <- makeGRangesFromDataFrame(df = CDS)
+            hits <- findOverlaps(query = CDS, subject = tr, type = "any")
+            CDS_exons <- tr[subjectHits(x = hits)]
+            CDS_exons$type <- "CDS"
+            start(x = CDS_exons)[1] <- start(x = CDS)
+            end(x = CDS_exons)[length(x = CDS_exons)] <- end(x = CDS)
+            start <- data.frame(
+                seqnames = as.character(x = seqnames(x = tr))[1],
+                start = start_codon[1],
+                end = start_codon[2],
+                strand = as.character(x = strand(x = tr))[1]
+            )
+            start <- makeGRangesFromDataFrame(df = start)
+            hits <- findOverlaps(query = start, subject = tr, type = "any")
+            start_codon <- tr[subjectHits(x = hits)]
+            start_codon$type <- "start_codon"
+            start(x = start_codon)[1] <- start(x = start)
+            end(x = start_codon)[1] <- end(x = start)
+            stop <- data.frame(
+                seqnames = as.character(x = seqnames(x = tr))[1],
+                start = stop_codon[1],
+                end = stop_codon[2],
+                strand = as.character(x = strand(x = tr))[1]
+            )
+            stop <- makeGRangesFromDataFrame(df = stop)
+            hits <- findOverlaps(query = stop, subject = tr, type = "any")
+            stop_codon <- tr[subjectHits(x = hits)]
+            stop_codon$type <- "stop_codon"
+            start(x = stop_codon)[1] <- start(x = stop)
+            end(x = stop_codon)[1] <- end(x = stop)
+            UTRs <- disjoin(c(tr, CDS))
+            hits <- findOverlaps(query = UTRs, subject = CDS, type = "any")
+            UTRs <- UTRs[-queryHits(x = hits)]
+            five_prime_utr <- UTRs[UTRs > CDS]
+            if (length(x = five_prime_utr) > 0) {
+                hits <- findOverlaps(
+                    query = five_prime_utr,
+                    subject = tr,
+                    type = "any"
+                )
+                mcols(x = five_prime_utr) <- mcols(x = tr[subjectHits(x = hits)])
+                five_prime_utr$type <- "five_prime_utr"
+            }
+            three_prime_utr <- UTRs[!UTRs > CDS]
+            if (length(x = three_prime_utr) > 0) {
+                hits <- findOverlaps(
+                    query = three_prime_utr,
+                    subject = tr,
+                    type = "any"
+                )
+                mcols(x = three_prime_utr) <- mcols(x = tr[subjectHits(x = hits)])
+                three_prime_utr$type <- "three_prime_utr"
+                end(x = three_prime_utr) <- end(x = three_prime_utr) - 3
+            }
+            transcript <- tr[1]
+            mcols(x = transcript) <-
+                mcols(x = transcript)[names(x = mcols(x = transcript)) != "exon_number"]
+            transcript$type <- "transcript"
+            start(x = transcript) <- min(x = start(x = tr))
+            end(x = transcript) <- max(x = end(x = tr))
+            gene <- genes[names(x = genes) == unique(x = tr$gene_id)][[1]]
+            tr <- c(
+                gene,
+                transcript,
+                sort(c(
+                    tr, five_prime_utr, start_codon, CDS_exons,
+                    stop_codon, three_prime_utr
+                ), decreasing = TRUE)
+            )
+        }
+        coding[[i]] <- tr
     }
-    coding[[i]] <- tr
-  }
-  coding <- unlist(x=coding)
-  noncoding <- GTFs[GTFs$transcript_biotype == "noncoding", ]
-  noncoding <- split(x=noncoding, f=noncoding$transcript_id)
-  for (i in 1:length(x=noncoding)){
-    tr <- noncoding[[i]]
-    if (as.character(x=strand(x=tr))[1] == "+"){
-      tr <- sort(x=tr)
-      transcript <- tr[1]
-      mcols(x=transcript) <-
-        mcols(x=transcript)[names(x=mcols(x=transcript)) != "exon_number"]
-      transcript$type <- "transcript"
-      start(x=transcript) <- min(x=start(x=tr))
-      end(x=transcript) <- max(x=end(x=tr))
-      gene <- genes[names(x=genes) == unique(x=tr$gene_id)][[1]]
-      tr <- c(gene, transcript, tr)
+    coding <- unlist(x = coding)
+    noncoding <- GTFs[GTFs$transcript_biotype == "noncoding", ]
+    noncoding <- split(x = noncoding, f = noncoding$transcript_id)
+    for (i in 1:length(x = noncoding)) {
+        tr <- noncoding[[i]]
+        if (as.character(x = strand(x = tr))[1] == "+") {
+            tr <- sort(x = tr)
+            transcript <- tr[1]
+            mcols(x = transcript) <-
+                mcols(x = transcript)[names(x = mcols(x = transcript)) != "exon_number"]
+            transcript$type <- "transcript"
+            start(x = transcript) <- min(x = start(x = tr))
+            end(x = transcript) <- max(x = end(x = tr))
+            gene <- genes[names(x = genes) == unique(x = tr$gene_id)][[1]]
+            tr <- c(gene, transcript, tr)
+        }
+        if (as.character(x = strand(x = tr))[1] == "-") {
+            tr <- sort(x = tr)
+            tr$exon_number <- rev(x = tr$exon_number)
+            transcript <- tr[1]
+            mcols(x = transcript) <-
+                mcols(x = transcript)[names(x = mcols(x = transcript)) != "exon_number"]
+            transcript$type <- "transcript"
+            start(x = transcript) <- min(x = start(x = tr))
+            end(x = transcript) <- max(x = end(x = tr))
+            gene <- genes[names(x = genes) == unique(x = tr$gene_id)][[1]]
+            tr <- c(gene, transcript, tr)
+        }
+        noncoding[[i]] <- tr
     }
-    if (as.character(x=strand(x=tr))[1] == "-"){
-      tr <- sort(x=tr)
-      tr$exon_number <- rev(x=tr$exon_number)
-      transcript <- tr[1]
-      mcols(x=transcript) <-
-        mcols(x=transcript)[names(x=mcols(x=transcript)) != "exon_number"]
-      transcript$type <- "transcript"
-      start(x=transcript) <- min(x=start(x=tr))
-      end(x=transcript) <- max(x=end(x=tr))
-      gene <- genes[names(x=genes) == unique(x=tr$gene_id)][[1]]
-      tr <- c(gene, transcript, tr)
+    noncoding <- unlist(x = noncoding)
+    GTFs <- c(coding, noncoding)
+    GTFs <- split(x = GTFs, f = GTFs$gene_id)
+    for (i in 1:length(x = GTFs)) {
+        GTFs[[i]] <- c(
+            GTFs[[i]][1],
+            GTFs[[i]][GTFs[[i]]$type != "gene", ]
+        )
+        names(x = GTFs[[i]]) <- NULL
     }
-    noncoding[[i]] <- tr
-  }
-  noncoding <- unlist(x=noncoding)
-  GTFs <- c(coding, noncoding)
-  GTFs <- split(x=GTFs, f=GTFs$gene_id)
-  for (i in 1:length(x=GTFs)){
-    GTFs[[i]] <- c(GTFs[[i]][1],
-                   GTFs[[i]][GTFs[[i]]$type != "gene", ])
-    names(x=GTFs[[i]]) <- NULL
-  }
-  GTFs <- unlist(x=GTFs)
-  ### Export of the developed annotations as file in format GTF/GFF.
-  export(object=GTFs, con=paste(gtfDir, gtf, sep="/"))
-  ### Export of the developed annotations as SQLite database.
-  TxDb <- makeTxDbFromGFF(file=paste(gtfDir, gtf, sep="/"),
-                          format="auto",
-                          dataSource=src,
-                          organism=organism)
-  saveDb(x=TxDb, file=paste(gtfDir, sqlite, sep="/"))
+    GTFs <- unlist(x = GTFs)
+    ### Export of the developed annotations as file in format GTF/GFF.
+    export(object = GTFs, con = paste(gtfDir, gtf, sep = "/"))
+    ### Export of the developed annotations as SQLite database.
+    TxDb <- makeTxDbFromGFF(
+        file = paste(gtfDir, gtf, sep = "/"),
+        format = "auto",
+        dataSource = src,
+        organism = organism
+    )
+    saveDb(x = TxDb, file = paste(gtfDir, sqlite, sep = "/"))
 }
 
 #' Extract of splice site sequences from a reference genome
@@ -639,48 +742,58 @@ developAnnotations <- function(gtfDir=NULL,
 #' @return object of class DNAStringSet containing splice site sequences.
 #' @author Vasily V. Grinev, Nadzeya A. Boyeva.
 #' @examples
-#' res <- extractSeqSSs(x="EEJs.Kasumi_1.RR_KD.PMC_BSU.fiveSSs.txt",
-#'                      genome="BSgenome.Hsapiens.UCSC.hg38",
-#'                      workDir="D:/Vasily Grinev")
+#' res <- extractSeqSSs(
+#'     x = "EEJs.Kasumi_1.RR_KD.PMC_BSU.fiveSSs.txt",
+#'     genome = "BSgenome.Hsapiens.UCSC.hg38",
+#'     workDir = "D:/Vasily Grinev"
+#' )
 #' @export
 #' @importFrom BSgenome getSeq
 #' @importFrom GenomicRanges makeGRangesFromDataFrame seqnames start end strand
 #' @importFrom methods is
 extractSeqSSs <- function(x,
-                          genome="BSgenome.Hsapiens.UCSC.hg38",
-                          workDir=NULL){
-  ### Setting the working directory.
-  if (is.null(x=workDir)){
-    workDir <- getwd()
-  }
-  ### Loading of the genomic coordinates of splice sites as an object of
-  #   class GRanges.
-  if (is.object(x=x)){
-    coordsSSs <- x
-  }else{
-    frt <- tools::file_ext(x=x)
-    if (!frt %in% "txt"){
-      stop("Invalid file format")
+    genome = "BSgenome.Hsapiens.UCSC.hg38",
+    workDir = NULL) {
+    ### Setting the working directory.
+    if (is.null(x = workDir)) {
+        workDir <- getwd()
     }
-    coordsSSs <- read.table(file=paste(workDir, x, sep="/"),
-                            sep="\t",
-                            header=TRUE,
-                            quote="\"",
-                            as.is=TRUE)
-    coordsSSs <- makeGRangesFromDataFrame(df=coordsSSs,
-                                          keep.extra.columns=TRUE)
-  }
-  ### Extraction of splice site sequences from the reference genome.
-  seqSSs <- getSeq(x=get(x=genome), names=coordsSSs)
-  names(x=seqSSs) <- paste(paste(seqnames(x=coordsSSs),
-                                 paste(start(x=coordsSSs),
-                                       end(x=coordsSSs),
-                                       sep="-"),
-                                 sep=":"),
-                           strand(x=coordsSSs),
-                           sep="_str")
-  ### Returning the final object.
-  return(seqSSs)
+    ### Loading of the genomic coordinates of splice sites as an object of
+    #   class GRanges.
+    if (is.object(x = x)) {
+        coordsSSs <- x
+    } else {
+        frt <- tools::file_ext(x = x)
+        if (!frt %in% "txt") {
+            stop("Invalid file format")
+        }
+        coordsSSs <- read.table(
+            file = paste(workDir, x, sep = "/"),
+            sep = "\t",
+            header = TRUE,
+            quote = "\"",
+            as.is = TRUE
+        )
+        coordsSSs <- makeGRangesFromDataFrame(
+            df = coordsSSs,
+            keep.extra.columns = TRUE
+        )
+    }
+    ### Extraction of splice site sequences from the reference genome.
+    seqSSs <- getSeq(x = get(x = genome), names = coordsSSs)
+    names(x = seqSSs) <- paste(
+        paste(seqnames(x = coordsSSs),
+            paste(start(x = coordsSSs),
+                end(x = coordsSSs),
+                sep = "-"
+            ),
+            sep = ":"
+        ),
+        strand(x = coordsSSs),
+        sep = "_str"
+    )
+    ### Returning the final object.
+    return(seqSSs)
 }
 
 #' Extract genomic coordinates of splice sites from exon-exon junctions
@@ -712,63 +825,69 @@ extractSeqSSs <- function(x,
 #'     coordinates of 5' and 3' splice sites.
 #' @author Vasily V. Grinev, Nadzeya A. Boyeva.
 #' @examples
-#' res <- extractSSsCoordsEEJs(x="EEJs.Kasumi_1.RR_KD.PMC_BSU.txt",
-#'                             eejDir="Files_EEJs",
-#'                             workDir="D:/Vasily Grinev")
+#' res <- extractSSsCoordsEEJs(
+#'     x = "EEJs.Kasumi_1.RR_KD.PMC_BSU.txt",
+#'     eejDir = "Files_EEJs",
+#'     workDir = "D:/Vasily Grinev"
+#' )
 #' @export
 #' @importFrom GenomicRanges makeGRangesFromDataFrame start end strand start<- end<-
 #' @importFrom methods is
-extractSSsCoordsEEJs <- function(x, eejDir=NULL, thr=5, workDir=NULL){
-  ### Setting the working directory.
-  if (is.null(x=workDir)){
-    workDir <- getwd()
-  }
-  ### Full path to the file.
-  if (is.null(x=eejDir)){
-    path <- workDir
-  }else{
-    path <- paste(workDir, eejDir, sep="/")
-  }
-  ### Retrieving and validation of the file extension.
-  frt <- tools::file_ext(x=x)
-  if (!frt %in% "txt"){
-    stop("Invalid file format")
-  }
-  ### Loading of exon-exon junctions as an object of class GRanges.
-  EEJs <- read.table(file=paste(path, x, sep="/"),
-                     sep="\t",
-                     header=TRUE,
-                     quote="\"",
-                     as.is=TRUE)
-  if (ncol(x=EEJs) > 7 & !is.null(x=thr)){
-    EEJs <- EEJs[rowSums(x=EEJs[, -1:-7] >= thr) >= 1, ]
-  }
-  rownames(x=EEJs) <- NULL
-  EEJs <- makeGRangesFromDataFrame(df=EEJs,
-                                   keep.extra.columns=TRUE)
-  ### Converting of genomic coordinates of exon-exon junctions
-  #   in genomic coordinates of splice sites.
-  fiveSSs <- EEJs
-  start(x=fiveSSs[strand(x=fiveSSs) == "+", ]) <-
-    start(x=fiveSSs[strand(x=fiveSSs) == "+", ]) - 2
-  end(x=fiveSSs[strand(x=fiveSSs) == "+", ]) <-
-    start(x=fiveSSs[strand(x=fiveSSs) == "+", ]) + 8
-  start(x=fiveSSs[strand(x=fiveSSs) == "-", ]) <-
-    end(x=fiveSSs[strand(x=fiveSSs) == "-", ]) - 6
-  end(x=fiveSSs[strand(x=fiveSSs) == "-", ]) <-
-    start(x=fiveSSs[strand(x=fiveSSs) == "-", ]) + 8
-  threeSSs <- EEJs
-  start(x=threeSSs[strand(x=threeSSs) == "+", ]) <-
-    end(x=threeSSs[strand(x=threeSSs) == "+", ]) - 20
-  end(x=threeSSs[strand(x=threeSSs) == "+", ]) <-
-    start(x=threeSSs[strand(x=threeSSs) == "+", ]) + 22
-  start(x=threeSSs[strand(x=threeSSs) == "-", ]) <-
-    start(x=threeSSs[strand(x=threeSSs) == "-", ]) - 2
-  end(x=threeSSs[strand(x=threeSSs) == "-", ]) <-
-    start(x=threeSSs[strand(x=threeSSs) == "-", ]) + 22
-  SSs <- list(fiveSSs=fiveSSs, threeSSs=threeSSs)
-  ### Returning the final object.
-  return(SSs)
+extractSSsCoordsEEJs <- function(x, eejDir = NULL, thr = 5, workDir = NULL) {
+    ### Setting the working directory.
+    if (is.null(x = workDir)) {
+        workDir <- getwd()
+    }
+    ### Full path to the file.
+    if (is.null(x = eejDir)) {
+        path <- workDir
+    } else {
+        path <- paste(workDir, eejDir, sep = "/")
+    }
+    ### Retrieving and validation of the file extension.
+    frt <- tools::file_ext(x = x)
+    if (!frt %in% "txt") {
+        stop("Invalid file format")
+    }
+    ### Loading of exon-exon junctions as an object of class GRanges.
+    EEJs <- read.table(
+        file = paste(path, x, sep = "/"),
+        sep = "\t",
+        header = TRUE,
+        quote = "\"",
+        as.is = TRUE
+    )
+    if (ncol(x = EEJs) > 7 & !is.null(x = thr)) {
+        EEJs <- EEJs[rowSums(x = EEJs[, -1:-7] >= thr) >= 1, ]
+    }
+    rownames(x = EEJs) <- NULL
+    EEJs <- makeGRangesFromDataFrame(
+        df = EEJs,
+        keep.extra.columns = TRUE
+    )
+    ### Converting of genomic coordinates of exon-exon junctions
+    #   in genomic coordinates of splice sites.
+    fiveSSs <- EEJs
+    start(x = fiveSSs[strand(x = fiveSSs) == "+", ]) <-
+        start(x = fiveSSs[strand(x = fiveSSs) == "+", ]) - 2
+    end(x = fiveSSs[strand(x = fiveSSs) == "+", ]) <-
+        start(x = fiveSSs[strand(x = fiveSSs) == "+", ]) + 8
+    start(x = fiveSSs[strand(x = fiveSSs) == "-", ]) <-
+        end(x = fiveSSs[strand(x = fiveSSs) == "-", ]) - 6
+    end(x = fiveSSs[strand(x = fiveSSs) == "-", ]) <-
+        start(x = fiveSSs[strand(x = fiveSSs) == "-", ]) + 8
+    threeSSs <- EEJs
+    start(x = threeSSs[strand(x = threeSSs) == "+", ]) <-
+        end(x = threeSSs[strand(x = threeSSs) == "+", ]) - 20
+    end(x = threeSSs[strand(x = threeSSs) == "+", ]) <-
+        start(x = threeSSs[strand(x = threeSSs) == "+", ]) + 22
+    start(x = threeSSs[strand(x = threeSSs) == "-", ]) <-
+        start(x = threeSSs[strand(x = threeSSs) == "-", ]) - 2
+    end(x = threeSSs[strand(x = threeSSs) == "-", ]) <-
+        start(x = threeSSs[strand(x = threeSSs) == "-", ]) + 22
+    SSs <- list(fiveSSs = fiveSSs, threeSSs = threeSSs)
+    ### Returning the final object.
+    return(SSs)
 }
 
 
@@ -788,9 +907,11 @@ extractSSsCoordsEEJs <- function(x, eejDir=NULL, thr=5, workDir=NULL){
 #'     coordinates of 5' and 3' splice sites.
 #' @author Vasily V. Grinev, Nadzeya A. Boyeva.
 #' @examples
-#' res <- extractSSsCoordsGTF(x="Ensembl_GRCh38.p14_release.114.gtf",
-#'                            gtfDir="Files_GTF",
-#'                            workDir="D:/Vasily Grinev")
+#' res <- extractSSsCoordsGTF(
+#'     x = "Ensembl_GRCh38.p14_release.114.gtf",
+#'     gtfDir = "Files_GTF",
+#'     workDir = "D:/Vasily Grinev"
+#' )
 #' @export
 #' @importFrom rtracklayer import
 #' @importFrom GenomicRanges makeGRangesListFromDataFrame makeGRangesFromDataFrame
@@ -798,84 +919,90 @@ extractSSsCoordsEEJs <- function(x, eejDir=NULL, thr=5, workDir=NULL){
 #' @importFrom IRanges setdiff
 #' @importFrom S4Vectors colnames
 #' @importFrom methods as
-extractSSsCoordsGTF <- function(x, gtfDir=NULL, workDir=NULL){
-  ### Setting the working directory.
-  if (is.null(x=workDir)){
-    workDir <- getwd()
-  }
-  ### Full path to the file.
-  if (is.null(x=gtfDir)){
-    path <- workDir
-  }else{
-    path <- paste(workDir, gtfDir, sep="/")
-  }
-  ### Retrieving and validation of the file extension.
-  frt <- tools::file_ext(x=x)
-  if (!frt %in% c("gtf", "gff3", "gz")){
-    stop("Invalid file format")
-  }
-  ### Loading of exon-exon junctions as an object of class GRanges.
-  EEJs <- import(con=paste(path, x, sep="/"))
-  EEJs <- EEJs[gsub(pattern=".+exon",
-                    replacement="exon",
-                    x=EEJs$type) == "exon", ]
-  if ("transcript_id" %in% colnames(x=elementMetadata(x=EEJs)) == "TRUE"){
-    splitField <- "transcript_id"
-  }else{
-    splitField <- "Name"
-  }
-  EEJs <- makeGRangesListFromDataFrame(df=as.data.frame(x=EEJs),
-                                       split.field=splitField,
-                                       keep.extra.columns=FALSE)
-  EEJs <- unlist(x=setdiff(x=range(x=EEJs), EEJs))
-  start(x=EEJs) <- start(x=EEJs) - 1
-  end(x=EEJs) <- end(x=EEJs) + 1
-  EEJs$transcript_id <- names(x=EEJs)
-  names(x=EEJs) <- NULL
-  EEJs <- as.data.frame(EEJs, stringsAsFactors=FALSE)
-  EEJs$seqnames <- as.character(x=EEJs$seqnames)
-  if (length(x=unique(x=nchar(EEJs$seqnames) == 1)) == 2){
-    EEJs$seqnames <- paste("chr", EEJs$seqnames, sep="")
-    if ("chrMT" %in% EEJs$seqnames == "TRUE"){
-      EEJs[EEJs$seqnames == "chrMT", ]$seqnames <- "chrM"
+extractSSsCoordsGTF <- function(x, gtfDir = NULL, workDir = NULL) {
+    ### Setting the working directory.
+    if (is.null(x = workDir)) {
+        workDir <- getwd()
     }
-    EEJs <- EEJs[EEJs$seqnames %in%
-                   c(paste("chr", c(1:22, "X", "Y", "M"), sep="")), ]
-  }else{
-    if ("chrMT" %in% EEJs$seqnames == "TRUE"){
-      EEJs[EEJs$seqnames == "chrMT", ]$seqnames <- "chrM"
+    ### Full path to the file.
+    if (is.null(x = gtfDir)) {
+        path <- workDir
+    } else {
+        path <- paste(workDir, gtfDir, sep = "/")
     }
-    EEJs <- EEJs[EEJs$seqnames %in%
-                   c(paste("chr", c(1:22, "X", "Y", "M"), sep="")), ]
-  }
-  EEJs$strand <- as.character(x=EEJs$strand)
-  EEJs <- EEJs[!duplicated(x=EEJs), ]
-  rownames(x=EEJs) <- NULL
-  EEJs <- makeGRangesFromDataFrame(df=EEJs,
-                                   keep.extra.columns=TRUE)
-  ### Converting of genomic coordinates of exon-exon junctions
-  #   in genomic coordinates of splice sites.
-  fiveSSs <- EEJs
-  start(x=fiveSSs[strand(x=fiveSSs) == "+", ]) <-
-    start(x=fiveSSs[strand(x=fiveSSs) == "+", ]) - 2
-  end(x=fiveSSs[strand(x=fiveSSs) == "+", ]) <-
-    start(x=fiveSSs[strand(x=fiveSSs) == "+", ]) + 8
-  start(x=fiveSSs[strand(x=fiveSSs) == "-", ]) <-
-    end(x=fiveSSs[strand(x=fiveSSs) == "-", ]) - 6
-  end(x=fiveSSs[strand(x=fiveSSs) == "-", ]) <-
-    start(x=fiveSSs[strand(x=fiveSSs) == "-", ]) + 8
-  threeSSs <- EEJs
-  start(x=threeSSs[strand(x=threeSSs) == "+", ]) <-
-    end(x=threeSSs[strand(x=threeSSs) == "+", ]) - 20
-  end(x=threeSSs[strand(x=threeSSs) == "+", ]) <-
-    start(x=threeSSs[strand(x=threeSSs) == "+", ]) + 22
-  start(x=threeSSs[strand(x=threeSSs) == "-", ]) <-
-    start(x=threeSSs[strand(x=threeSSs) == "-", ]) - 2
-  end(x=threeSSs[strand(x=threeSSs) == "-", ]) <-
-    start(x=threeSSs[strand(x=threeSSs) == "-", ]) + 22
-  SSs <- list(fiveSSs=sort(x=fiveSSs), threeSSs=sort(x=threeSSs))
-  ### Returning the final object.
-  return(SSs)
+    ### Retrieving and validation of the file extension.
+    frt <- tools::file_ext(x = x)
+    if (!frt %in% c("gtf", "gff3", "gz")) {
+        stop("Invalid file format")
+    }
+    ### Loading of exon-exon junctions as an object of class GRanges.
+    EEJs <- import(con = paste(path, x, sep = "/"))
+    EEJs <- EEJs[gsub(
+        pattern = ".+exon",
+        replacement = "exon",
+        x = EEJs$type
+    ) == "exon", ]
+    if ("transcript_id" %in% colnames(x = elementMetadata(x = EEJs)) == "TRUE") {
+        splitField <- "transcript_id"
+    } else {
+        splitField <- "Name"
+    }
+    EEJs <- makeGRangesListFromDataFrame(
+        df = as.data.frame(x = EEJs),
+        split.field = splitField,
+        keep.extra.columns = FALSE
+    )
+    EEJs <- unlist(x = setdiff(x = range(x = EEJs), EEJs))
+    start(x = EEJs) <- start(x = EEJs) - 1
+    end(x = EEJs) <- end(x = EEJs) + 1
+    EEJs$transcript_id <- names(x = EEJs)
+    names(x = EEJs) <- NULL
+    EEJs <- as.data.frame(EEJs, stringsAsFactors = FALSE)
+    EEJs$seqnames <- as.character(x = EEJs$seqnames)
+    if (length(x = unique(x = nchar(EEJs$seqnames) == 1)) == 2) {
+        EEJs$seqnames <- paste("chr", EEJs$seqnames, sep = "")
+        if ("chrMT" %in% EEJs$seqnames == "TRUE") {
+            EEJs[EEJs$seqnames == "chrMT", ]$seqnames <- "chrM"
+        }
+        EEJs <- EEJs[EEJs$seqnames %in%
+            c(paste("chr", c(1:22, "X", "Y", "M"), sep = "")), ]
+    } else {
+        if ("chrMT" %in% EEJs$seqnames == "TRUE") {
+            EEJs[EEJs$seqnames == "chrMT", ]$seqnames <- "chrM"
+        }
+        EEJs <- EEJs[EEJs$seqnames %in%
+            c(paste("chr", c(1:22, "X", "Y", "M"), sep = "")), ]
+    }
+    EEJs$strand <- as.character(x = EEJs$strand)
+    EEJs <- EEJs[!duplicated(x = EEJs), ]
+    rownames(x = EEJs) <- NULL
+    EEJs <- makeGRangesFromDataFrame(
+        df = EEJs,
+        keep.extra.columns = TRUE
+    )
+    ### Converting of genomic coordinates of exon-exon junctions
+    #   in genomic coordinates of splice sites.
+    fiveSSs <- EEJs
+    start(x = fiveSSs[strand(x = fiveSSs) == "+", ]) <-
+        start(x = fiveSSs[strand(x = fiveSSs) == "+", ]) - 2
+    end(x = fiveSSs[strand(x = fiveSSs) == "+", ]) <-
+        start(x = fiveSSs[strand(x = fiveSSs) == "+", ]) + 8
+    start(x = fiveSSs[strand(x = fiveSSs) == "-", ]) <-
+        end(x = fiveSSs[strand(x = fiveSSs) == "-", ]) - 6
+    end(x = fiveSSs[strand(x = fiveSSs) == "-", ]) <-
+        start(x = fiveSSs[strand(x = fiveSSs) == "-", ]) + 8
+    threeSSs <- EEJs
+    start(x = threeSSs[strand(x = threeSSs) == "+", ]) <-
+        end(x = threeSSs[strand(x = threeSSs) == "+", ]) - 20
+    end(x = threeSSs[strand(x = threeSSs) == "+", ]) <-
+        start(x = threeSSs[strand(x = threeSSs) == "+", ]) + 22
+    start(x = threeSSs[strand(x = threeSSs) == "-", ]) <-
+        start(x = threeSSs[strand(x = threeSSs) == "-", ]) - 2
+    end(x = threeSSs[strand(x = threeSSs) == "-", ]) <-
+        start(x = threeSSs[strand(x = threeSSs) == "-", ]) + 22
+    SSs <- list(fiveSSs = sort(x = fiveSSs), threeSSs = sort(x = threeSSs))
+    ### Returning the final object.
+    return(SSs)
 }
 
 
@@ -905,15 +1032,17 @@ extractSSsCoordsGTF <- function(x, gtfDir=NULL, workDir=NULL){
 #'     coding changes for single nucleotide variants.
 #' @author Vasily V. Grinev.
 #' @examples
-#' vcfFile="test_seq5, fisherCalleR, SNVs.vcf"
-#' proteins="Ensembl_GRCh38.p14_release.114_proteins.txt"
-#' intrSNVtoAAs <- introduceSNVtoAAs(vcfDir="Files_VCF",
-#'                                   vcfFile=vcfFile,
-#'                                   OrgDb="org.Hs.eg.db",
-#'                                   TxDb="TxDb.Hsapiens.UCSC.hg38.knownGene",
-#'                                   genome="BSgenome.Hsapiens.UCSC.hg38",
-#'                                   proteins=proteins,
-#'                                   workDir="D:/Vasily Grinev/SNVs")
+#' vcfFile <- "test_seq5, fisherCalleR, SNVs.vcf"
+#' proteins <- "Ensembl_GRCh38.p14_release.114_proteins.txt"
+#' intrSNVtoAAs <- introduceSNVtoAAs(
+#'     vcfDir = "Files_VCF",
+#'     vcfFile = vcfFile,
+#'     OrgDb = "org.Hs.eg.db",
+#'     TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
+#'     genome = "BSgenome.Hsapiens.UCSC.hg38",
+#'     proteins = proteins,
+#'     workDir = "D:/Vasily Grinev/SNVs"
+#' )
 #' @export
 #' @importFrom VariantAnnotation readVcf alt alt<- predictCoding
 #' @importFrom SparseArray rowRanges
@@ -921,102 +1050,108 @@ extractSSsCoordsGTF <- function(x, gtfDir=NULL, workDir=NULL){
 #' @importFrom GenomicRanges start seqnames
 #' @importFrom BiocGenerics "%in%" match
 #' @importFrom AnnotationDbi mapIds
-introduceSNVtoAAs <- function(vcfDir=NULL,
-                              vcfFile,
-                              OrgDb="org.Hs.eg.db",
-                              TxDb="TxDb.Hsapiens.UCSC.hg38.knownGene",
-                              genome="BSgenome.Hsapiens.UCSC.hg38",
-                              proteins,
-                              workDir=NULL){
-  ### Checking of required packages.
-  for (pkg in c(genome, OrgDb, TxDb)){
-    if (!requireNamespace(pkg, quietly=TRUE)){
-      stop("Package '", pkg, "' is required but not installed. ",
-           "Install it with BiocManager::install('", pkg, "').")
+introduceSNVtoAAs <- function(vcfDir = NULL,
+    vcfFile,
+    OrgDb = "org.Hs.eg.db",
+    TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
+    genome = "BSgenome.Hsapiens.UCSC.hg38",
+    proteins,
+    workDir = NULL) {
+    ### Checking of required packages.
+    for (pkg in c(genome, OrgDb, TxDb)) {
+        if (!requireNamespace(pkg, quietly = TRUE)) {
+            stop(
+                "Package '", pkg, "' is required but not installed. ",
+                "Install it with BiocManager::install('", pkg, "')."
+            )
+        }
     }
-  }
-  ### Setting the working directory.
-  if (is.null(x=workDir)){
-    workDir <- getwd()
-  }
-  ### Setting the VCF directory.
-  if (is.null(x=vcfDir)){
-    vcfDir <- workDir
-  }else{
-    vcfDir <- paste(workDir, vcfDir, sep="/")
-  }
-  ### Loading of the single nucleotide variations as an object of class
-  #   GRanges.
-  vcf <- readVcf(file=paste(vcfDir, vcfFile, sep="/"))
-  ### Filter to canonical chromosomes to avoid out-of-bound ranges
-  #   warnings from predictCoding().
-  canonical <- paste0("chr", c(1:22, "X", "Y", "M"))
-  vcf <- vcf[seqnames(rowRanges(vcf)) %in% canonical]
-  ### Handle multi-allelic ALT.
-  ALT <- as.character(x=unlist(x=rowRanges(x=vcf)$ALT))
-  vcf <- vcf[rep(x=seq_along(x=vcf), times=lengths(x=rowRanges(x=vcf)$ALT)), ]
-  alt(x=vcf) <- DNAStringSetList(strsplit(x=ALT, split=""))
-  ### Loading gene models as an object of class TxDb.
-  txDb <- get(x=TxDb, envir=asNamespace(TxDb))
-  ### Loading genome wide annotations as an object of class OrgDb.
-  orgDb <- get(x=OrgDb, envir=asNamespace(OrgDb))
-  ### Loading of the protein annotations as an object of class data frame.
-  pr <- read.table(file=paste(workDir, proteins, sep="/"),
-                   sep="\t",
-                   header=TRUE,
-                   quote="\"",
-                   as.is=TRUE)
-  rownames(x=pr) <- pr[, 1]
-  ### Prediction of amino acid coding changes for single nucleotide variants.
-  AAs <- predictCoding(query=vcf,
-                       subject=txDb,
-                       seqSource=get(x=genome, envir=asNamespace(genome)))
-  AAs <- AAs[AAs$CONSEQUENCE == "nonsynonymous", ]
-  ### Annotation.
-  AAs$snv_id <- names(x=AAs)
-  AAs$snv_ref <- as.character(x=AAs$REF)
-  AAs$snv_alt <- as.character(x=unlist(x=AAs$ALT))
-  AAs$snv_qual <- AAs$QUAL
-  AAs$Ensembl_gene_IDs <- mapIds(
-    x=orgDb,
-    keys=AAs$GENEID,
-    column="ENSEMBL",
-    keytype="ENTREZID",
-    multiVals="first"
-  )
-  AAs$Entrez_gene_IDs <- AAs$GENEID
-  AAs$HUGO_gene_symbols <- mapIds(
-    x=orgDb,
-    keys=AAs$GENEID,
-    column="SYMBOL",
-    keytype="ENTREZID",
-    multiVals="first"
-  )
-  AAs$Ensembl_tx_names <- mapIds(
-    x=txDb,
-    keys=AAs$TXID,
-    column="TXNAME",
-    keytype="TXID",
-    multiVals="first"
-  )
-  AAs$Ensembl_tx_names <- substr(x=AAs$Ensembl_tx_names, start=1, stop=15)
-  AAs$SNV_CDS_loc <- start(x=AAs$CDSLOC)
-  AAs$ref_codon <- as.vector(x=as.character(x=AAs$REFCODON))
-  AAs$alt_codon <- as.vector(x=as.character(x=AAs$VARCODON))
-  AAs$protein_id <- ""
-  AAs$pdb_id <- ""
-  AAs$uniprot.swissprot_id <- ""
-  AAs$uniprot.trembl_id <- ""
-  AAs$SNV_prot_loc <- as.vector(x=unlist(x=AAs$PROTEINLOC))
-  AAs$ref_aa <- as.vector(x=as.character(x=AAs$REFAA))
-  AAs$alt_aa <- as.vector(x=as.character(x=AAs$VARAA))
-  AAs <- data.frame(AAs)[, c(25:28, 1:5, 29:42)]
-  AAs$seqnames <- as.character(x=AAs$seqnames)
-  AAs$strand <- as.character(x=AAs$strand)
-  idx <- AAs[, 13] %in% pr[, 1]
-  AAs[idx, 17:20] <- pr[AAs[idx, 13], 3:6]
-  ### Returning the final object.
-  return(AAs)
+    ### Setting the working directory.
+    if (is.null(x = workDir)) {
+        workDir <- getwd()
+    }
+    ### Setting the VCF directory.
+    if (is.null(x = vcfDir)) {
+        vcfDir <- workDir
+    } else {
+        vcfDir <- paste(workDir, vcfDir, sep = "/")
+    }
+    ### Loading of the single nucleotide variations as an object of class
+    #   GRanges.
+    vcf <- readVcf(file = paste(vcfDir, vcfFile, sep = "/"))
+    ### Filter to canonical chromosomes to avoid out-of-bound ranges
+    #   warnings from predictCoding().
+    canonical <- paste0("chr", c(1:22, "X", "Y", "M"))
+    vcf <- vcf[seqnames(rowRanges(vcf)) %in% canonical]
+    ### Handle multi-allelic ALT.
+    ALT <- as.character(x = unlist(x = rowRanges(x = vcf)$ALT))
+    vcf <- vcf[rep(x = seq_along(x = vcf), times = lengths(x = rowRanges(x = vcf)$ALT)), ]
+    alt(x = vcf) <- DNAStringSetList(strsplit(x = ALT, split = ""))
+    ### Loading gene models as an object of class TxDb.
+    txDb <- get(x = TxDb, envir = asNamespace(TxDb))
+    ### Loading genome wide annotations as an object of class OrgDb.
+    orgDb <- get(x = OrgDb, envir = asNamespace(OrgDb))
+    ### Loading of the protein annotations as an object of class data frame.
+    pr <- read.table(
+        file = paste(workDir, proteins, sep = "/"),
+        sep = "\t",
+        header = TRUE,
+        quote = "\"",
+        as.is = TRUE
+    )
+    rownames(x = pr) <- pr[, 1]
+    ### Prediction of amino acid coding changes for single nucleotide variants.
+    AAs <- predictCoding(
+        query = vcf,
+        subject = txDb,
+        seqSource = get(x = genome, envir = asNamespace(genome))
+    )
+    AAs <- AAs[AAs$CONSEQUENCE == "nonsynonymous", ]
+    ### Annotation.
+    AAs$snv_id <- names(x = AAs)
+    AAs$snv_ref <- as.character(x = AAs$REF)
+    AAs$snv_alt <- as.character(x = unlist(x = AAs$ALT))
+    AAs$snv_qual <- AAs$QUAL
+    AAs$Ensembl_gene_IDs <- mapIds(
+        x = orgDb,
+        keys = AAs$GENEID,
+        column = "ENSEMBL",
+        keytype = "ENTREZID",
+        multiVals = "first"
+    )
+    AAs$Entrez_gene_IDs <- AAs$GENEID
+    AAs$HUGO_gene_symbols <- mapIds(
+        x = orgDb,
+        keys = AAs$GENEID,
+        column = "SYMBOL",
+        keytype = "ENTREZID",
+        multiVals = "first"
+    )
+    AAs$Ensembl_tx_names <- mapIds(
+        x = txDb,
+        keys = AAs$TXID,
+        column = "TXNAME",
+        keytype = "TXID",
+        multiVals = "first"
+    )
+    AAs$Ensembl_tx_names <- substr(x = AAs$Ensembl_tx_names, start = 1, stop = 15)
+    AAs$SNV_CDS_loc <- start(x = AAs$CDSLOC)
+    AAs$ref_codon <- as.vector(x = as.character(x = AAs$REFCODON))
+    AAs$alt_codon <- as.vector(x = as.character(x = AAs$VARCODON))
+    AAs$protein_id <- ""
+    AAs$pdb_id <- ""
+    AAs$uniprot.swissprot_id <- ""
+    AAs$uniprot.trembl_id <- ""
+    AAs$SNV_prot_loc <- as.vector(x = unlist(x = AAs$PROTEINLOC))
+    AAs$ref_aa <- as.vector(x = as.character(x = AAs$REFAA))
+    AAs$alt_aa <- as.vector(x = as.character(x = AAs$VARAA))
+    AAs <- data.frame(AAs)[, c(25:28, 1:5, 29:42)]
+    AAs$seqnames <- as.character(x = AAs$seqnames)
+    AAs$strand <- as.character(x = AAs$strand)
+    idx <- AAs[, 13] %in% pr[, 1]
+    AAs[idx, 17:20] <- pr[AAs[idx, 13], 3:6]
+    ### Returning the final object.
+    return(AAs)
 }
 
 #' Introduce single nucleotide variant(-s) to splice site(-s)
@@ -1047,11 +1182,13 @@ introduceSNVtoAAs <- function(vcfDir=NULL,
 #' @examples
 #' coords <- "EEJs.Kasumi_1.RR_KD.PMC_BSU.fiveSSs.txt"
 #' vcf <- "test_seq4, fisherCalleR, SNVs.filtered.vcf"
-#' intrSNVtoSSs <- introduceSNVtoSSs(x=coords,
-#'                                   vcfDir="Files_VCF",
-#'                                   vcfFile=vcf,
-#'                                   genome="BSgenome.Hsapiens.UCSC.hg38",
-#'                                   workDir="D:/Vasily Grinev")
+#' intrSNVtoSSs <- introduceSNVtoSSs(
+#'     x = coords,
+#'     vcfDir = "Files_VCF",
+#'     vcfFile = vcf,
+#'     genome = "BSgenome.Hsapiens.UCSC.hg38",
+#'     workDir = "D:/Vasily Grinev"
+#' )
 #' @export
 #' @importFrom VariantAnnotation readVcf
 #' @importFrom SparseArray rowRanges
@@ -1060,87 +1197,105 @@ introduceSNVtoAAs <- function(vcfDir=NULL,
 #' @importFrom GenomicRanges start end strand seqnames
 #' @importFrom Biostrings DNAStringSet reverseComplement
 introduceSNVtoSSs <- function(x,
-                              vcfDir=NULL,
-                              vcfFile,
-                              genome="BSgenome.Hsapiens.UCSC.hg38",
-                              workDir=NULL){
-  ### Setting the working directory.
-  if (is.null(x=workDir)){
-    workDir <- getwd()
-  }
-  ### Setting the VCF directory.
-  if (is.null(x=vcfDir)){
-    vcfDir <- workDir
-  }else{
-    vcfDir <- paste(workDir, vcfDir, sep="/")
-  }
-  ### Loading of the single nucleotide variations as an object of class
-  #   GRanges.
-  vcf <- rowRanges(x=readVcf(file=paste(vcfDir, vcfFile, sep="/")))[, "ALT"]
-  ALT <- as.character(x=unlist(x=vcf$ALT))
-  vcf <- vcf[rep(x=seq_along(x=vcf), times=lengths(x=vcf$ALT)), ]
-  vcf$ALT <- ALT
-  ### Loading of the genomic coordinates of splice sites as an object of
-  #   class GRanges.
-  if (is.object(x=x)){
-    spl.sites <- x
-  }else{
-    frt <- tools::file_ext(x=x)
-    if (!frt %in% "txt"){
-      stop("Invalid file format")
+    vcfDir = NULL,
+    vcfFile,
+    genome = "BSgenome.Hsapiens.UCSC.hg38",
+    workDir = NULL) {
+    ### Setting the working directory.
+    if (is.null(x = workDir)) {
+        workDir <- getwd()
     }
-    spl.sites <- read.table(file=paste(workDir, x, sep="/"),
-                            sep="\t",
-                            header=TRUE,
-                            quote="\"",
-                            as.is=TRUE)
-    spl.sites <- makeGRangesFromDataFrame(df=spl.sites,
-                                          keep.extra.columns=TRUE)
-  }
-  ### Find overlaps between splice sites and SNVs.
-  hits <- findOverlaps(query=spl.sites,
-                       subject=vcf,
-                       type="any",
-                       ignore.strand=TRUE)
-  if (length(x=hits) > 0){
-    spl.sites <- spl.sites[queryHits(x=hits)]
-    vcf <- vcf[subjectHits(x=hits)]
-    ### Extraction of reference sequences of splice sites to be corrected.
-    spl.sites$seq_original <- extractSeqSSs(x=spl.sites,
-                                            genome=genome,
-                                            workDir=workDir)
-    spl.sites$seq_original <- as.character(x=spl.sites$seq_original)
-    spl.sites$seq_corrected <- spl.sites$seq_original
-    rev_compl <- as.character(x=strand(x=spl.sites)) == "-"
-    spl.sites$seq_corrected[rev_compl] <-
-      reverseComplement(x=DNAStringSet(x=spl.sites$seq_corrected[rev_compl]))
-    ### Correction of the splice site sequences.
-    if (length(x=spl.sites) != length(x=vcf)){
-      stop("The list of splice sites to be corrected and the list of ",
-           "relevant SNVs differ in length.")
+    ### Setting the VCF directory.
+    if (is.null(x = vcfDir)) {
+        vcfDir <- workDir
+    } else {
+        vcfDir <- paste(workDir, vcfDir, sep = "/")
     }
-    substr(x=spl.sites$seq_corrected,
-           start=start(x=vcf) - start(x=spl.sites) + 1,
-           stop=start(x=vcf) - start(x=spl.sites) + 1) <- vcf$ALT
-    spl.sites$seq_corrected[rev_compl] <-
-      reverseComplement(x=DNAStringSet(x=spl.sites$seq_corrected[rev_compl]))
-    ### Returning the final object.
-    anno <- data.frame(spl.sites)
-    anno <- anno[, c(1:7,
-                     (ncol(x=anno) - 1):ncol(x=anno),
-                     8:(ncol(x=anno) - 2))]
-    seqSSs <- DNAStringSet(x=anno$seq_corrected)
-    names(x=seqSSs) <- paste(paste(seqnames(x=spl.sites),
-                                   paste(start(x=spl.sites),
-                                         end(x=spl.sites),
-                                         sep="-"),
-                                   sep=":"),
-                             strand(x=spl.sites),
-                             sep="_str")
-    return(list(annotation=anno, sequences=seqSSs))
-  }else{
-    warning("WARNING: No matches were found between splice sites and SNVs.")
-  }
+    ### Loading of the single nucleotide variations as an object of class
+    #   GRanges.
+    vcf <- rowRanges(x = readVcf(file = paste(vcfDir, vcfFile, sep = "/")))[, "ALT"]
+    ALT <- as.character(x = unlist(x = vcf$ALT))
+    vcf <- vcf[rep(x = seq_along(x = vcf), times = lengths(x = vcf$ALT)), ]
+    vcf$ALT <- ALT
+    ### Loading of the genomic coordinates of splice sites as an object of
+    #   class GRanges.
+    if (is.object(x = x)) {
+        spl.sites <- x
+    } else {
+        frt <- tools::file_ext(x = x)
+        if (!frt %in% "txt") {
+            stop("Invalid file format")
+        }
+        spl.sites <- read.table(
+            file = paste(workDir, x, sep = "/"),
+            sep = "\t",
+            header = TRUE,
+            quote = "\"",
+            as.is = TRUE
+        )
+        spl.sites <- makeGRangesFromDataFrame(
+            df = spl.sites,
+            keep.extra.columns = TRUE
+        )
+    }
+    ### Find overlaps between splice sites and SNVs.
+    hits <- findOverlaps(
+        query = spl.sites,
+        subject = vcf,
+        type = "any",
+        ignore.strand = TRUE
+    )
+    if (length(x = hits) > 0) {
+        spl.sites <- spl.sites[queryHits(x = hits)]
+        vcf <- vcf[subjectHits(x = hits)]
+        ### Extraction of reference sequences of splice sites to be corrected.
+        spl.sites$seq_original <- extractSeqSSs(
+            x = spl.sites,
+            genome = genome,
+            workDir = workDir
+        )
+        spl.sites$seq_original <- as.character(x = spl.sites$seq_original)
+        spl.sites$seq_corrected <- spl.sites$seq_original
+        rev_compl <- as.character(x = strand(x = spl.sites)) == "-"
+        spl.sites$seq_corrected[rev_compl] <-
+            reverseComplement(x = DNAStringSet(x = spl.sites$seq_corrected[rev_compl]))
+        ### Correction of the splice site sequences.
+        if (length(x = spl.sites) != length(x = vcf)) {
+            stop(
+                "The list of splice sites to be corrected and the list of ",
+                "relevant SNVs differ in length."
+            )
+        }
+        substr(
+            x = spl.sites$seq_corrected,
+            start = start(x = vcf) - start(x = spl.sites) + 1,
+            stop = start(x = vcf) - start(x = spl.sites) + 1
+        ) <- vcf$ALT
+        spl.sites$seq_corrected[rev_compl] <-
+            reverseComplement(x = DNAStringSet(x = spl.sites$seq_corrected[rev_compl]))
+        ### Returning the final object.
+        anno <- data.frame(spl.sites)
+        anno <- anno[, c(
+            1:7,
+            (ncol(x = anno) - 1):ncol(x = anno),
+            8:(ncol(x = anno) - 2)
+        )]
+        seqSSs <- DNAStringSet(x = anno$seq_corrected)
+        names(x = seqSSs) <- paste(
+            paste(seqnames(x = spl.sites),
+                paste(start(x = spl.sites),
+                    end(x = spl.sites),
+                    sep = "-"
+                ),
+                sep = ":"
+            ),
+            strand(x = spl.sites),
+            sep = "_str"
+        )
+        return(list(annotation = anno, sequences = seqSSs))
+    } else {
+        warning("WARNING: No matches were found between splice sites and SNVs.")
+    }
 }
 
 
@@ -1159,86 +1314,103 @@ introduceSNVtoSSs <- function(x,
 #'     sites, splice site sequences and MaxEntScan scores.
 #' @author Vasily V. Grinev, Nadzeya A. Boyeva.
 #' @examples
-#' res <- scoreSSs(x="EEJs.Kasumi_1.RR_KD.PMC_BSU.fiveSSs.fasta",
-#'                 type=5,
-#'                 workDir="D:/Vasily Grinev")
+#' res <- scoreSSs(
+#'     x = "EEJs.Kasumi_1.RR_KD.PMC_BSU.fiveSSs.fasta",
+#'     type = 5,
+#'     workDir = "D:/Vasily Grinev"
+#' )
 #' @export
 #' @importFrom Biostrings readDNAStringSet width uniqueLetters
 #' @importFrom methods is
 scoreSSs <- function(x,
-                     type,
-                     workDir=NULL){
-  # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  ### Connection to splice site scoring models.
-  models <- system.file("extdata", "me2x5", package="huGSVcalleR")
-  setwd(dir=dirname(path=models))
-  # models <- "D:/Vasily Grinev/exdata/me2x5"
-  # setwd(dir=dirname(path=models))
-  ### Setting the working directory.
-  if (is.null(x=workDir)){
-    workDir <- getwd()
-  }
-  ### Loading of the splice site sequences as an object of class DNAStringSet.
-  if (is.object(x=x)){
-    seqSSs <- x
-  }else{
-    frt <- tools::file_ext(x=x)
-    if (!frt %in% c("fa", "fasta")){
-      stop("Invalid file format")
+    type,
+    workDir = NULL) {
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    ### Connection to splice site scoring models.
+    models <- system.file("extdata", "me2x5", package = "huGSVcalleR")
+    setwd(dir = dirname(path = models))
+    # models <- "D:/Vasily Grinev/exdata/me2x5"
+    # setwd(dir=dirname(path=models))
+    ### Setting the working directory.
+    if (is.null(x = workDir)) {
+        workDir <- getwd()
     }
-    seqSSs <- readDNAStringSet(filepath=paste(workDir, x, sep="/"),
-                               format=frt)
-  }
-  if (Sys.which("perl") == "") {
-    stop("Perl not found in PATH. scoreSSs() requires Perl ",
-         "for MaxEntScan. Install Perl (e.g., Strawberry Perl on Windows) ",
-         "and ensure it is available in PATH.")
-  }
-  ### Quality control of splice site sequences.
-  if (!type %in% c(3, 5)){
-    stop("Invalid type of splice sites. ",
-         "The entered type of splice sites must be numeric value 3 or 5.")
-  }
-  if (((type == 3) & (unique(x=width(x=seqSSs))) != 23)){
-    stop("Incorrect length of splice sites. ",
-         "Acceptor splice site sequences must be 23 in length.")
-  }
-  if (((type == 5) & (unique(x=width(x=seqSSs))) != 9)){
-    stop("Incorrect length of splice sites. ",
-         "Donor splice site sequences must be 9 in length.")
-  }
-  if (!all(uniqueLetters(x=seqSSs) %in%
-           c("a", "c", "g", "t", "G", "C", "T", "A"))){
-    warning("Some sequences showed characters apart from A, C, G and T. ",
-            "Scores can't be calculated for the incorrect records.")
-  }
-  ### Creation a new text file with splice site sequences.
-  if (file.exists("seqSSs")){
+    ### Loading of the splice site sequences as an object of class DNAStringSet.
+    if (is.object(x = x)) {
+        seqSSs <- x
+    } else {
+        frt <- tools::file_ext(x = x)
+        if (!frt %in% c("fa", "fasta")) {
+            stop("Invalid file format")
+        }
+        seqSSs <- readDNAStringSet(
+            filepath = paste(workDir, x, sep = "/"),
+            format = frt
+        )
+    }
+    if (Sys.which("perl") == "") {
+        stop(
+            "Perl not found in PATH. scoreSSs() requires Perl ",
+            "for MaxEntScan. Install Perl (e.g., Strawberry Perl on Windows) ",
+            "and ensure it is available in PATH."
+        )
+    }
+    ### Quality control of splice site sequences.
+    if (!type %in% c(3, 5)) {
+        stop(
+            "Invalid type of splice sites. ",
+            "The entered type of splice sites must be numeric value 3 or 5."
+        )
+    }
+    if (((type == 3) & (unique(x = width(x = seqSSs))) != 23)) {
+        stop(
+            "Incorrect length of splice sites. ",
+            "Acceptor splice site sequences must be 23 in length."
+        )
+    }
+    if (((type == 5) & (unique(x = width(x = seqSSs))) != 9)) {
+        stop(
+            "Incorrect length of splice sites. ",
+            "Donor splice site sequences must be 9 in length."
+        )
+    }
+    if (!all(uniqueLetters(x = seqSSs) %in%
+        c("a", "c", "g", "t", "G", "C", "T", "A"))) {
+        warning(
+            "Some sequences showed characters apart from A, C, G and T. ",
+            "Scores can't be calculated for the incorrect records."
+        )
+    }
+    ### Creation a new text file with splice site sequences.
+    if (file.exists("seqSSs")) {
+        file.remove("seqSSs")
+    }
+    message(as.character(x = seqSSs), file = "seqSSs", sep = "\n", append = TRUE)
+    ### Calculation of the MaxEntScan scores.
+    if (type == 3) {
+        cmd <- paste("score3.pl", "seqSSs")
+    }
+    if (type == 5) {
+        cmd <- paste("score5.pl", "seqSSs")
+    }
+    scores <- system2(command = "perl", args = cmd, stdout = TRUE)
+    if (length(x = scores) > 0) {
+        scores <- substr(
+            x = scores,
+            start = regexpr(pattern = "\t", text = scores)[[1]] + 1,
+            stop = nchar(x = scores)
+        )
+    }
     file.remove("seqSSs")
-  }
-  message(as.character(x=seqSSs), file="seqSSs", sep="\n", append=TRUE)
-  ### Calculation of the MaxEntScan scores.
-  if (type == 3){
-    cmd <- paste("score3.pl", "seqSSs")
-  }
-  if (type == 5){
-    cmd <- paste("score5.pl", "seqSSs")
-  }
-  scores <- system2(command="perl", args=cmd, stdout=TRUE)
-  if (length(x=scores) > 0){
-    scores <- substr(x=scores,
-                     start=regexpr(pattern="\t", text=scores)[[1]] + 1,
-                     stop=nchar(x=scores))
-  }
-  file.remove("seqSSs")
-  ### Returning the final object.
-  scores <- cbind(names(x=seqSSs),
-                  as.vector(x=as.character(x=seqSSs)),
-                  scores)
-  colnames(x=scores) <- c("ss_id", "ss_seq", "max.ent_score")
-  scores <- data.frame(scores)
-  scores[, 3] <- as.numeric(scores[, 3])
-  scores <- scores[!duplicated(x=scores), ]
-  return(scores)
+    ### Returning the final object.
+    scores <- cbind(
+        names(x = seqSSs),
+        as.vector(x = as.character(x = seqSSs)),
+        scores
+    )
+    colnames(x = scores) <- c("ss_id", "ss_seq", "max.ent_score")
+    scores <- data.frame(scores)
+    scores[, 3] <- as.numeric(scores[, 3])
+    scores <- scores[!duplicated(x = scores), ]
+    return(scores)
 }
-
