@@ -371,7 +371,7 @@ reportQAlResults <- function(x,
     )
     gt <- gTree(children = gList(table, title1, title2, title3, note))
     grid.draw(gt)
-    suppressMessages(expr = dev.off())
+    invisible(dev.off())
     ### Graphical reports.
     ##  Plots of mapping qualities.
     if (is.null(x = output)) {
@@ -636,7 +636,7 @@ reportQAlResults <- function(x,
         col = "black",
         outer = TRUE
     )
-    suppressMessages(expr = dev.off())
+    invisible(dev.off())
 }
 
 #' Sort and index BAM file(-s)
@@ -692,6 +692,6 @@ sortBamFile <- function(bamDir,
             byQname = byQname,
             nThreads = threads
         )
-        suppressMessages(expr = indexBam(files = sortedBam))
+        invisible(utils::capture.output(indexBam(files = sortedBam), type = "message"))
     }
 }

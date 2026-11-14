@@ -1369,7 +1369,7 @@ reportQAResults <- function(x,
     )
     gt <- gTree(children = gList(table, title1, title2, title3, note))
     grid.draw(gt)
-    suppressMessages(expr = dev.off())
+    invisible(dev.off())
     ##  Saving of overrepresented reads.
     ORs <- DNAStringSet(x = x$ORs$sequence)
     names(x = ORs) <- paste(
@@ -1676,14 +1676,16 @@ reportQAResults <- function(x,
         ),
         lty = 1, lwd = 1, bty = "n"
     )
-    suppressWarnings(expr = legend(
-        x = "topright",
-        legend = paste("KS test: p = ",
-            ks.test(x = x$GCs$frequency, y = "pnorm")$p.value,
-            sep = ""
-        ),
-        lty = 0, bty = "n"
-    ))
+    ks_p <- tryCatch(
+      ks.test(x = x$GCs$frequency, y = "pnorm")$p.value,
+      error = function(e) NA_real_,
+      warning = function(w) NA_real_
+    )
+    legend(
+      x = "topright",
+      legend = paste("KS test: p = ", round(ks_p, 4), sep = ""),
+      lty = 0, bty = "n"
+    )
     ##  Title, subtitle, sub-subtitle & footnote.
     mtext(
         text = "Quality of the raw reads. Summary plots",
@@ -1920,5 +1922,5 @@ reportQAResults <- function(x,
         col = "black",
         outer = TRUE
     )
-    suppressMessages(expr = dev.off())
+    invisible(dev.off())
 }
