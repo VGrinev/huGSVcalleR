@@ -7,23 +7,24 @@
 scoreSSs(x, type, workDir = NULL)
 }
 \arguments{
-\item{x}{splice site sequences in FASTA format. It can be the name of object
-of class DNAStringSet (as output, for example, of extractSeqSSs()
-function) or standard FA/FASTA file.}
+\item{x}{splice site sequences in FASTA format. It can be the name of
+object of class DNAStringSet (as output, for example, of
+extractSeqSSs() function) or standard FA/FASTA file.}
 
-\item{type}{integer value 5 or 3 for define of donor or acceptor splice
-sites, respectively.}
+\item{type}{integer value 5 or 3 for define of donor or acceptor
+splice sites, respectively.}
 
 \item{workDir}{character string giving the path to and name of work
 directory. NULL by default that mean the current working directory.}
 }
 \value{
-object of class data frame containing three fields: IDs of splice
-sites, splice site sequences and MaxEntScan scores.
+object of class data frame containing three fields: IDs of
+splice sites, splice site sequences and MaxEntScan scores.
 }
 \description{
-Scoring of the splice sites according to MaxEntScan models
-which are available at http://hollywood.mit.edu/burgelab/maxent or
+Scoring of the splice sites according to MaxEntScan
+models which are available at
+http://hollywood.mit.edu/burgelab/maxent or
 https://github.com/matthdsm/MaxEntScan.
 }
 \examples{

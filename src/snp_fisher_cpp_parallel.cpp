@@ -12,10 +12,12 @@ struct FisherWorker : public Worker {
 
   RVector<int> cn, ct, cr, cm, ctr, ctr_max;
 
-  FisherWorker(const IntegerVector& A, const IntegerVector& C, const IntegerVector& G,
-               const IntegerVector& T, const CharacterVector& reference,
+  FisherWorker(const IntegerVector& A, const IntegerVector& C,
+               const IntegerVector& G, const IntegerVector& T,
+               const CharacterVector& reference,
                IntegerVector& cn, IntegerVector& ct,
-               IntegerVector& cr, IntegerVector& cm, IntegerVector& ctr, IntegerVector& ctr_max)
+               IntegerVector& cr, IntegerVector& cm, IntegerVector& ctr,
+               IntegerVector& ctr_max)
     : A(A), C(C), G(G), T(T), reference(reference),
       cn(cn), ct(ct), cr(cr), cm(cm), ctr(ctr), ctr_max(ctr_max) {}
 
@@ -32,7 +34,8 @@ struct FisherWorker : public Worker {
         (reference[j] == "T") * T[j];
 
       std::uniform_real_distribution<> dis1(0.0, total % 2 + 1);
-      cn[j] = static_cast<int>(std::min(total / 2 + dis1(gen), 1.25 * ref_count + 1));
+      cn[j] = static_cast<int>(std::min(total / 2 + dis1(gen),
+                                        1.25 * ref_count + 1));
       ct[j] = total - cn[j];
       cr[j] = ref_count;
       cm[j] = total - ref_count;
@@ -60,7 +63,8 @@ struct FisherCalcWorker : public Worker
                    const IntegerVector& cr, const IntegerVector& cm,
                    const IntegerVector& ctr_max, const IntegerVector& ctr,
                    NumericVector& fisher)
-    : cn(cn), ct(ct), cr(cr), cm(cm), ctr_max(ctr_max), ctr(ctr), fisher(fisher) {}
+    : cn(cn), ct(ct), cr(cr), cm(cm), ctr_max(ctr_max), ctr(ctr), fisher(fisher)
+    {}
 
   void operator()(std::size_t begin, std::size_t end)
   {
@@ -80,7 +84,8 @@ struct FisherCalcWorker : public Worker
             log_fisher = log_temp;
           } else {
             double m = std::max(log_fisher, log_temp);
-            log_fisher = m + std::log1p(std::exp(std::min(log_fisher, log_temp) - m));
+            log_fisher = m + std::log1p(std::exp(std::min(log_fisher, log_temp)
+                                                   - m));
           }
         }
       }
@@ -96,43 +101,53 @@ struct FisherCalcWorker : public Worker
   }
 };
 
- //' Parallel SNP Fisher's Exact Test Calculation
- //' @name snp_fisher_cpp_parallel
- //' @description
- //' This function performs a parallel computation of Fisher's Exact Test for SNP (single nucleotide polymorphism) data.
- //' It calculates the Fisher's exact test statistic based on nucleotide counts (A, C, G, T) at each SNP position.
- //' The function utilizes parallel processing to efficiently handle large datasets by distributing the computation
- //' across multiple CPU cores using RcppParallel.
- //'
- //' @param df_d A data frame containing the following columns:
- //'   - `reference`: A character vector with the reference alleles ("A", "C", "G", "T").
- //'   - `A`, `C`, `G`, `T`: Integer vectors representing the counts of each nucleotide (A, C, G, T) at each SNP position.
- //'
- //' @return A numeric vector containing the p-values from Fisher's Exact Test for each SNP position.
- //'   A p-value of 1 indicates no variation, while smaller values suggest greater variation and statistical significance.
- //'
- //' @details
- //' The function performs the following steps:
- //' 1. For each SNP position, the nucleotide counts for A, C, G, T are extracted from the input data frame.
- //' 2. Intermediate quantities such as `cn`, `ct`, `cr`, and others are computed using parallel processing.
- //' 3. Fisher's exact test statistics are calculated for each SNP position using binomial coefficients.
- //'    The computation is performed in log-space via `lgamma` to avoid overflow for large counts.
- //' 4. The function is optimized for parallel execution, distributing the workload across multiple cores.
- //'
- //' @author Dzianis D. Sarnatski, Mikalai M. Yatskou
- //' @examples
- //' df <- data.frame(reference = c("A", "C", "G", "T"),
- //'                  A = c(10, 0, 5, 0),
- //'                  C = c(2, 10, 0, 0),
- //'                  G = c(0, 0, 10, 5),
- //'                  T = c(0, 0, 0, 10))
- //'
- //' result <- snp_fisher_cpp_parallel(df)
- //' print(result)
- //'
- // [[Rcpp::export]]
- NumericVector snp_fisher_cpp_parallel(DataFrame& df_d)
- {
+//' Parallel SNP Fisher's Exact Test Calculation
+//' @name snp_fisher_cpp_parallel
+//' @description
+//' This function performs a parallel computation of Fisher's Exact Test
+//' for SNP (single nucleotide polymorphism) data. It calculates the
+//' Fisher's exact test statistic based on nucleotide counts (A, C, G, T)
+//' at each SNP position. The function utilizes parallel processing to
+//' efficiently handle large datasets by distributing the computation
+//' across multiple CPU cores using RcppParallel.
+//'
+//' @param df_d A data frame containing the following columns:
+//'   - `reference`: A character vector with the reference alleles
+//'     ("A", "C", "G", "T").
+//'   - `A`, `C`, `G`, `T`: Integer vectors representing the counts of
+//'     each nucleotide (A, C, G, T) at each SNP position.
+//'
+//' @return A numeric vector containing the p-values from Fisher's Exact
+//'   Test for each SNP position. A p-value of 1 indicates no variation,
+//'   while smaller values suggest greater variation and statistical
+//'   significance.
+//'
+//' @details
+//' The function performs the following steps:
+//' 1. For each SNP position, the nucleotide counts for A, C, G, T are
+//'    extracted from the input data frame.
+//' 2. Intermediate quantities such as `cn`, `ct`, `cr`, and others are
+//'    computed using parallel processing.
+//' 3. Fisher's exact test statistics are calculated for each SNP
+//'    position using binomial coefficients. The computation is performed
+//'    in log-space via `lgamma` to avoid overflow for large counts.
+//' 4. The function is optimized for parallel execution, distributing the
+//'    workload across multiple cores.
+//'
+//' @author Dzianis D. Sarnatski, Mikalai M. Yatskou
+//' @examples
+//' df <- data.frame(reference = c("A", "C", "G", "T"),
+//'                  A = c(10, 0, 5, 0),
+//'                  C = c(2, 10, 0, 0),
+//'                  G = c(0, 0, 10, 5),
+//'                  T = c(0, 0, 0, 10))
+//'
+//' result <- snp_fisher_cpp_parallel(df)
+//' print(result)
+//'
+// [[Rcpp::export]]
+NumericVector snp_fisher_cpp_parallel(DataFrame& df_d)
+{
    int n = df_d.nrows();
    NumericVector fisher(n);
    IntegerVector cn(n), ct(n), cr(n), cm(n), ctr(n), ctr_max(n);

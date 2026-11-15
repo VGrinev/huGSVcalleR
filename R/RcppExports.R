@@ -4,28 +4,37 @@
 #' Parallel Calculation of Binomial Probabilities for SNPs
 #' @name snp_binomial_cpp_parallel
 #' @description
-#' This function calculates the cumulative binomial probability for each SNP in the provided dataset.
-#' It takes into account the reference allele at each position and computes the binomial probability
-#' for observing a certain number of non-reference alleles, given a probability of mutation `p`.
-#' The function utilizes parallel computation to speed up the process for large datasets.
+#' This function calculates the cumulative binomial probability for each
+#' SNP in the provided dataset. It takes into account the reference
+#' allele at each position and computes the binomial probability for
+#' observing a certain number of non-reference alleles, given a
+#' probability of mutation `p`. The function utilizes parallel
+#' computation to speed up the process for large datasets.
 #'
 #' @param df_d A data frame with the following columns:
-#'   - `A`, `C`, `G`, `T`: Integer vectors representing the counts of each nucleotide at each position.
-#'   - `reference`: A character vector containing the reference alleles ("A", "C", "G", "T") at each position.
+#'   - `A`, `C`, `G`, `T`: Integer vectors representing the counts of
+#'     each nucleotide at each position.
+#'   - `reference`: A character vector containing the reference alleles
+#'     ("A", "C", "G", "T") at each position.
 #'
-#' @return A numeric vector of binomial probabilities, where each element corresponds to a SNP
-#'   and represents the cumulative binomial probability of observing the reference allele count
-#'   given a mutation probability `p`.
+#' @return A numeric vector of binomial probabilities, where each
+#'   element corresponds to a SNP and represents the cumulative binomial
+#'   probability of observing the reference allele count given a
+#'   mutation probability `p`.
 #'
 #' @details
-#' The function works by first determining the total number of alleles (`A[i]`, `C[i]`, `G[i]`, `T[i]`)
-#' for each SNP, and calculating how many of those are the reference allele. The binomial probability is
-#' computed for different possible outcomes, considering the mutation probability `p` and the number of
-#' non-reference alleles. The calculation is performed in parallel for faster execution on large datasets.
+#' The function works by first determining the total number of alleles
+#' (`A[i]`, `C[i]`, `G[i]`, `T[i]`) for each SNP, and calculating how
+#' many of those are the reference allele. The binomial probability is
+#' computed for different possible outcomes, considering the mutation
+#' probability `p` and the number of non-reference alleles. The
+#' calculation is performed in parallel for faster execution on large
+#' datasets.
 #'
-#' The binomial probability for each SNP is calculated as the sum of binomial probabilities for each
-#' possible count of non-reference alleles (`k`), using the binomial coefficient formula and the probability
-#' mass function for the binomial distribution.
+#' The binomial probability for each SNP is calculated as the sum of
+#' binomial probabilities for each possible count of non-reference
+#' alleles (`k`), using the binomial coefficient formula and the
+#' probability mass function for the binomial distribution.
 #'
 #' @author Dzianis D. Sarnatski, Mikalai M. Yatskou
 #' @examples
@@ -44,24 +53,34 @@ snp_binomial_cpp_parallel <- function(df_d) {
 #' Parallel SNP Counting in a DataFrame
 #' @name snp_counting_cpp_parallel
 #' @description
-#' This function calculates the reference allele count ratio for each position in the provided genomic data.
-#' It uses parallel processing for faster execution by distributing the computation across multiple cores.
-#' The ratio is computed as the reference allele count divided by the total allele count at each position.
-#' The function uses the Rcpp and RcppParallel libraries to efficiently handle the calculations in parallel.
+#' This function calculates the reference allele count ratio for each
+#' position in the provided genomic data. It uses parallel processing
+#' for faster execution by distributing the computation across multiple
+#' cores. The ratio is computed as the reference allele count divided by
+#' the total allele count at each position. The function uses the Rcpp
+#' and RcppParallel libraries to efficiently handle the calculations in
+#' parallel.
 #'
 #' @param df_d A data frame containing the following columns:
-#'   - `reference`: A character vector with the reference alleles ("A", "C", "G", "T").
-#'   - `A`, `C`, `G`, `T`: Integer vectors representing the counts of each nucleotide at each position.
+#'   - `reference`: A character vector with the reference alleles
+#'     ("A", "C", "G", "T").
+#'   - `A`, `C`, `G`, `T`: Integer vectors representing the counts of
+#'     each nucleotide at each position.
 #'
-#' @return A numeric vector containing the ratio of the reference allele count to the total allele count for each position.
-#'   If the total count is zero, the result will be `NA`.
+#' @return A numeric vector containing the ratio of the reference allele
+#'   count to the total allele count for each position. If the total
+#'   count is zero, the result will be `NA`.
 #'
 #' @details
 #' The function performs the following steps:
-#' 1. For each position, the total number of nucleotide counts (`A[i]`, `C[i]`, `G[i]`, `T[i]`) is computed.
-#' 2. The reference allele count is determined based on the `reference` column, comparing it to the nucleotide counts.
-#' 3. The ratio of the reference allele count to the total count is calculated for each position.
-#' 4. The calculation is performed in parallel across multiple cores to speed up the process for large datasets.
+#' 1. For each position, the total number of nucleotide counts
+#'    (`A[i]`, `C[i]`, `G[i]`, `T[i]`) is computed.
+#' 2. The reference allele count is determined based on the `reference`
+#'    column, comparing it to the nucleotide counts.
+#' 3. The ratio of the reference allele count to the total count is
+#'    calculated for each position.
+#' 4. The calculation is performed in parallel across multiple cores to
+#'    speed up the process for large datasets.
 #'
 #' @author Dzianis D. Sarnatski, Mikalai M. Yatskou
 #' @examples
@@ -81,38 +100,52 @@ snp_counting_cpp_parallel <- function(df_d) {
 #' Parallel SNP Entropy and P-value Calculation
 #' @name snp_entropy_cpp_parallel
 #' @description
-#' This function calculates the entropy and/or p-value for each SNP (single nucleotide polymorphism) position
-#' in the provided genomic data. Entropy quantifies the variability in nucleotide distributions, while the
-#' p-value assesses the statistical significance of the entropy using a chi-square test. The function supports
-#' optional calculation of either entropy or p-values and utilizes parallel processing for efficiency on large datasets.
+#' This function calculates the entropy and/or p-value for each SNP
+#' (single nucleotide polymorphism) position in the provided genomic
+#' data. Entropy quantifies the variability in nucleotide distributions,
+#' while the p-value assesses the statistical significance of the
+#' entropy using a chi-square test. The function supports optional
+#' calculation of either entropy or p-values and utilizes parallel
+#' processing for efficiency on large datasets.
 #'
 #' @param df_d A data frame containing the following columns:
-#'   - reference: A character vector specifying the reference allele for each position (values: "A", "C", "G", "T").
-#'   - A, C, G, T: Integer vectors representing the observed counts of each nucleotide at each SNP position.
-#' @param p_value A boolean flag (default: TRUE) indicating whether to calculate p-values. If FALSE, the function
-#'   returns entropy values instead.
+#'   - reference: A character vector specifying the reference allele for
+#'     each position (values: "A", "C", "G", "T").
+#'   - A, C, G, T: Integer vectors representing the observed counts of
+#'     each nucleotide at each SNP position.
+#' @param p_value A boolean flag (default: TRUE) indicating whether to
+#'   calculate p-values. If FALSE, the function returns entropy values
+#'   instead.
 #'
 #' @return
 #' A numeric vector containing either:
 #'   - Entropy values (if p_value = FALSE).
-#'   - P-values of the chi-square tests for the entropy values (if p_value = TRUE).
-#'   A p-value of 1 indicates no significant variation, while smaller values suggest greater variation and statistical significance.
+#'   - P-values of the chi-square tests for the entropy values (if
+#'     p_value = TRUE).
+#'   A p-value of 1 indicates no significant variation, while smaller
+#'   values suggest greater variation and statistical significance.
 #'
 #' @details
 #' The function performs the following steps:
 #' 1. Retrieves the nucleotide counts (A, C, G, T) for each SNP position.
 #' 2. Computes the total coverage (sum of counts for all nucleotides).
-#' 3. If the total coverage is zero, assigns a p-value or entropy value of 1.
-#' 4. Adjusts the nucleotide distribution if the reference allele does not match the most frequent nucleotide:
-#'    - Splits the count of the most frequent nucleotide between it and the reference allele.
+#' 3. If the total coverage is zero, assigns a p-value or entropy value
+#'    of 1.
+#' 4. Adjusts the nucleotide distribution if the reference allele does
+#'    not match the most frequent nucleotide:
+#'    - Splits the count of the most frequent nucleotide between it and
+#'      the reference allele.
 #' 5. Normalizes nucleotide counts to probabilities.
 #' 6. Computes entropy using the formula:
 #'    Entropy = -sum(p_i * log10(p_i))
 #'    where p_i is the normalized count of nucleotide i.
-#' 7. If p_value = TRUE, computes the chi-square statistic using the entropy and total coverage, then derives the p-value:
+#' 7. If p_value = TRUE, computes the chi-square statistic using the
+#'    entropy and total coverage, then derives the p-value:
 #'    chi^2 = 2 * total coverage * Entropy
-#'    The p-value is calculated using the chi-square distribution with 4 degrees of freedom.
-#' 8. Executes the calculations in parallel across multiple cores for faster processing of large datasets.
+#'    The p-value is calculated using the chi-square distribution with
+#'    4 degrees of freedom.
+#' 8. Executes the calculations in parallel across multiple cores for
+#'    faster processing of large datasets.
 #'
 #' @examples
 #' # Example input data
@@ -134,6 +167,50 @@ snp_entropy_cpp_parallel <- function(df_d, p_value = FALSE) {
     .Call(`_huGSVcalleR_snp_entropy_cpp_parallel`, df_d, p_value)
 }
 
+#' Parallel SNP Fisher's Exact Test Calculation
+#' @name snp_fisher_cpp_parallel
+#' @description
+#' This function performs a parallel computation of Fisher's Exact Test
+#' for SNP (single nucleotide polymorphism) data. It calculates the
+#' Fisher's exact test statistic based on nucleotide counts (A, C, G, T)
+#' at each SNP position. The function utilizes parallel processing to
+#' efficiently handle large datasets by distributing the computation
+#' across multiple CPU cores using RcppParallel.
+#'
+#' @param df_d A data frame containing the following columns:
+#'   - `reference`: A character vector with the reference alleles
+#'     ("A", "C", "G", "T").
+#'   - `A`, `C`, `G`, `T`: Integer vectors representing the counts of
+#'     each nucleotide (A, C, G, T) at each SNP position.
+#'
+#' @return A numeric vector containing the p-values from Fisher's Exact
+#'   Test for each SNP position. A p-value of 1 indicates no variation,
+#'   while smaller values suggest greater variation and statistical
+#'   significance.
+#'
+#' @details
+#' The function performs the following steps:
+#' 1. For each SNP position, the nucleotide counts for A, C, G, T are
+#'    extracted from the input data frame.
+#' 2. Intermediate quantities such as `cn`, `ct`, `cr`, and others are
+#'    computed using parallel processing.
+#' 3. Fisher's exact test statistics are calculated for each SNP
+#'    position using binomial coefficients. The computation is performed
+#'    in log-space via `lgamma` to avoid overflow for large counts.
+#' 4. The function is optimized for parallel execution, distributing the
+#'    workload across multiple cores.
+#'
+#' @author Dzianis D. Sarnatski, Mikalai M. Yatskou
+#' @examples
+#' df <- data.frame(reference = c("A", "C", "G", "T"),
+#'                  A = c(10, 0, 5, 0),
+#'                  C = c(2, 10, 0, 0),
+#'                  G = c(0, 0, 10, 5),
+#'                  T = c(0, 0, 0, 10))
+#'
+#' result <- snp_fisher_cpp_parallel(df)
+#' print(result)
+#'
 snp_fisher_cpp_parallel <- function(df_d) {
     .Call(`_huGSVcalleR_snp_fisher_cpp_parallel`, df_d)
 }
@@ -141,27 +218,38 @@ snp_fisher_cpp_parallel <- function(df_d) {
 #' Parallel Poisson Test for SNP Detection
 #' @name snp_poisson_cpp_parallel
 #' @description
-#' This function calculates the Poisson-based probability for detecting SNPs at each position in genomic data.
-#' The probability is computed for observing the non-reference allele count under a Poisson distribution.
-#' Parallel processing is employed to accelerate computation across large datasets.
+#' This function calculates the Poisson-based probability for detecting
+#' SNPs at each position in genomic data. The probability is computed
+#' for observing the non-reference allele count under a Poisson
+#' distribution. Parallel processing is employed to accelerate
+#' computation across large datasets.
 #'
 #' @param df_d A data frame containing the following columns:
-#'   - `reference`: A character vector with the reference alleles ("A", "C", "G", "T").
-#'   - `A`, `C`, `G`, `T`: Integer vectors representing the counts of each nucleotide at each position.
+#'   - `reference`: A character vector with the reference alleles
+#'     ("A", "C", "G", "T").
+#'   - `A`, `C`, `G`, `T`: Integer vectors representing the counts of
+#'     each nucleotide at each position.
 #'
-#' @return A numeric vector containing the Poisson-based probability for each position.
-#'         This probability represents the likelihood of observing the non-reference allele count
-#'         under the Poisson model with a fixed mutation rate (default: 9/20000).
+#' @return A numeric vector containing the Poisson-based probability for
+#'         each position. This probability represents the likelihood of
+#'         observing the non-reference allele count under the Poisson
+#'         model with a fixed mutation rate (default: 9/20000).
 #'
 #' @details
 #' The function performs the following steps:
-#' 1. For each position, the total number of nucleotide counts (`A[i]`, `C[i]`, `G[i]`, `T[i]`) is computed.
-#' 2. The count of the reference allele is determined based on the `reference` column.
-#' 3. The non-reference allele count is calculated as the total count minus the reference allele count.
-#' 4. Using the Poisson distribution, the probability of observing at least the non-reference allele count is computed.
-#' 5. The calculations are performed in parallel for efficiency on large datasets.
+#' 1. For each position, the total number of nucleotide counts
+#'    (`A[i]`, `C[i]`, `G[i]`, `T[i]`) is computed.
+#' 2. The count of the reference allele is determined based on the
+#'    `reference` column.
+#' 3. The non-reference allele count is calculated as the total count
+#'    minus the reference allele count.
+#' 4. Using the Poisson distribution, the probability of observing at
+#'    least the non-reference allele count is computed.
+#' 5. The calculations are performed in parallel for efficiency on large
+#'    datasets.
 #'
-#' @note The mutation rate used in the Poisson model is fixed at 9/20000 by default.
+#' @note The mutation rate used in the Poisson model is fixed at 9/20000
+#' by default.
 #'
 #' @examples
 #' df <- data.frame(reference = c("A", "C", "G", "T"),
@@ -177,6 +265,44 @@ snp_poisson_cpp_parallel <- function(df_d) {
     .Call(`_huGSVcalleR_snp_poisson_cpp_parallel`, df_d)
 }
 
+#' Parallel Feature Extraction for SNP Data
+#' @name vectorise_data_cpp_parallel
+#' @description
+#' This function extracts a configurable set of features from a
+#' nucleotide count table for each SNP position. The features are
+#' computed in parallel using RcppParallel and returned as a numeric
+#' matrix wrapped in a DataFrame.
+#'
+#' @param df_d A data frame with the following columns:
+#'   - `A`, `C`, `G`, `T`: Integer vectors representing the counts of
+#'     each nucleotide at each position.
+#'   - `reference`: A character vector containing the reference alleles
+#'     ("A", "C", "G", "T") at each position.
+#' @param features A character vector specifying which features to
+#'   extract. Supported names are `x1` through `x14`. Unknown names are
+#'   ignored.
+#'
+#' @return A DataFrame with one column per requested feature and one row
+#'   per input position.
+#'
+#' @details
+#' The function computes the selected features in parallel. Features
+#' `x1`–`x4`, `x10`–`x14` are calculated inside the worker, while
+#' `x5`–`x9` are delegated to the corresponding C++ test functions
+#' (entropy, binomial, Fisher, Poisson).
+#'
+#' @author Dzianis D. Sarnatski, Mikalai M. Yatskou
+#' @examples
+#' df <- data.frame(reference = c("A", "C", "G", "T"),
+#'                  A = c(10, 0, 5, 0),
+#'                  C = c(2, 10, 0, 0),
+#'                  G = c(0, 0, 10, 5),
+#'                  T = c(0, 0, 0, 10))
+#'
+#' result <- vectorise_data_cpp_parallel(df,
+#'                                       c("x1", "x2", "x10"))
+#' print(result)
+#'
 vectorise_data_cpp_parallel <- function(df_d, features) {
     .Call(`_huGSVcalleR_vectorise_data_cpp_parallel`, df_d, features)
 }

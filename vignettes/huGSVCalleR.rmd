@@ -229,7 +229,8 @@ str(qal, max.level = 1)
 #>  $ MAPQs: int [1:19713] 40 40 40 40 20 40 20 40 40 20 ...
 #>  $ TLENs: int [1:19660] 150 150 176 176 150 150 325 169 169 150 ...
 #>  $ FLAGs: Named num [1:12] 20000 19642 287 287 9856 ...
-#>   ..- attr(*, "names")= chr [1:12] "isPaired" "isProperPair" "isUnmappedQuery" "hasUnmappedMate" ...
+#>   ..- attr(*, "names")= chr [1:12] "isPaired" "isProperPair"
+#>   "isUnmappedQuery" "hasUnmappedMate" ...
 
 report <- reportQAlResults(
     x = qal,
@@ -343,7 +344,9 @@ callSNVs(
     workDir = "D:/Vasily Grinev"
 )
 
-list.files("D:/Vasily Grinev/Files_VCF", pattern = "^test_seq\\.(fisher|entropy)")
+list.files("D:/Vasily Grinev/Files_VCF",
+    pattern = "^test_seq\\.(fisher|entropy)"
+)
 #> [1] "test_seq.fisher.fisher.vcf"
 #> [2] "test_seq.entropy.entropy.vcf"
 ```
@@ -476,12 +479,18 @@ annoSNVs <- annotateBasic(
 
 # annotateBasic() writes the annotation to a TXT file; read it back
 # to inspect the result.
-anno_file <- "D:/Vasily Grinev/test_seq3, fisherCalleR, annotated SNVs.basic annotation.txt"
+anno_file <- paste0(
+    "D:/Vasily Grinev/test_seq3, fisherCalleR,",
+    "annotated SNVs.basic annotation.txt"
+)
 anno_tab <- read.delim(anno_file, sep = "\t", header = TRUE)
 head(anno_tab)
-#>               snv_id seqnames    start      end strand ref alt pos_depth   score   gene_name
-#> 1 chr12:25206086_A/C    chr12 25206086 25206086      *   A   C        76 40.0000 ETFRF1,KRAS
-#> 2 chr12:25208192_C/G    chr12 25208192 25208192      *   C   G        40 25.0776 ETFRF1,KRAS
+#>               snv_id seqnames    start      end strand ref alt
+#> 1 chr12:25206086_A/C    chr12 25206086 25206086      *   A   C
+#> 2 chr12:25208192_C/G    chr12 25208192 25208192      *   C   G
+#>   pos_depth   score   gene_name
+#> 1 76 40.0000 ETFRF1,KRAS
+#> 2 40 25.0776 ETFRF1,KRAS
 #> ...
 ```
 
@@ -586,7 +595,10 @@ intrSNVtoSSs <- introduceSNVtoSSs(
     genome  = "BSgenome.Hsapiens.UCSC.hg38",
     workDir = "D:/Vasily Grinev"
 )
-head(intrSNVtoSSs$annotation[, c("seqnames", "start", "end", "seq_original", "seq_corrected")])
+head(intrSNVtoSSs$annotation[, c(
+    "seqnames", "start", "end",
+    "seq_original", "seq_corrected"
+)])
 #>   seqnames   start     end seq_original seq_corrected
 #> 1    chr19 7643046 7643054    AAGGTGTGC     AAGGTCTGC
 #> 2    chr19 7643243 7643251    CAGGTGGGG     CAGCTGGGG

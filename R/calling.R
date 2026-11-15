@@ -579,12 +579,13 @@ gatkCalleR <- function(bamDir = NULL,
 #' @importFrom data.table data.table
 #' @import randomForest
 #' @import LiblineaR
-mlCalleR <- function(fr_table,
-    model = "rpart",
-    pvalue = FALSE,
-    vcfDir = NULL,
-    outputVCF,
-    workDir = NULL) {
+mlCalleR <- function(
+        fr_table,
+        model = "rpart",
+        pvalue = FALSE,
+        vcfDir = NULL,
+        outputVCF,
+        workDir = NULL) {
     ### Validation of the input model.
     if (!model %in% SUPPORTED_ML_MODELS) {
         stop(paste(
@@ -683,7 +684,11 @@ mlCalleR <- function(fr_table,
                 pred
             }
         } else {
-            prediction <- predict(model.obj, newdata = data.features, type = "class")
+            prediction <- predict(
+                model.obj,
+                newdata = data.features,
+                type = "class"
+            )
         }
     } else if (model == "log_reg") {
         if (pvalue) {
@@ -705,13 +710,15 @@ mlCalleR <- function(fr_table,
                 vapply(pred, function(x) x[2], numeric(1))
             } else if (is.matrix(pred)) {
                 pred[, 2]
-            } else {
-                {
-                    pred
-                } |> as.vector()
-            }
+            } else {{
+                pred
+            } |> as.vector()            }
         } else {
-            prediction <- predict(model.obj, newdata = data.features, type = "class")
+            prediction <- predict(
+                model.obj,
+                newdata = data.features,
+                type = "class"
+            )
         }
     } else if (model == "SVM") {
         if (pvalue) {
@@ -791,12 +798,11 @@ mlCalleR <- function(fr_table,
 #' @keywords internal
 #' @noRd
 #' @importFrom data.table fread
-generateVCF <- function(
-        input,
-        version = "4.0",
-        vcfDir = NULL,
-        outputVCF,
-        workDir = NULL) {
+generateVCF <- function(input,
+    version = "4.0",
+    vcfDir = NULL,
+    outputVCF,
+    workDir = NULL) {
     ### Setting the working directory.
     if (is.null(x = workDir)) {
         workDir <- getwd()
@@ -879,9 +885,20 @@ generateVCF <- function(
         ### Writing of VCF file(-s).
         meta <- c(
             "##fileformat=VCFv4.0",
-            "##INFO=<ID=DP,Number=1,Type=Integer,Description=\"Read Depth\">",
-            "##INFO=<ID=MMsum,Number=1,Type=Integer,Description=\"Number of supporting reads for alternative allele(-s)\">",
-            "##INFO=<ID=MM,Number=1,Type=String,Description=\"Number of supporting reads for each alternative allele\">",
+            paste0(
+                "##INFO=<ID=DP,Number=1,Type=Integer,",
+                "Description=\"Read Depth\">"
+            ),
+            paste0(
+                "##INFO=<ID=MMsum,Number=1,Type=Integer,",
+                "Description=\"Number of supporting reads",
+                " for alternative allele(-s)\">"
+            ),
+            paste0(
+                "##INFO=<ID=MM,Number=1,Type=String,",
+                "Description=\"Number of supporting reads",
+                " for each alternative allele\">"
+            ),
             "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO"
         )
         ##  Tests that return a p-value in [0, 1] and must be converted to

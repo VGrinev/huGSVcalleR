@@ -481,15 +481,14 @@ annotateBasic <- function(
 #' @importFrom IRanges disjoin
 #' @importFrom S4Vectors queryHits subjectHits mcols mcols<- split
 #' @importFrom methods as
-developAnnotations <- function(
-        gtfDir = NULL,
-        gtfFile,
-        orf,
-        gtf,
-        src,
-        organism,
-        sqlite,
-        workDir = NULL) {
+developAnnotations <- function(gtfDir = NULL,
+    gtfFile,
+    orf,
+    gtf,
+    src,
+    organism,
+    sqlite,
+    workDir = NULL) {
     ### Setting the working directory.
     if (is.null(x = workDir)) {
         workDir <- getwd()
@@ -518,7 +517,7 @@ developAnnotations <- function(
         "protein_coding"
     GTFs[GTFs$gene_id %in%
         GTFs[GTFs$transcript_biotype ==
-               "protein_coding", ]$gene_id, ]$gene_biotype <- "protein_coding"
+            "protein_coding", ]$gene_id, ]$gene_biotype <- "protein_coding"
     genes <- split(x = GTFs, f = GTFs$gene_id)
     genes <- lapply(
         X = genes,
@@ -1248,14 +1247,13 @@ extractSSsCoordsGTF <- function(x, gtfDir = NULL, workDir = NULL) {
 #' @importFrom GenomicRanges start seqnames
 #' @importFrom BiocGenerics "%in%" match
 #' @importFrom AnnotationDbi mapIds
-introduceSNVtoAAs <- function(
-        vcfDir = NULL,
-        vcfFile,
-        OrgDb = "org.Hs.eg.db",
-        TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
-        genome = "BSgenome.Hsapiens.UCSC.hg38",
-        proteins,
-        workDir = NULL) {
+introduceSNVtoAAs <- function(vcfDir = NULL,
+    vcfFile,
+    OrgDb = "org.Hs.eg.db",
+    TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
+    genome = "BSgenome.Hsapiens.UCSC.hg38",
+    proteins,
+    workDir = NULL) {
     ### Checking of required packages.
     for (pkg in c(genome, OrgDb, TxDb)) {
         if (!requireNamespace(pkg, quietly = TRUE)) {
@@ -1285,7 +1283,10 @@ introduceSNVtoAAs <- function(
     ### Handle multi-allelic ALT.
     ALT <- as.character(x = unlist(x = rowRanges(x = vcf)$ALT))
     vcf <- vcf[
-        rep(x = seq_along(x = vcf), times = lengths(x = rowRanges(x = vcf)$ALT)),
+        rep(
+            x = seq_along(x = vcf),
+            times = lengths(x = rowRanges(x = vcf)$ALT)
+        ),
     ]
     alt(x = vcf) <- DNAStringSetList(strsplit(x = ALT, split = ""))
     ### Loading gene models as an object of class TxDb.

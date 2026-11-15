@@ -231,10 +231,9 @@ buildIndexSubread <- function(ref_genome,
 #' @importFrom grDevices cairo_pdf dev.off rgb
 #' @importFrom graphics hist axis title plot rect text segments par mtext
 #' @importFrom stats quantile median
-reportQAlResults <- function(
-        x,
-        output = NULL,
-        workDir = NULL) {
+reportQAlResults <- function(x,
+    output = NULL,
+    workDir = NULL) {
     ### Textual report.
     ##  Template of textual table.
     tab <- data.frame(
@@ -448,19 +447,31 @@ reportQAlResults <- function(
     title(ylab = "Reads exceeding quality level, %", line = 2.8, cex.lab = 1.2)
     rect(
         xleft = 0, ybottom = 0, xright = 10, ytop = 100, border = NA,
-        col = rgb(red = 240, green = 228, blue = 66, maxColorValue = 255, alpha = 30)
+        col = rgb(
+            red = 240, green = 228, blue = 66, maxColorValue = 255,
+            alpha = 30
+        )
     )
     rect(
         xleft = 10, ybottom = 0, xright = 20, ytop = 100, border = NA,
-        col = rgb(red = 230, green = 159, blue = 0, maxColorValue = 255, alpha = 40)
+        col = rgb(
+            red = 230, green = 159, blue = 0, maxColorValue = 255,
+            alpha = 40
+        )
     )
     rect(
         xleft = 20, ybottom = 0, xright = 30, ytop = 100, border = NA,
-        col = rgb(red = 213, green = 94, blue = 0, maxColorValue = 255, alpha = 50)
+        col = rgb(
+            red = 213, green = 94, blue = 0, maxColorValue = 255,
+            alpha = 50
+        )
     )
     rect(
         xleft = 30, ybottom = 0, xright = 40, ytop = 100, border = NA,
-        col = rgb(red = 213, green = 94, blue = 0, maxColorValue = 255, alpha = 80)
+        col = rgb(
+            red = 213, green = 94, blue = 0, maxColorValue = 255,
+            alpha = 80
+        )
     )
     text(
         x = 10, y = 23, srt = 90, cex = 0.9,
@@ -534,7 +545,10 @@ reportQAlResults <- function(
     axis(
         side = 2,
         at = c(0.0, ceiling(x = max(x = p)) / 4 * seq_len(4)),
-        labels = round(x = c(0.0, ceiling(x = max(x = p)) / 4 * seq_len(4)), digits = 2),
+        labels = round(
+            x = c(0.0, ceiling(x = max(x = p)) / 4 * seq_len(4)),
+            digits = 2
+        ),
         las = 1, lwd = 0.8
     )
     title(main = "Distribution of template lengths", cex.main = 1.5)
@@ -580,24 +594,44 @@ reportQAlResults <- function(
         line = 2.8, cex.lab = 1.2
     )
     rect(
-        xleft = 0, ybottom = 0, xright = ceiling(x = max(x = p)), ytop = 20, border = NA,
-        col = rgb(red = 240, green = 228, blue = 66, maxColorValue = 255, alpha = 30)
+        xleft = 0, ybottom = 0, xright = ceiling(x = max(x = p)),
+        ytop = 20, border = NA,
+        col = rgb(
+            red = 240, green = 228, blue = 66, maxColorValue = 255,
+            alpha = 30
+        )
     )
     rect(
-        xleft = 0, ybottom = 20, xright = ceiling(x = max(x = p)), ytop = 40, border = NA,
-        col = rgb(red = 230, green = 159, blue = 0, maxColorValue = 255, alpha = 40)
+        xleft = 0, ybottom = 20, xright = ceiling(x = max(x = p)),
+        ytop = 40, border = NA,
+        col = rgb(
+            red = 230, green = 159, blue = 0, maxColorValue = 255,
+            alpha = 40
+        )
     )
     rect(
-        xleft = 0, ybottom = 40, xright = ceiling(x = max(x = p)), ytop = 60, border = NA,
-        col = rgb(red = 213, green = 94, blue = 0, maxColorValue = 255, alpha = 50)
+        xleft = 0, ybottom = 40, xright = ceiling(x = max(x = p)), ytop = 60,
+        border = NA,
+        col = rgb(
+            red = 213, green = 94, blue = 0, maxColorValue = 255,
+            alpha = 50
+        )
     )
     rect(
-        xleft = 0, ybottom = 60, xright = ceiling(x = max(x = p)), ytop = 80, border = NA,
-        col = rgb(red = 213, green = 94, blue = 0, maxColorValue = 255, alpha = 70)
+        xleft = 0, ybottom = 60, xright = ceiling(x = max(x = p)), ytop = 80,
+        border = NA,
+        col = rgb(
+            red = 213, green = 94, blue = 0, maxColorValue = 255,
+            alpha = 70
+        )
     )
     rect(
-        xleft = 0, ybottom = 80, xright = ceiling(x = max(x = p)), ytop = 100, border = NA,
-        col = rgb(red = 213, green = 94, blue = 0, maxColorValue = 255, alpha = 90)
+        xleft = 0, ybottom = 80, xright = ceiling(x = max(x = p)), ytop = 100,
+        border = NA,
+        col = rgb(
+            red = 213, green = 94, blue = 0, maxColorValue = 255,
+            alpha = 90
+        )
     )
     ##  Title, subtitle, sub-subtitle & footnote.
     mtext(
@@ -666,12 +700,11 @@ reportQAlResults <- function(
 #' @export
 #' @importFrom Rsamtools sortBam indexBam
 #' @importFrom parallel detectCores
-sortBamFile <- function(
-        bamDir,
-        bamFile,
-        byQname,
-        threads = detectCores(logical = TRUE) - 1,
-        workDir = NULL) {
+sortBamFile <- function(bamDir,
+    bamFile,
+    byQname,
+    threads = detectCores(logical = TRUE) - 1,
+    workDir = NULL) {
     ### Sorting and indexing of generated BAM file(-s).
     for (i in seq_along(x = bamFile)) {
         sortedBam <- sortBam(
@@ -694,6 +727,8 @@ sortBamFile <- function(
             byQname = byQname,
             nThreads = threads
         )
-        invisible(utils::capture.output(indexBam(files = sortedBam), type = "message"))
+        invisible(utils::capture.output(indexBam(files = sortedBam),
+            type = "message"
+        ))
     }
 }

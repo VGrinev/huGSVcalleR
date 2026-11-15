@@ -17,16 +17,18 @@ developAnnotations(
 }
 \arguments{
 \item{gtfDir}{character string giving the name (or path to and name) of
-directory with GTF file(-s). NULL by default, which means the current
-working directory will be used instead of the specified GTF directory.}
+directory with GTF file(-s). NULL by default, which means the
+current working directory will be used instead of the specified
+GTF directory.}
 
-\item{gtfFile}{character string giving the name of input GTF/GFF file with
-experimental transcriptome. It is typically StringTie output. Valid
-format is "gtf" or "gff".}
+\item{gtfFile}{character string giving the name of input GTF/GFF file
+with experimental transcriptome. It is typically StringTie output.
+Valid format is "gtf" or "gff".}
 
-\item{orf}{character string giving the name of tab-delimited TXT file with
-coordinates of open reading frames in experimental transcripts. It is
-typically ORFhunteR output. This file should include three fields:
+\item{orf}{character string giving the name of tab-delimited TXT file
+with coordinates of open reading frames in experimental
+transcripts. It is typically ORFhunteR output. This file should
+include three fields:
 i) transcript_id - transcript ID;
 ii) orf_start    - start coordinate of the open reading frame in a
 transcript;
@@ -41,19 +43,19 @@ Ensembl-like annotated experimental transcriptome.}
 \item{organism}{the proper scientific name of the organism for which
 transcriptomic data were generated.}
 
-\item{sqlite}{character string giving the name of output SQLite database
-with Ensembl-like annotated experimental transcriptome.}
+\item{sqlite}{character string giving the name of output SQLite
+database with Ensembl-like annotated experimental transcriptome.}
 
 \item{workDir}{character string giving the path to and name of work
 directory. NULL by default that mean the current working directory.}
 }
 \value{
-GTF/GFF file and local SQLite database with Ensembl-like annotations
-of the experimental transcriptome.
+GTF/GFF file and local SQLite database with Ensembl-like
+annotations of the experimental transcriptome.
 }
 \description{
-This function converts a standard GTF/GFF file with experimental
-transcriptome to Ensembl-like annotations.
+This function converts a standard GTF/GFF file with
+experimental transcriptome to Ensembl-like annotations.
 }
 \examples{
 anno <- developAnnotations(

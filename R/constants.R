@@ -5,7 +5,10 @@ SUPPORTED_CLASSICAL_TESTS <- c(
 )
 
 # All supported criteria for callSNVs().
-SUPPORTED_CALLERS <- c(SUPPORTED_CLASSICAL_TESTS, "fisherRSubread", "gatk", "ml")
+SUPPORTED_CALLERS <- c(
+    SUPPORTED_CLASSICAL_TESTS, "fisherRSubread",
+    "gatk", "ml"
+)
 
 # Supported machine learning models for SNV calling.
 SUPPORTED_ML_MODELS <- c("log_reg", "rand_forest", "rpart", "SVM", "xgboost")

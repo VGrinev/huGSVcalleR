@@ -13,10 +13,10 @@ introduceSNVtoSSs(
 )
 }
 \arguments{
-\item{x}{genomic coordinates of 5' or 3' splice sites. It can be the name of
-object of class GRanges (as output of extractSSsCoordsEEJs() or
-extractSSsCoordsGTF() function) or tab-delimited TXT file with the
-following fields:
+\item{x}{genomic coordinates of 5' or 3' splice sites. It can be the
+name of object of class GRanges (as output of
+extractSSsCoordsEEJs() or extractSSsCoordsGTF() function) or
+tab-delimited TXT file with the following fields:
 i) seqnames - name of chromosome or scaffold with prefix "chr";
 ii) start   - start coordinate of splice site;
 iii) end    - end coordinate of splice site;
@@ -25,25 +25,26 @@ v-...) ...  - (optionally) any metadata.
 If TXT file, it should be in work directory.}
 
 \item{vcfDir}{character string giving the name (or path to and name) of
-directory with VCF file(-s). NULL by default, which means the current
-working directory will be used instead of the specified VCF directory.}
+directory with VCF file(-s). NULL by default, which means the
+current working directory will be used instead of the specified
+VCF directory.}
 
 \item{vcfFile}{character string giving the name of input VCF file.}
 
-\item{genome}{character string giving the name of the BSgenome data package
-to be used for reference sequence extraction. Default value is
-package BSgenome.Hsapiens.UCSC.hg38.}
+\item{genome}{character string giving the name of the BSgenome data
+package to be used for reference sequence extraction. Default
+value is package BSgenome.Hsapiens.UCSC.hg38.}
 
 \item{workDir}{character string giving the path to and name of work
 directory. NULL by default that mean the current working directory.}
 }
 \value{
-object of class list containing extended data frame with splice
-sites and DNAStringSet with corrected splice site sequences.
+object of class list containing extended data frame with
+splice sites and DNAStringSet with corrected splice site sequences.
 }
 \description{
-Introduction of single nucleotide variant(-s) into the splice
-site sequence(-s).
+Introduction of single nucleotide variant(-s) into the
+splice site sequence(-s).
 }
 \examples{
 coords <- "EEJs.Kasumi_1.RR_KD.PMC_BSU.fiveSSs.txt"

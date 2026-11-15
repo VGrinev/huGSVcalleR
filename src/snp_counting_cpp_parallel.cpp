@@ -41,24 +41,34 @@
 //' Parallel SNP Counting in a DataFrame
 //' @name snp_counting_cpp_parallel
 //' @description
-//' This function calculates the reference allele count ratio for each position in the provided genomic data.
-//' It uses parallel processing for faster execution by distributing the computation across multiple cores.
-//' The ratio is computed as the reference allele count divided by the total allele count at each position.
-//' The function uses the Rcpp and RcppParallel libraries to efficiently handle the calculations in parallel.
+//' This function calculates the reference allele count ratio for each
+//' position in the provided genomic data. It uses parallel processing
+//' for faster execution by distributing the computation across multiple
+//' cores. The ratio is computed as the reference allele count divided by
+//' the total allele count at each position. The function uses the Rcpp
+//' and RcppParallel libraries to efficiently handle the calculations in
+//' parallel.
 //'
 //' @param df_d A data frame containing the following columns:
-//'   - `reference`: A character vector with the reference alleles ("A", "C", "G", "T").
-//'   - `A`, `C`, `G`, `T`: Integer vectors representing the counts of each nucleotide at each position.
+//'   - `reference`: A character vector with the reference alleles
+//'     ("A", "C", "G", "T").
+//'   - `A`, `C`, `G`, `T`: Integer vectors representing the counts of
+//'     each nucleotide at each position.
 //'
-//' @return A numeric vector containing the ratio of the reference allele count to the total allele count for each position.
-//'   If the total count is zero, the result will be `NA`.
+//' @return A numeric vector containing the ratio of the reference allele
+//'   count to the total allele count for each position. If the total
+//'   count is zero, the result will be `NA`.
 //'
 //' @details
 //' The function performs the following steps:
-//' 1. For each position, the total number of nucleotide counts (`A[i]`, `C[i]`, `G[i]`, `T[i]`) is computed.
-//' 2. The reference allele count is determined based on the `reference` column, comparing it to the nucleotide counts.
-//' 3. The ratio of the reference allele count to the total count is calculated for each position.
-//' 4. The calculation is performed in parallel across multiple cores to speed up the process for large datasets.
+//' 1. For each position, the total number of nucleotide counts
+//'    (`A[i]`, `C[i]`, `G[i]`, `T[i]`) is computed.
+//' 2. The reference allele count is determined based on the `reference`
+//'    column, comparing it to the nucleotide counts.
+//' 3. The ratio of the reference allele count to the total count is
+//'    calculated for each position.
+//' 4. The calculation is performed in parallel across multiple cores to
+//'    speed up the process for large datasets.
 //'
 //' @author Dzianis D. Sarnatski, Mikalai M. Yatskou
 //' @examples

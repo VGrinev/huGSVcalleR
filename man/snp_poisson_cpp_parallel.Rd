@@ -9,32 +9,43 @@ snp_poisson_cpp_parallel(df_d)
 \arguments{
 \item{df_d}{A data frame containing the following columns:
 \itemize{
-\item \code{reference}: A character vector with the reference alleles ("A", "C", "G", "T").
-\item \code{A}, \code{C}, \code{G}, \code{T}: Integer vectors representing the counts of each nucleotide at each position.
+\item \code{reference}: A character vector with the reference alleles
+("A", "C", "G", "T").
+\item \code{A}, \code{C}, \code{G}, \code{T}: Integer vectors representing the counts of
+each nucleotide at each position.
 }}
 }
 \value{
-A numeric vector containing the Poisson-based probability for each position.
-This probability represents the likelihood of observing the non-reference allele count
-under the Poisson model with a fixed mutation rate (default: 9/20000).
+A numeric vector containing the Poisson-based probability for
+each position. This probability represents the likelihood of
+observing the non-reference allele count under the Poisson
+model with a fixed mutation rate (default: 9/20000).
 }
 \description{
-This function calculates the Poisson-based probability for detecting SNPs at each position in genomic data.
-The probability is computed for observing the non-reference allele count under a Poisson distribution.
-Parallel processing is employed to accelerate computation across large datasets.
+This function calculates the Poisson-based probability for detecting
+SNPs at each position in genomic data. The probability is computed
+for observing the non-reference allele count under a Poisson
+distribution. Parallel processing is employed to accelerate
+computation across large datasets.
 }
 \details{
 The function performs the following steps:
 \enumerate{
-\item For each position, the total number of nucleotide counts (\code{A[i]}, \code{C[i]}, \code{G[i]}, \code{T[i]}) is computed.
-\item The count of the reference allele is determined based on the \code{reference} column.
-\item The non-reference allele count is calculated as the total count minus the reference allele count.
-\item Using the Poisson distribution, the probability of observing at least the non-reference allele count is computed.
-\item The calculations are performed in parallel for efficiency on large datasets.
+\item For each position, the total number of nucleotide counts
+(\code{A[i]}, \code{C[i]}, \code{G[i]}, \code{T[i]}) is computed.
+\item The count of the reference allele is determined based on the
+\code{reference} column.
+\item The non-reference allele count is calculated as the total count
+minus the reference allele count.
+\item Using the Poisson distribution, the probability of observing at
+least the non-reference allele count is computed.
+\item The calculations are performed in parallel for efficiency on large
+datasets.
 }
 }
 \note{
-The mutation rate used in the Poisson model is fixed at 9/20000 by default.
+The mutation rate used in the Poisson model is fixed at 9/20000
+by default.
 }
 \examples{
 df <- data.frame(reference = c("A", "C", "G", "T"),

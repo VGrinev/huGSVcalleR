@@ -1,14 +1,17 @@
 #include "vectorise_data_cpp_parallel.h"
 
-bool check_match_with_non_ref_quantity(const std::vector<int>& counts, int ref_index) {
+bool check_match_with_non_ref_quantity(const std::vector<int>& counts,
+                                       int ref_index) {
   int ref_reads = counts[ref_index];
-  int non_ref_reads = std::accumulate(counts.begin(), counts.end(), 0) - ref_reads;
+  int non_ref_reads =
+    std::accumulate(counts.begin(), counts.end(), 0) - ref_reads;
   return (ref_reads == non_ref_reads) ||
     (ref_reads + 1 == non_ref_reads) ||
     (ref_reads - 1 == non_ref_reads);
 }
 
-bool check_match_with_max_coverage(const std::vector<int>& counts, int ref_index) {
+bool check_match_with_max_coverage(const std::vector<int>& counts,
+                                   int ref_index) {
   int ref_reads = counts[ref_index];
   int max_reads = *std::max_element(counts.begin(), counts.end());
   return ref_reads == max_reads;
@@ -39,7 +42,9 @@ double read_position_variance(const std::vector<int>& counts) {
 
   if (variant_positions.size() <= 1) return 0.0;
 
-  double mean = std::accumulate(variant_positions.begin(), variant_positions.end(), 0.0) / variant_positions.size();
+  double mean = std::accumulate(variant_positions.begin(),
+                                variant_positions.end(), 0.0) /
+                                  variant_positions.size();
 
   double variance = 0.0;
   for (int pos : variant_positions) {
@@ -49,16 +54,30 @@ double read_position_variance(const std::vector<int>& counts) {
   return variance / (variant_positions.size() - 1);
 }
 
-double log_error_prob(const std::vector<int>& counts, const int& ref_index) {
+double log_error_prob(const std::vector<int>& counts,
+                      const int& ref_index) {
   const double p1 = 0.05;
   const double p2 = 0.5;
 
   int ref_reads = counts[ref_index];
-  int non_ref_reads = std::accumulate(counts.begin(), counts.end(), 0) - ref_reads;
+  int non_ref_reads =
+    std::accumulate(counts.begin(), counts.end(), 0) - ref_reads;
   int total_reads = std::accumulate(counts.begin(), counts.end(), 0);
 
-  double prob1 = std::exp(std::lgamma(total_reads + 1) - std::lgamma(non_ref_reads + 1) - std::lgamma(total_reads - non_ref_reads + 1) + non_ref_reads * std::log(p1) + (total_reads - non_ref_reads) * std::log(1 - p1));
-  double prob2 = std::exp(std::lgamma(total_reads + 1) - std::lgamma(non_ref_reads + 1) - std::lgamma(total_reads - non_ref_reads + 1) + non_ref_reads * std::log(p2) + (total_reads - non_ref_reads) * std::log(1 - p2));
+  double prob1 = std::exp(
+    std::lgamma(total_reads + 1) -
+      std::lgamma(non_ref_reads + 1) -
+      std::lgamma(total_reads - non_ref_reads + 1) +
+      non_ref_reads * std::log(p1) +
+      (total_reads - non_ref_reads) * std::log(1 - p1)
+  );
+  double prob2 = std::exp(
+    std::lgamma(total_reads + 1) -
+      std::lgamma(non_ref_reads + 1) -
+      std::lgamma(total_reads - non_ref_reads + 1) +
+      non_ref_reads * std::log(p2) +
+      (total_reads - non_ref_reads) * std::log(1 - p2)
+  );
 
   return std::log(prob1 / prob2);
 }
@@ -72,9 +91,12 @@ struct VectoriseWorker : public Worker {
   RMatrix<double> results;
   std::unordered_set<std::string> selected_features;
 
-  VectoriseWorker(const IntegerVector& A, const IntegerVector& C,
-                  const IntegerVector& G, const IntegerVector& T,
-                  const CharacterVector& reference, NumericMatrix& results,
+  VectoriseWorker(const IntegerVector& A,
+                  const IntegerVector& C,
+                  const IntegerVector& G,
+                  const IntegerVector& T,
+                  const CharacterVector& reference,
+                  NumericMatrix& results,
                   const std::unordered_set<std::string>& selected_features)
     : A(A), C(C), G(G), T(T),
       reference(reference), results(results),
@@ -89,7 +111,9 @@ struct VectoriseWorker : public Worker {
       counts[3] = T[i];
 
       std::string ref = as<std::string>(reference[i]);
-      int ref_index = (ref == "A" ? 0 : ref == "C" ? 1 : ref == "G" ? 2 : 3);
+      int ref_index = (ref == "A" ? 0 :
+                         ref == "C" ? 1 :
+                         ref == "G" ? 2 : 3);
 
       size_t col = 0;
 
@@ -97,13 +121,22 @@ struct VectoriseWorker : public Worker {
         results(i, col++) = counts[ref_index];
       }
 
-      if (selected_features.count("x2") || selected_features.count("x3") || selected_features.count("x4")) {
+      if (selected_features.count("x2") ||
+          selected_features.count("x3") ||
+          selected_features.count("x4")) {
         std::vector<int> non_ref_counts = counts;
         non_ref_counts[ref_index] = 0;
-        std::sort(non_ref_counts.begin(), non_ref_counts.end(), std::greater<int>());
-        if (selected_features.count("x2")) results(i, col++) = non_ref_counts[0];
-        if (selected_features.count("x3")) results(i, col++) = non_ref_counts[1];
-        if (selected_features.count("x4")) results(i, col++) = non_ref_counts[2];
+        std::sort(non_ref_counts.begin(), non_ref_counts.end(),
+                  std::greater<int>());
+        if (selected_features.count("x2")) {
+          results(i, col++) = non_ref_counts[0];
+        }
+        if (selected_features.count("x3")) {
+          results(i, col++) = non_ref_counts[1];
+        }
+        if (selected_features.count("x4")) {
+          results(i, col++) = non_ref_counts[2];
+        }
       }
 
       if (selected_features.count("x5")) {
@@ -139,69 +172,112 @@ struct VectoriseWorker : public Worker {
       }
 
       if (selected_features.count("x13")) {
-        results(i, col++) = static_cast<int>(check_match_with_max_coverage(counts, ref_index));
+        results(i, col++) =
+          static_cast<int>(check_match_with_max_coverage(
+              counts, ref_index));
       }
 
       if (selected_features.count("x14")) {
-        results(i, col++) = static_cast<int>(check_match_with_non_ref_quantity(counts, ref_index));
+        results(i, col++) =
+          static_cast<int>(check_match_with_non_ref_quantity(
+              counts, ref_index));
       }
     }
   }
 };
 
+//' Parallel Feature Extraction for SNP Data
+//' @name vectorise_data_cpp_parallel
+//' @description
+//' This function extracts a configurable set of features from a
+//' nucleotide count table for each SNP position. The features are
+//' computed in parallel using RcppParallel and returned as a numeric
+//' matrix wrapped in a DataFrame.
+//'
+//' @param df_d A data frame with the following columns:
+//'   - `A`, `C`, `G`, `T`: Integer vectors representing the counts of
+//'     each nucleotide at each position.
+//'   - `reference`: A character vector containing the reference alleles
+//'     ("A", "C", "G", "T") at each position.
+//' @param features A character vector specifying which features to
+//'   extract. Supported names are `x1` through `x14`. Unknown names are
+//'   ignored.
+//'
+//' @return A DataFrame with one column per requested feature and one row
+//'   per input position.
+//'
+//' @details
+//' The function computes the selected features in parallel. Features
+//' `x1`–`x4`, `x10`–`x14` are calculated inside the worker, while
+//' `x5`–`x9` are delegated to the corresponding C++ test functions
+//' (entropy, binomial, Fisher, Poisson).
+//'
+//' @author Dzianis D. Sarnatski, Mikalai M. Yatskou
+//' @examples
+//' df <- data.frame(reference = c("A", "C", "G", "T"),
+//'                  A = c(10, 0, 5, 0),
+//'                  C = c(2, 10, 0, 0),
+//'                  G = c(0, 0, 10, 5),
+//'                  T = c(0, 0, 0, 10))
+//'
+//' result <- vectorise_data_cpp_parallel(df,
+//'                                       c("x1", "x2", "x10"))
+//' print(result)
+//'
 // [[Rcpp::export]]
-DataFrame vectorise_data_cpp_parallel(DataFrame& df_d, CharacterVector features) {
-  std::unordered_set<std::string> selected_features;
-  for (int i = 0; i < features.size(); ++i) {
-    selected_features.insert(as<std::string>(features[i]));
-  }
-  std::size_t n = df_d.nrows();
-  std::size_t num_features = selected_features.size();
+DataFrame vectorise_data_cpp_parallel(DataFrame& df_d,
+                                       CharacterVector features) {
+   std::unordered_set<std::string> selected_features;
+   for (int i = 0; i < features.size(); ++i) {
+     selected_features.insert(as<std::string>(features[i]));
+   }
+   std::size_t n = df_d.nrows();
+   std::size_t num_features = selected_features.size();
 
-  NumericMatrix results(n, num_features);
+   NumericMatrix results(n, num_features);
 
-  size_t col = 0;
+   size_t col = 0;
 
-  if (selected_features.count("x1")) {
-    col++;
-  }
-  if (selected_features.count("x2")) {
-    col++;
-  }
-  if (selected_features.count("x3")) {
-    col++;
-  }
-  if (selected_features.count("x4")) {
-    col++;
-  }
+   if (selected_features.count("x1")) {
+     col++;
+   }
+   if (selected_features.count("x2")) {
+     col++;
+   }
+   if (selected_features.count("x3")) {
+     col++;
+   }
+   if (selected_features.count("x4")) {
+     col++;
+   }
 
-  if (selected_features.count("x5")) {
-    results(_, col++) = snp_entropy_cpp_parallel(df_d, false);
-  }
-  if (selected_features.count("x6")) {
-    results(_, col++) = snp_entropy_cpp_parallel(df_d, true);
-  }
-  if (selected_features.count("x7")) {
-    results(_, col++) = snp_binomial_cpp_parallel(df_d);
-  }
-  if (selected_features.count("x8")) {
-    results(_, col++) = snp_fisher_cpp_parallel(df_d);
-  }
-  if (selected_features.count("x9")) {
-    results(_, col++) = snp_poisson_cpp_parallel(df_d);
-  }
+   if (selected_features.count("x5")) {
+     results(_, col++) = snp_entropy_cpp_parallel(df_d, false);
+   }
+   if (selected_features.count("x6")) {
+     results(_, col++) = snp_entropy_cpp_parallel(df_d, true);
+   }
+   if (selected_features.count("x7")) {
+     results(_, col++) = snp_binomial_cpp_parallel(df_d);
+   }
+   if (selected_features.count("x8")) {
+     results(_, col++) = snp_fisher_cpp_parallel(df_d);
+   }
+   if (selected_features.count("x9")) {
+     results(_, col++) = snp_poisson_cpp_parallel(df_d);
+   }
 
-  VectoriseWorker worker(df_d["A"], df_d["C"], df_d["G"], df_d["T"],
-                         df_d["reference"], results, selected_features);
-  parallelFor(0, n, worker);
+   VectoriseWorker worker(df_d["A"], df_d["C"], df_d["G"], df_d["T"],
+                          df_d["reference"], results, selected_features);
+   parallelFor(0, n, worker);
 
-  DataFrame output = DataFrame(results);
+   DataFrame output = DataFrame(results);
 
-  CharacterVector col_names(features.size());
-  for (R_xlen_t i = 0; i < features.size(); ++i) {
-    col_names[i] = features[i];
-  }
-  output.attr("names") = col_names;
+   CharacterVector col_names(features.size());
+   for (R_xlen_t i = 0; i < features.size(); ++i) {
+     col_names[i] = features[i];
+   }
+   output.attr("names") = col_names;
 
-  return output;
-}
+   return output;
+ }

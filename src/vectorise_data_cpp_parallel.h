@@ -19,6 +19,7 @@ using namespace RcppParallel;
 // [[Rcpp::depends(RcppParallel)]]
 
 // Function to extract feastures for SNPs
-DataFrame vectorise_data_cpp_parallel(DataFrame& df_d, CharacterVector features);
+DataFrame vectorise_data_cpp_parallel(DataFrame& df_d,
+                                      CharacterVector features);
 
 #endif // SNP_FISHER_H

@@ -8,24 +8,26 @@ extractSSsCoordsGTF(x, gtfDir = NULL, workDir = NULL)
 }
 \arguments{
 \item{x}{character string specifying the name of file with input data.
-Accepted formats: GFF2.5/GTF or GFF3 (the gz archive of GFF2.5/GTF or
-GFF3 file is also accepted). The file should include models of genes in
-general/generic feature format with mandatory field "transcript_id".}
+Accepted formats: GFF2.5/GTF or GFF3 (the gz archive of GFF2.5/GTF
+or GFF3 file is also accepted). The file should include models of
+genes in general/generic feature format with mandatory field
+"transcript_id".}
 
 \item{gtfDir}{character string specifying the name of the directory
 containing the file with input data. NULL by default that mean the
 current working directory.}
 
-\item{workDir}{character string specifying the path to and name of working
-directory. NULL by default that means the current working directory.}
+\item{workDir}{character string specifying the path to and name of
+working directory. NULL by default that means the current working
+directory.}
 }
 \value{
-object of class list containing two GRanges objects with genomic
-coordinates of 5' and 3' splice sites.
+object of class list containing two GRanges objects with
+genomic coordinates of 5' and 3' splice sites.
 }
 \description{
-Extraction of the genomic coordinates of splice sites using
-genomic/transcriptomic annotations.
+Extraction of the genomic coordinates of splice sites
+using genomic/transcriptomic annotations.
 }
 \examples{
 res <- extractSSsCoordsGTF(

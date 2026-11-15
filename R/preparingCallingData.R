@@ -112,17 +112,18 @@
 #' @importFrom utils read.table
 #' @importFrom methods is
 #' @importFrom tibble tibble
-collectBasesPileup <- function(bamDir = NULL,
-    bamFile,
-    gr = "SeqInfo",
-    canChr = TRUE,
-    depth = 1e6, baseq = 20, mapq = 20,
-    coverage = NULL,
-    genome = "BSgenome.Hsapiens.UCSC.hg38",
-    tmpDir = tempdir(),
-    postfix = NULL,
-    threads = 1,
-    workDir = NULL) {
+collectBasesPileup <- function(
+        bamDir = NULL,
+        bamFile,
+        gr = "SeqInfo",
+        canChr = TRUE,
+        depth = 1e6, baseq = 20, mapq = 20,
+        coverage = NULL,
+        genome = "BSgenome.Hsapiens.UCSC.hg38",
+        tmpDir = tempdir(),
+        postfix = NULL,
+        threads = 1,
+        workDir = NULL) {
     ### Setting the working directory.
     if (is.null(x = workDir)) {
         workDir <- getwd()
@@ -181,7 +182,11 @@ collectBasesPileup <- function(bamDir = NULL,
         ) == "TRUE") {
             GRs <- makeGRangesFromDataFrame(df = GRs)
         } else {
-            GRs$seqnames <- gsub(pattern = "chr", replacement = "", x = GRs$seqnames)
+            GRs$seqnames <- gsub(
+                pattern = "chr",
+                replacement = "",
+                x = GRs$seqnames
+            )
             GRs <- makeGRangesFromDataFrame(df = GRs)
         }
     }
@@ -198,15 +203,16 @@ collectBasesPileup <- function(bamDir = NULL,
     bpparam <- SnowParam(workers = threads, stop.on.error = TRUE)
     foreach_result <- bplapply(
         X = seq_along(GRs),
-        FUN = function(i,
-    GRs,
-    bam_link,
-    depth,
-    baseq,
-    mapq,
-    coverage,
-    genome_obj,
-    tmpDir) {
+        FUN = function(
+        i,
+        GRs,
+        bam_link,
+        depth,
+        baseq,
+        mapq,
+        coverage,
+        genome_obj,
+        tmpDir) {
             #   Get pileup statistics for the current chunk.
             chunk <- GRs[i]
             pileup_data <- pileup(
@@ -221,8 +227,8 @@ collectBasesPileup <- function(bamDir = NULL,
                     include_insertions = FALSE
                 )
             )
-            #   Transformation of the primary pileup object to a six-fields table
-            #   object of class data.frame.
+            #   Transformation of the primary pileup object to a six-fields
+            #   table object of class data.frame.
             pileup_data$position <- paste(pileup_data$seqnames,
                 pileup_data$pos,
                 sep = ":"
@@ -889,19 +895,20 @@ markDuplicatesGATK <- function(bamDir = NULL,
 #' @examples
 #' ...
 #' @export
-recalibrateBamGATK <- function(bamDir = NULL,
-    bamFile,
-    vcfDir = NULL,
-    vcfFile,
-    fastaDir = NULL,
-    faFile,
-    createBQSR = TRUE,
-    recalibrate = TRUE,
-    nameBQSR,
-    postfix = "Recalibrated",
-    SE = TRUE,
-    gatk_path = "gatk",
-    workDir = NULL) {
+recalibrateBamGATK <- function(
+        bamDir = NULL,
+        bamFile,
+        vcfDir = NULL,
+        vcfFile,
+        fastaDir = NULL,
+        faFile,
+        createBQSR = TRUE,
+        recalibrate = TRUE,
+        nameBQSR,
+        postfix = "Recalibrated",
+        SE = TRUE,
+        gatk_path = "gatk",
+        workDir = NULL) {
     ### Setting the working directory.
     if (is.null(x = workDir)) {
         workDir <- getwd()
@@ -926,7 +933,11 @@ recalibrateBamGATK <- function(bamDir = NULL,
     }
     ### Generation of BQSR table.
     if (isTRUE(x = createBQSR)) {
-        bqsr_name <- paste(gsub(pattern = ".bam", replacement = "", x = bamFile),
+        bqsr_name <- paste(
+            gsub(
+                pattern = ".bam",
+                replacement = "", x = bamFile
+            ),
             "bqsr.table",
             sep = "."
         )
@@ -956,7 +967,12 @@ recalibrateBamGATK <- function(bamDir = NULL,
     ### Recalibration process.
     if (isTRUE(x = recalibrate)) {
         if (isTRUE(x = createBQSR)) {
-            bqsr_name <- paste(gsub(pattern = ".bam", replacement = "", x = bamFile),
+            bqsr_name <- paste(
+                gsub(
+                    pattern = ".bam",
+                    replacement = "",
+                    x = bamFile
+                ),
                 "bqsr.table",
                 sep = "."
             )

@@ -260,12 +260,11 @@ filterVariants <- function(
 #' )
 #' @export
 #' @importFrom data.table fread as.data.table data.table fifelse
-benchmarkVariants <- function(
-        vcfDir,
-        ref_vcf,
-        query_vcf,
-        featureTable = FALSE,
-        workDir = NULL) {
+benchmarkVariants <- function(vcfDir,
+    ref_vcf,
+    query_vcf,
+    featureTable = FALSE,
+    workDir = NULL) {
     ### Setting the working directory.
     if (is.null(x = workDir)) {
         workDir <- getwd()
@@ -328,7 +327,8 @@ benchmarkVariants <- function(
         FN <- sum(!truth_keys %in% test_keys)
         precision <- if ((TP + FP) == 0) NA else TP / (TP + FP)
         recall <- if ((TP + FN) == 0) NA else TP / (TP + FN)
-        f1 <- if (is.na(x = precision) || is.na(x = recall) || (precision + recall) == 0) {
+        f1 <- if (is.na(x = precision) || is.na(x = recall) ||
+            (precision + recall) == 0) {
             NA
         } else {
             2 * precision * recall / (precision + recall)

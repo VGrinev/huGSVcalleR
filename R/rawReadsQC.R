@@ -44,13 +44,12 @@
 #' @importFrom methods as is
 #' @importFrom stats density quantile
 #' @importFrom DelayedArray mean
-assessQRawReads <- function(
-        fastqDir = NULL,
-        fastq,
-        n = NULL,
-        adapters = NULL,
-        contaminants = NULL,
-        workDir = NULL) {
+assessQRawReads <- function(fastqDir = NULL,
+    fastq,
+    n = NULL,
+    adapters = NULL,
+    contaminants = NULL,
+    workDir = NULL) {
     ### Setting the working directory.
     if (is.null(x = workDir)) {
         workDir <- getwd()
@@ -77,7 +76,10 @@ assessQRawReads <- function(
     ##  Total number of bases.
     TNBs <- TNBs[[2]]
     ##  Distribution the length of reads.
-    reads <- readFASTQ(fastqDir = fastqDir, fastq = fastq, n = n, workDir = workDir)
+    reads <- readFASTQ(
+        fastqDir = fastqDir, fastq = fastq, n = n,
+        workDir = workDir
+    )
     RLs <- as.numeric(x = summary(object = width(x = reads$reads)))
     ##  Per entire reads quality.
     PERQs <- mean(x = as(object = reads$QScores, Class = "IntegerList"))
@@ -129,7 +131,10 @@ assessQRawReads <- function(
         }
     }
     PCQRs <- data.frame(do.call(args = m, what = rbind))
-    colnames(x = PCQRs) <- c("cycles", "minimum", "Q1", "median", "Q3", "maximum")
+    colnames(x = PCQRs) <- c(
+        "cycles", "minimum", "Q1", "median", "Q3",
+        "maximum"
+    )
     PCQRs[, -1] <- apply(X = PCQRs[, -1], MARGIN = 2, FUN = as.numeric)
     ##  Bases composition of the entire set of reads.
     BCs <- letterFrequency(
@@ -201,7 +206,10 @@ assessQRawReads <- function(
     DSs <- dustyScore(x = reads$reads)
     DSs <- list(
         scores = DSs,
-        density = do.call(what = cbind, args = density(x = log10(x = DSs))[seq_len(2)]),
+        density = do.call(
+            what = cbind,
+            args = density(x = log10(x = DSs))[seq_len(2)]
+        ),
         metrics = quantile(x = DSs, probs = c(0.1, 0.25, 0.5, 0.75, 0.9))
     )
     ##  Frequency of reads.
@@ -278,10 +286,11 @@ assessQRawReads <- function(
 #' @export
 #' @importFrom Biostrings DNAStringSet PhredQuality
 #' @importFrom tools file_ext
-readFASTQ <- function(fastqDir = NULL,
-    fastq,
-    n = NULL,
-    workDir = NULL) {
+readFASTQ <- function(
+        fastqDir = NULL,
+        fastq,
+        n = NULL,
+        workDir = NULL) {
     ### Setting the working directory.
     if (is.null(x = workDir)) {
         workDir <- getwd()
@@ -312,8 +321,16 @@ readFASTQ <- function(fastqDir = NULL,
                 by = 4
             )])
         )
-        names(x = FQs$reads) <- reads[seq(from = 1, to = length(x = reads), by = 4)]
-        names(x = FQs$QScores) <- reads[seq(from = 1, to = length(x = reads), by = 4)]
+        names(x = FQs$reads) <- reads[seq(
+            from = 1,
+            to = length(x = reads),
+            by = 4
+        )]
+        names(x = FQs$QScores) <- reads[seq(
+            from = 1,
+            to = length(x = reads),
+            by = 4
+        )]
     } else {
         reads <- readLines(con = paste(path, fastq, sep = "/"), n = n * 4)
         FQs <- list(
@@ -444,29 +461,30 @@ readFASTQ <- function(fastqDir = NULL,
 #' @importFrom methods as
 #' @importFrom utils read.table
 #' @importFrom IRanges narrow
-cleanRawReads <- function(fastqDir = NULL,
-    fastq1,
-    fastq2 = NULL,
-    adapters = NULL,
-    error = 0.2,
-    min_match_flank = 3L,
-    anchored = TRUE,
-    indels = FALSE,
-    tr_score = NULL,
-    tr_start = 10,
-    tr_end = 30,
-    phred = NA,
-    k = 3,
-    halfwidth = NULL,
-    successive = TRUE,
-    readl = 0,
-    readq = 0,
-    readn = 0,
-    dustScore = NULL,
-    batchSize = NA,
-    postfix = "filtered",
-    overwrite = FALSE,
-    workDir = NULL) {
+cleanRawReads <- function(
+        fastqDir = NULL,
+        fastq1,
+        fastq2 = NULL,
+        adapters = NULL,
+        error = 0.2,
+        min_match_flank = 3L,
+        anchored = TRUE,
+        indels = FALSE,
+        tr_score = NULL,
+        tr_start = 10,
+        tr_end = 30,
+        phred = NA,
+        k = 3,
+        halfwidth = NULL,
+        successive = TRUE,
+        readl = 0,
+        readq = 0,
+        readn = 0,
+        dustScore = NULL,
+        batchSize = NA,
+        postfix = "filtered",
+        overwrite = FALSE,
+        workDir = NULL) {
     ### Setting the working directory.
     if (is.null(x = workDir)) {
         workDir <- getwd()
@@ -551,9 +569,15 @@ cleanRawReads <- function(fastqDir = NULL,
     ##  Step 3, removing of the too short reads.
     FQ1 <- FQ1[width(x = FQ1) >= readl]
     ##  Step 4, removing of the too low quality reads.
-    FQ1 <- FQ1[rowMeans(x = as(quality(x = FQ1), "matrix"), na.rm = TRUE) >= readq]
+    FQ1 <- FQ1[rowMeans(
+        x = as(quality(x = FQ1), "matrix"),
+        na.rm = TRUE
+    ) >= readq]
     ##  Step 5, removing of the reads with ambiguous nucleotides.
-    FQ1 <- FQ1[polynFilter(threshold = as.integer(x = readn), nuc = "other")(FQ1)]
+    FQ1 <- FQ1[polynFilter(
+        threshold = as.integer(x = readn),
+        nuc = "other"
+    )(FQ1)]
     ##  Step 6, removing of the duplicated reads.
     FQ1 <- FQ1[occurrenceFilter(
         min = 1L, max = 1L,
@@ -562,7 +586,10 @@ cleanRawReads <- function(fastqDir = NULL,
     )(FQ1)]
     if (!is.null(x = dustScore)) {
         ##  Step 7, removing of the too low-complexity reads.
-        FQ1 <- FQ1[dustyFilter(threshold = dustScore, batchSize = batchSize)(FQ1)]
+        FQ1 <- FQ1[dustyFilter(
+            threshold = dustScore,
+            batchSize = batchSize
+        )(FQ1)]
     }
     if (!is.null(x = fastq2)) {
         ### Loading of the FASTQ file 2.
@@ -1222,10 +1249,9 @@ findForeignSeqs <- function(
 #' @importFrom graphics plot axis title rect legend mtext text barplot
 #' @importFrom stats ks.test density
 #' @importFrom grDevices pdf dev.off
-reportQAResults <- function(
-        x,
-        output = NULL,
-        workDir = NULL) {
+reportQAResults <- function(x,
+    output = NULL,
+    workDir = NULL) {
     ### Textual reports.
     ##  Template of textual table.
     tab <- data.frame(
@@ -1289,7 +1315,11 @@ reportQAResults <- function(
     tab[4, 2] <- x$TNBs
     tab[5:9, 2] <- x$RLs[-4]
     tab[10:14, 2] <- sprintf(x = x$PERQs$metrics, fmt = "%.1f")
-    tab[15:39, 2] <- formatC(x = c(t(x$BCs$metrics[, -1])), format = "e", digits = 2)
+    tab[15:39, 2] <- formatC(
+        x = c(t(x$BCs$metrics[, -1])),
+        format = "e",
+        digits = 2
+    )
     tab[40:44, 2] <- formatC(x = x$GCs$metrics, format = "e", digits = 2)
     tab[45:49, 2] <- x$DSs$metrics
     ##  Saving of textual table as *.PDF file.
@@ -1304,7 +1334,10 @@ reportQAResults <- function(
             sep = "."
         )
     }
-    pdf(file = paste(workDir, file_output, sep = "/"), height = nrow(x = tab) / 3)
+    pdf(
+        file = paste(workDir, file_output, sep = "/"),
+        height = nrow(x = tab) / 3
+    )
     theme <- ttheme_minimal(
         core = list(
             fg_params = list(
@@ -1456,7 +1489,10 @@ reportQAResults <- function(
     title(main = "Distribution of reads quality", cex.main = 1.5)
     title(xlab = "Standard vioplot", line = 1, cex.lab = 1.2)
     title(ylab = "Average read quality scores", line = 2.3, cex.lab = 1.2)
-    per <- data.frame(threshold = 0:ceiling(x = max(x = x$PERQs$means)), percent = 0)
+    per <- data.frame(
+        threshold = 0:ceiling(x = max(x = x$PERQs$means)),
+        percent = 0
+    )
     per[1, 2] <- 100
     L <- length(x = x$PERQs$means)
     for (i in seq_len(ceiling(x = max(x = x$PERQs$means)))) {
@@ -1487,15 +1523,24 @@ reportQAResults <- function(
     title(ylab = "Reads exceeding quality level, %", line = 2.8, cex.lab = 1.2)
     rect(
         xleft = 0, ybottom = 0, xright = 20, ytop = 100, border = NA,
-        col = rgb(red = 240, green = 228, blue = 66, maxColorValue = 255, alpha = 40)
+        col = rgb(
+            red = 240, green = 228, blue = 66, maxColorValue = 255,
+            alpha = 40
+        )
     )
     rect(
         xleft = 20, ybottom = 0, xright = 30, ytop = 100, border = NA,
-        col = rgb(red = 230, green = 159, blue = 0, maxColorValue = 255, alpha = 40)
+        col = rgb(
+            red = 230, green = 159, blue = 0, maxColorValue = 255,
+            alpha = 40
+        )
     )
     rect(
         xleft = 30, ybottom = 0, xright = 40, ytop = 100, border = NA,
-        col = rgb(red = 213, green = 94, blue = 0, maxColorValue = 255, alpha = 70)
+        col = rgb(
+            red = 213, green = 94, blue = 0, maxColorValue = 255,
+            alpha = 70
+        )
     )
     text(
         x = 20, y = 20, srt = 90,
@@ -1532,7 +1577,10 @@ reportQAResults <- function(
         frame = FALSE,
         axes = FALSE,
         lwd = 0.6,
-        medlwd = 1, medcol = rgb(red = 204, green = 121, blue = 167, maxColorValue = 255),
+        medlwd = 1, medcol = rgb(
+            red = 204, green = 121, blue = 167,
+            maxColorValue = 255
+        ),
         whisklty = "solid"
     )
     axis(
@@ -1550,26 +1598,45 @@ reportQAResults <- function(
     text(
         x = seq(from = 1, to = length(x = x$PCQRs[, 1]), by = 2),
         par("usr")[3] - 3, offset = -0.5, cex = 0.9,
-        labels = x$PCQRs[, 1][seq(from = 1, to = length(x = x$PCQRs[, 1]), by = 2)],
+        labels = x$PCQRs[, 1][seq(
+            from = 1,
+            to = length(x = x$PCQRs[, 1]),
+            by = 2
+        )],
         srt = 55, pos = 2, xpd = TRUE
     )
     title(main = "Per cycle quality of reads", cex.main = 1.5)
     title(xlab = "Cycles", line = 3.7, cex.lab = 1.2)
-    title(ylab = "Quality scores across of all bases", line = 2.3, cex.lab = 1.2)
-    rect(
-        xleft = 0.5, ybottom = 0, xright = length(x = x$PCQRs[, 1]) + 0.5, ytop = 20,
-        border = NA,
-        col = rgb(red = 240, green = 228, blue = 66, maxColorValue = 255, alpha = 40)
+    title(
+        ylab = "Quality scores across of all bases", line = 2.3,
+        cex.lab = 1.2
     )
     rect(
-        xleft = 0.5, ybottom = 20, xright = length(x = x$PCQRs[, 1]) + 0.5, ytop = 30,
+        xleft = 0.5, ybottom = 0, xright = length(x = x$PCQRs[, 1]) + 0.5,
+        ytop = 20,
         border = NA,
-        col = rgb(red = 230, green = 159, blue = 0, maxColorValue = 255, alpha = 40)
+        col = rgb(
+            red = 240, green = 228, blue = 66, maxColorValue = 255,
+            alpha = 40
+        )
     )
     rect(
-        xleft = 0.5, ybottom = 30, xright = length(x = x$PCQRs[, 1]) + 0.5, ytop = 40,
+        xleft = 0.5, ybottom = 20, xright = length(x = x$PCQRs[, 1]) + 0.5,
+        ytop = 30,
         border = NA,
-        col = rgb(red = 213, green = 94, blue = 0, maxColorValue = 255, alpha = 70)
+        col = rgb(
+            red = 230, green = 159, blue = 0, maxColorValue = 255,
+            alpha = 40
+        )
+    )
+    rect(
+        xleft = 0.5, ybottom = 30, xright = length(x = x$PCQRs[, 1]) + 0.5,
+        ytop = 40,
+        border = NA,
+        col = rgb(
+            red = 213, green = 94, blue = 0, maxColorValue = 255,
+            alpha = 70
+        )
     )
     ##  Base composition of the entire set of reads.
     colrs <- c(
@@ -1582,7 +1649,10 @@ reportQAResults <- function(
     bxp(
         z = list(
             stats = t(x$BCs$metrics[, -1]),
-            n = rep(x = length(x = x$PERQs$means), times = nrow(x = x$BCs$metrics))
+            n = rep(
+                x = length(x = x$PERQs$means),
+                times = nrow(x = x$BCs$metrics)
+            )
         ),
         ylim = c(0, 0.5),
         boxfill = colrs,
@@ -1629,7 +1699,11 @@ reportQAResults <- function(
     text(
         x = seq(from = 1, to = length(x = x$PCCBs[, 1]), by = 2),
         par("usr")[3] - 0.08, offset = -0.5, cex = 0.9,
-        labels = x$PCCBs[, 1][seq(from = 1, to = length(x = x$PCCBs[, 1]), by = 2)],
+        labels = x$PCCBs[, 1][seq(
+            from = 1,
+            to = length(x = x$PCCBs[, 1]),
+            by = 2
+        )],
         srt = 55, pos = 2, xpd = TRUE
     )
     title(main = "Per cycle composition of reads", cex.main = 1.5)
@@ -1667,7 +1741,10 @@ reportQAResults <- function(
     axis(
         side = 2,
         at = c(0.0, max(x = x$GCs$density[, 2]) / 4 * seq_len(4)),
-        labels = round(x = c(0.0, max(x = x$GCs$density[, 2]) / 4 * seq_len(4)), digits = 2),
+        labels = round(
+            x = c(0.0, max(x = x$GCs$density[, 2]) / 4 * seq_len(4)),
+            digits = 2
+        ),
         las = 1, lwd = 0.8
     )
     title(main = "GC composition of reads", cex.main = 1.5)
@@ -1747,7 +1824,10 @@ reportQAResults <- function(
     axis(
         side = 2,
         at = c(0.0, max(x = x$DSs$density[, 2]) / 4 * seq_len(4)),
-        labels = round(x = c(0.0, max(x = x$DSs$density[, 2]) / 4 * seq_len(4)), digits = 2),
+        labels = round(
+            x = c(0.0, max(x = x$DSs$density[, 2]) / 4 * seq_len(4)),
+            digits = 2
+        ),
         las = 1, lwd = 0.8
     )
     title(main = "Low-complexity of reads", cex.main = 1.5)
@@ -1767,7 +1847,8 @@ reportQAResults <- function(
         lty = 0, bty = "n"
     )
     rect(
-        xleft = 2.0, ybottom = 0, xright = 3.0, ytop = max(x = x$DSs$density[, 2]),
+        xleft = 2.0, ybottom = 0, xright = 3.0,
+        ytop = max(x = x$DSs$density[, 2]),
         density = 20, border = NA, lwd = 0.3,
         col = rgb(red = 0, green = 158, blue = 115, maxColorValue = 255)
     )
@@ -1831,7 +1912,11 @@ reportQAResults <- function(
         text(
             x = seq(from = 1, to = length(x = x$ASs[, 1]), by = 2),
             par("usr")[3] - 0.028, offset = -0.5,
-            labels = x$ASs[, 1][seq(from = 1, to = length(x = x$ASs[, 1]), by = 2)],
+            labels = x$ASs[, 1][seq(
+                from = 1,
+                to = length(x = x$ASs[, 1]),
+                by = 2
+            )],
             cex = 0.9, srt = 55, pos = 2, xpd = TRUE
         )
         title(main = "Adapter contaminations", cex.main = 1.5)
@@ -1875,7 +1960,11 @@ reportQAResults <- function(
         text(
             x = seq(from = 1, to = length(x = x$FSs[, 1]), by = 2),
             par("usr")[3] - 0.028, offset = -0.5,
-            labels = x$FSs[, 1][seq(from = 1, to = length(x = x$FSs[, 1]), by = 2)],
+            labels = x$FSs[, 1][seq(
+                from = 1,
+                to = length(x = x$FSs[, 1]),
+                by = 2
+            )],
             cex = 0.9, srt = 55, pos = 2, xpd = TRUE
         )
         title(main = "Foreign sequence contaminations", cex.main = 1.5)

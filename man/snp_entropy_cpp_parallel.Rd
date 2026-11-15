@@ -9,45 +9,59 @@ snp_entropy_cpp_parallel(df_d, p_value = FALSE)
 \arguments{
 \item{df_d}{A data frame containing the following columns:
 \itemize{
-\item reference: A character vector specifying the reference allele for each position (values: "A", "C", "G", "T").
-\item A, C, G, T: Integer vectors representing the observed counts of each nucleotide at each SNP position.
+\item reference: A character vector specifying the reference allele for
+each position (values: "A", "C", "G", "T").
+\item A, C, G, T: Integer vectors representing the observed counts of
+each nucleotide at each SNP position.
 }}
 
-\item{p_value}{A boolean flag (default: TRUE) indicating whether to calculate p-values. If FALSE, the function
-returns entropy values instead.}
+\item{p_value}{A boolean flag (default: TRUE) indicating whether to
+calculate p-values. If FALSE, the function returns entropy values
+instead.}
 }
 \value{
 A numeric vector containing either:
 \itemize{
 \item Entropy values (if p_value = FALSE).
-\item P-values of the chi-square tests for the entropy values (if p_value = TRUE).
-A p-value of 1 indicates no significant variation, while smaller values suggest greater variation and statistical significance.
+\item P-values of the chi-square tests for the entropy values (if
+p_value = TRUE).
+A p-value of 1 indicates no significant variation, while smaller
+values suggest greater variation and statistical significance.
 }
 }
 \description{
-This function calculates the entropy and/or p-value for each SNP (single nucleotide polymorphism) position
-in the provided genomic data. Entropy quantifies the variability in nucleotide distributions, while the
-p-value assesses the statistical significance of the entropy using a chi-square test. The function supports
-optional calculation of either entropy or p-values and utilizes parallel processing for efficiency on large datasets.
+This function calculates the entropy and/or p-value for each SNP
+(single nucleotide polymorphism) position in the provided genomic
+data. Entropy quantifies the variability in nucleotide distributions,
+while the p-value assesses the statistical significance of the
+entropy using a chi-square test. The function supports optional
+calculation of either entropy or p-values and utilizes parallel
+processing for efficiency on large datasets.
 }
 \details{
 The function performs the following steps:
 \enumerate{
 \item Retrieves the nucleotide counts (A, C, G, T) for each SNP position.
 \item Computes the total coverage (sum of counts for all nucleotides).
-\item If the total coverage is zero, assigns a p-value or entropy value of 1.
-\item Adjusts the nucleotide distribution if the reference allele does not match the most frequent nucleotide:
+\item If the total coverage is zero, assigns a p-value or entropy value
+of 1.
+\item Adjusts the nucleotide distribution if the reference allele does
+not match the most frequent nucleotide:
 \itemize{
-\item Splits the count of the most frequent nucleotide between it and the reference allele.
+\item Splits the count of the most frequent nucleotide between it and
+the reference allele.
 }
 \item Normalizes nucleotide counts to probabilities.
 \item Computes entropy using the formula:
 Entropy = -sum(p_i * log10(p_i))
 where p_i is the normalized count of nucleotide i.
-\item If p_value = TRUE, computes the chi-square statistic using the entropy and total coverage, then derives the p-value:
+\item If p_value = TRUE, computes the chi-square statistic using the
+entropy and total coverage, then derives the p-value:
 chi^2 = 2 * total coverage * Entropy
-The p-value is calculated using the chi-square distribution with 4 degrees of freedom.
-\item Executes the calculations in parallel across multiple cores for faster processing of large datasets.
+The p-value is calculated using the chi-square distribution with
+4 degrees of freedom.
+\item Executes the calculations in parallel across multiple cores for
+faster processing of large datasets.
 }
 }
 \examples{

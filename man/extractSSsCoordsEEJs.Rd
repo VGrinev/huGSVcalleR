@@ -7,39 +7,43 @@
 extractSSsCoordsEEJs(x, eejDir = NULL, thr = 5, workDir = NULL)
 }
 \arguments{
-\item{x}{character string specifying the name of the tab-delimited TXT file
-with experimentally detected exon-exon junctions. This file must contain
-the following fields:
+\item{x}{character string specifying the name of the tab-delimited TXT
+file with experimentally detected exon-exon junctions. This file
+must contain the following fields:
 i) eej_id     - exon-exon junction ID;
 ii) gene_id   - gene ID;
 iii) seqnames - name of chromosome or scaffold with prefix "chr";
 iv) start     - start coordinate of exon-exon junction (genomic
-position of the last nucleotide in the upstream exon);
-v) end        - end coordinate of exon-exon junction(genomic
-position of the first nucleotide in the downstream exon);
-vi) strand    - strand information about exon-exon junction location;
-vii-...) ...  - (optionally) one or more samples with summarized raw
-RNA-Seq reads spanning exon-exon junction.}
+position of the last nucleotide in the upstream
+exon);
+v) end        - end coordinate of exon-exon junction (genomic
+position of the first nucleotide in the downstream
+exon);
+vi) strand    - strand information about exon-exon junction
+location;
+vii-...) ...  - (optionally) one or more samples with summarized
+raw RNA-Seq reads spanning exon-exon junction.}
 
 \item{eejDir}{character string specifying the name of the directory
-containing the tab-delimited TXT file(-s) with experimentally detected
-exon-exon junctions. NULL by default that mean the current working
-directory.}
+containing the tab-delimited TXT file(-s) with experimentally
+detected exon-exon junctions. NULL by default that mean the
+current working directory.}
 
 \item{thr}{an integer argument. It is a threshold for minimal coverage
-(sequencing depth) of exon-exon junction (in raw reads). Default value
-is 5 but can be specified by the user.}
+(sequencing depth) of exon-exon junction (in raw reads). Default
+value is 5 but can be specified by the user.}
 
-\item{workDir}{character string specifying the path to and name of working
-directory. NULL by default that means the current working directory.}
+\item{workDir}{character string specifying the path to and name of
+working directory. NULL by default that means the current working
+directory.}
 }
 \value{
-object of class list containing two GRanges objects with genomic
-coordinates of 5' and 3' splice sites.
+object of class list containing two GRanges objects with
+genomic coordinates of 5' and 3' splice sites.
 }
 \description{
-Extraction of the genomic coordinates of splice sites using
-experimentally detected exon-exon junctions.
+Extraction of the genomic coordinates of splice sites
+using experimentally detected exon-exon junctions.
 }
 \examples{
 res <- extractSSsCoordsEEJs(

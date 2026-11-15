@@ -16,17 +16,23 @@ struct SNPEntropyWorker : public Worker
                    const IntegerVector& C, const IntegerVector& G,
                    const IntegerVector& T, const bool& p_value_arg,
                    NumericVector& results)
-    : A(A), C(C), G(G), T(T), p_value(p_value_arg), reference(reference), results(results),
+    : A(A), C(C), G(G), T(T), p_value(p_value_arg), reference(reference),
+      results(results),
       nucleotides(CharacterVector::create("A", "C", "G", "T")) {}
 
   void operator()(std::size_t begin, std::size_t end)
   {
     for (std::size_t i = begin; i < end; ++i)
     {
-     std::array<double, 4> SampleCite = {static_cast<double>(A[i]), static_cast<double>(C[i]),
-                                         static_cast<double>(G[i]), static_cast<double>(T[i])};
+     std::array<double, 4> SampleCite = {static_cast<double>(A[i]),
+                                         static_cast<double>(C[i]),
+                                         static_cast<double>(G[i]),
+                                         static_cast<double>(T[i])};
 
-     double NumOfCovers = SampleCite[0] + SampleCite[1] + SampleCite[2] + SampleCite[3];
+     double NumOfCovers = SampleCite[0] +
+       SampleCite[1] +
+       SampleCite[2] +
+       SampleCite[3];
 
       if (NumOfCovers == 0)
       {
@@ -87,38 +93,52 @@ struct SNPEntropyWorker : public Worker
 //' Parallel SNP Entropy and P-value Calculation
 //' @name snp_entropy_cpp_parallel
 //' @description
-//' This function calculates the entropy and/or p-value for each SNP (single nucleotide polymorphism) position
-//' in the provided genomic data. Entropy quantifies the variability in nucleotide distributions, while the
-//' p-value assesses the statistical significance of the entropy using a chi-square test. The function supports
-//' optional calculation of either entropy or p-values and utilizes parallel processing for efficiency on large datasets.
+//' This function calculates the entropy and/or p-value for each SNP
+//' (single nucleotide polymorphism) position in the provided genomic
+//' data. Entropy quantifies the variability in nucleotide distributions,
+//' while the p-value assesses the statistical significance of the
+//' entropy using a chi-square test. The function supports optional
+//' calculation of either entropy or p-values and utilizes parallel
+//' processing for efficiency on large datasets.
 //'
 //' @param df_d A data frame containing the following columns:
-//'   - reference: A character vector specifying the reference allele for each position (values: "A", "C", "G", "T").
-//'   - A, C, G, T: Integer vectors representing the observed counts of each nucleotide at each SNP position.
-//' @param p_value A boolean flag (default: TRUE) indicating whether to calculate p-values. If FALSE, the function
-//'   returns entropy values instead.
+//'   - reference: A character vector specifying the reference allele for
+//'     each position (values: "A", "C", "G", "T").
+//'   - A, C, G, T: Integer vectors representing the observed counts of
+//'     each nucleotide at each SNP position.
+//' @param p_value A boolean flag (default: TRUE) indicating whether to
+//'   calculate p-values. If FALSE, the function returns entropy values
+//'   instead.
 //'
 //' @return
 //' A numeric vector containing either:
 //'   - Entropy values (if p_value = FALSE).
-//'   - P-values of the chi-square tests for the entropy values (if p_value = TRUE).
-//'   A p-value of 1 indicates no significant variation, while smaller values suggest greater variation and statistical significance.
+//'   - P-values of the chi-square tests for the entropy values (if
+//'     p_value = TRUE).
+//'   A p-value of 1 indicates no significant variation, while smaller
+//'   values suggest greater variation and statistical significance.
 //'
 //' @details
 //' The function performs the following steps:
 //' 1. Retrieves the nucleotide counts (A, C, G, T) for each SNP position.
 //' 2. Computes the total coverage (sum of counts for all nucleotides).
-//' 3. If the total coverage is zero, assigns a p-value or entropy value of 1.
-//' 4. Adjusts the nucleotide distribution if the reference allele does not match the most frequent nucleotide:
-//'    - Splits the count of the most frequent nucleotide between it and the reference allele.
+//' 3. If the total coverage is zero, assigns a p-value or entropy value
+//'    of 1.
+//' 4. Adjusts the nucleotide distribution if the reference allele does
+//'    not match the most frequent nucleotide:
+//'    - Splits the count of the most frequent nucleotide between it and
+//'      the reference allele.
 //' 5. Normalizes nucleotide counts to probabilities.
 //' 6. Computes entropy using the formula:
 //'    Entropy = -sum(p_i * log10(p_i))
 //'    where p_i is the normalized count of nucleotide i.
-//' 7. If p_value = TRUE, computes the chi-square statistic using the entropy and total coverage, then derives the p-value:
+//' 7. If p_value = TRUE, computes the chi-square statistic using the
+//'    entropy and total coverage, then derives the p-value:
 //'    chi^2 = 2 * total coverage * Entropy
-//'    The p-value is calculated using the chi-square distribution with 4 degrees of freedom.
-//' 8. Executes the calculations in parallel across multiple cores for faster processing of large datasets.
+//'    The p-value is calculated using the chi-square distribution with
+//'    4 degrees of freedom.
+//' 8. Executes the calculations in parallel across multiple cores for
+//'    faster processing of large datasets.
 //'
 //' @examples
 //' # Example input data

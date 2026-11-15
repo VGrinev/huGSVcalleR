@@ -8,35 +8,41 @@ annotateBasic(vcfDir = NULL, vcfFile, ref_genes, output = NULL, workDir = NULL)
 }
 \arguments{
 \item{vcfDir}{character string giving the name (or path to and name) of
-directory with VCF file(-s). NULL by default, which means the current
-working directory will be used instead of the specified VCF directory.}
+directory with VCF file(-s). NULL by default, which means the
+current working directory will be used instead of the specified
+VCF directory.}
 
-\item{vcfFile}{character string giving the name of input VCF file. File must
-not contain NON_REF fields (for HaplotypeCaller it means run with -ERC NONE).}
+\item{vcfFile}{character string giving the name of input VCF file.
+File must not contain NON_REF fields (for HaplotypeCaller it means
+run with -ERC NONE).}
 
 \item{ref_genes}{character string giving the name of TXT file in
-tab-delimited format with basic annotations of reference genes. This
-file must contains the following fields:
-i) gene_id        - (optionally) gene ID (for example, Ensembl based);
+tab-delimited format with basic annotations of reference genes.
+This file must contains the following fields:
+i) gene_id        - (optionally) gene ID (for example, Ensembl
+based);
 ii) gene_name     - name of gene (for example, HUGO based);
 iii) gene_biotype - biotype of gene;
-iv) seqnames      - name of chromosome or scaffold with prefix "chr";
+iv) seqnames      - name of chromosome or scaffold with prefix
+"chr";
 v) start          - start coordinate of gene;
 vi) end           - end coordinate of gene;
 vii) strand       - (optionally) strand information about gene.}
 
-\item{output}{character string giving the name (without extension) of TXT
-file in tab-delimited format for storing annotated single nucleotide
-variations. The words "basic" will be added to this name. NULL by default, which means that the name
-will be generated automatically based on the name of the input
-VCF file.}
+\item{output}{character string giving the name (without extension) of
+TXT file in tab-delimited format for storing annotated single
+nucleotide variations. The words "basic" will be added to this
+name. NULL by default, which means that the name will be generated
+automatically based on the name of the input VCF file.}
 
 \item{workDir}{character string giving the path to and name of working
-directory. NULL by default that means the current working directory.}
+directory. NULL by default that means the current working
+directory.}
 }
 \value{
 an object of class list with two slots and two new TXT file in
-tab-delimited format with basic and extended annotation of provided single nucleotide variations.
+tab-delimited format with basic and extended annotation of
+provided single nucleotide variations.
 }
 \description{
 This function performs a basic annotation of the single
