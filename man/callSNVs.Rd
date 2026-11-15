@@ -132,9 +132,9 @@ use. Available options: "log_reg", "rand_forest", "rpart", "SVM",
 instead of class labels. Default is FALSE. Only with criterion "ml".}
 }
 \value{
-VCF file(-s) with detected single nucleotide variations. The
-function returns the result of the low-level function corresponding
-to the chosen criterion.
+VCF file(-s) with detected single nucleotide variations are
+written to \code{vcfDir}. The function is called for its side effect
+and returns \code{NULL} invisibly.
 }
 \description{
 This function is a wrapper that allows to call and control
