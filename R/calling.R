@@ -52,126 +52,126 @@
 #' @noRd
 #' @importFrom parallel detectCores
 gatkCalleR <- function(bamDir = NULL,
-                       bamFile,
-                       postfix = NA,
-                       fastaDir = NULL,
-                       faFile,
-                       intervals = NULL,
-                       pcr_model = "CONSERVATIVE",
-                       soft_clip = TRUE,
-                       ERC = "NONE",
-                       cores = "MAX",
-                       SE = TRUE,
-                       gatk_path = NULL,
-                       workDir = NULL) {
-  ### Platform check: GATK is not natively supported on Windows.
-  if (.Platform$OS.type == "windows") {
-    stop(
-      "GATK is not natively supported on Windows. ",
-      "Please use WSL2 or Docker and run GATK manually, ",
-      "then use callSNVs(criteria = 'fisher') or another method. ",
-      "See the INSTALL file for details."
-    )
-  }
-  ### Validation of GATK path.
-  if (is.null(x = gatk_path)) {
-    stop(
-      "Cannot run GATK without path. Please provide full path to GATK ",
-      "executive script, or 'gatk' if it can be called from $PATH."
-    )
-  }
-  if (!file.exists(gatk_path) && !nzchar(Sys.which(gatk_path))) {
-    stop(
-      "GATK executable not found: ", gatk_path,
-      ". Provide a valid path or ensure 'gatk' is in $PATH."
-    )
-  }
-  ### Setting the working directory.
-  if (is.null(x = workDir)) {
-    workDir <- getwd()
-  }
-  ### Full path to the BAM file.
-  if (is.null(x = bamDir)) {
-    path1 <- workDir
-  } else {
-    path1 <- paste(workDir, bamDir, sep = "/")
-  }
-  ### Full path to the reference genome.
-  if (is.null(x = fastaDir)) {
-    path2 <- workDir
-  } else {
-    path2 <- paste(workDir, fastaDir, sep = "/")
-  }
-  ### Settings of run.
-  #   Settings for input BAM file.
-  input <- paste("-I",
-                 paste(path1, bamFile, sep = "/"),
-                 sep = " "
-  )
-  #   Settings for output VCF file.
-  bam_basename <- gsub(pattern = ".bam", replacement = "", x = bamFile)
-  if (!is.na(x = postfix)) {
-    out_name <- paste(bam_basename, postfix, "vcf", sep = ".")
-  } else {
-    out_name <- paste(bam_basename, "HCaller", "vcf", sep = ".")
-  }
-  output <- paste("-O", file.path(path1, out_name), sep = " ")
-  #   Settings for fai-indexed reference genome.
-  fa <- paste("-R", paste(path2, faFile, sep = "/"), sep = " ")
-  #   Settings for intervals.
-  if (!is.null(x = intervals)) {
-    GRs <- read.table(
-      file = paste(workDir, intervals, sep = "/"),
-      sep = "\t",
-      header = TRUE,
-      quote = "\"",
-      as.is = TRUE
-    )
-    GRs <- paste(paste(GRs[, 1], GRs[, 2], sep = ":"), GRs[, 3], sep = "-")
-    GRs <- paste("--intervals", GRs)
-    fa <- paste(fa, GRs)
-  }
-  #   Settings for PCR indel model.
-  pcr <- paste("--pcr-indel-model", pcr_model)
-  #   Settings for using for discovery the soft clipped regions
-  softclip <- paste("--dont-use-soft-clipped-bases", soft_clip)
-  # Settings for ERC output.
-  erc <- paste("-ERC", ERC)
-  #   Setting the multithreads process.
-  if (cores == "MAX") {
-    cores <- detectCores()
-  }
-  cores <- paste("--native-pair-hmm-threads", cores)
-  ### Settings for saving of standart error.
-  se <- ""
-  if (SE == TRUE) {
-    se <- paste(gsub(pattern = ".bam", replacement = "", x = bamFile),
-                "STDERR.HC.TXT",
-                sep = "."
-    )
-  }
-  ### Running of command.
-  status <- system2(
-    command = gatk_path,
-    args = c(
-      "HaplotypeCaller", input, output, fa,
-      pcr, softclip, erc, cores
-    ),
-    if (se == "") {
-      stderr <- se
-    } else {
-      stderr <- paste(path1, se, sep = "/")
+    bamFile,
+    postfix = NA,
+    fastaDir = NULL,
+    faFile,
+    intervals = NULL,
+    pcr_model = "CONSERVATIVE",
+    soft_clip = TRUE,
+    ERC = "NONE",
+    cores = "MAX",
+    SE = TRUE,
+    gatk_path = NULL,
+    workDir = NULL) {
+    ### Platform check: GATK is not natively supported on Windows.
+    if (.Platform$OS.type == "windows") {
+        stop(
+            "GATK is not natively supported on Windows. ",
+            "Please use WSL2 or Docker and run GATK manually, ",
+            "then use callSNVs(criteria = 'fisher') or another method. ",
+            "See the INSTALL file for details."
+        )
     }
-  )
-  if (status != 0) {
-    stop(
-      "GATK HaplotypeCaller failed with exit code ", status,
-      ". Check that gatk_path points to a valid GATK executable ",
-      "and that the input files (BAM, FASTA, intervals) are correct."
+    ### Validation of GATK path.
+    if (is.null(x = gatk_path)) {
+        stop(
+            "Cannot run GATK without path. Please provide full path to GATK ",
+            "executive script, or 'gatk' if it can be called from $PATH."
+        )
+    }
+    if (!file.exists(gatk_path) && !nzchar(Sys.which(gatk_path))) {
+        stop(
+            "GATK executable not found: ", gatk_path,
+            ". Provide a valid path or ensure 'gatk' is in $PATH."
+        )
+    }
+    ### Setting the working directory.
+    if (is.null(x = workDir)) {
+        workDir <- getwd()
+    }
+    ### Full path to the BAM file.
+    if (is.null(x = bamDir)) {
+        path1 <- workDir
+    } else {
+        path1 <- paste(workDir, bamDir, sep = "/")
+    }
+    ### Full path to the reference genome.
+    if (is.null(x = fastaDir)) {
+        path2 <- workDir
+    } else {
+        path2 <- paste(workDir, fastaDir, sep = "/")
+    }
+    ### Settings of run.
+    #   Settings for input BAM file.
+    input <- paste("-I",
+        paste(path1, bamFile, sep = "/"),
+        sep = " "
     )
-  }
-  ### Returning nothing: the VCF file is the only output.
-  invisible(NULL)
+    #   Settings for output VCF file.
+    bam_basename <- gsub(pattern = ".bam", replacement = "", x = bamFile)
+    if (!is.na(x = postfix)) {
+        out_name <- paste(bam_basename, postfix, "vcf", sep = ".")
+    } else {
+        out_name <- paste(bam_basename, "HCaller", "vcf", sep = ".")
+    }
+    output <- paste("-O", file.path(path1, out_name), sep = " ")
+    #   Settings for fai-indexed reference genome.
+    fa <- paste("-R", paste(path2, faFile, sep = "/"), sep = " ")
+    #   Settings for intervals.
+    if (!is.null(x = intervals)) {
+        GRs <- read.table(
+            file = paste(workDir, intervals, sep = "/"),
+            sep = "\t",
+            header = TRUE,
+            quote = "\"",
+            as.is = TRUE
+        )
+        GRs <- paste(paste(GRs[, 1], GRs[, 2], sep = ":"), GRs[, 3], sep = "-")
+        GRs <- paste("--intervals", GRs)
+        fa <- paste(fa, GRs)
+    }
+    #   Settings for PCR indel model.
+    pcr <- paste("--pcr-indel-model", pcr_model)
+    #   Settings for using for discovery the soft clipped regions
+    softclip <- paste("--dont-use-soft-clipped-bases", soft_clip)
+    # Settings for ERC output.
+    erc <- paste("-ERC", ERC)
+    #   Setting the multithreads process.
+    if (cores == "MAX") {
+        cores <- detectCores()
+    }
+    cores <- paste("--native-pair-hmm-threads", cores)
+    ### Settings for saving of standart error.
+    se <- ""
+    if (SE == TRUE) {
+        se <- paste(gsub(pattern = ".bam", replacement = "", x = bamFile),
+            "STDERR.HC.TXT",
+            sep = "."
+        )
+    }
+    ### Running of command.
+    status <- system2(
+        command = gatk_path,
+        args = c(
+            "HaplotypeCaller", input, output, fa,
+            pcr, softclip, erc, cores
+        ),
+        if (se == "") {
+            stderr <- se
+        } else {
+            stderr <- paste(path1, se, sep = "/")
+        }
+    )
+    if (status != 0) {
+        stop(
+            "GATK HaplotypeCaller failed with exit code ", status,
+            ". Check that gatk_path points to a valid GATK executable ",
+            "and that the input files (BAM, FASTA, intervals) are correct."
+        )
+    }
+    ### Returning nothing: the VCF file is the only output.
+    invisible(NULL)
 }
 
 #' Call of single nucleotide variations using Fisher’s exact test
@@ -216,57 +216,57 @@ gatkCalleR <- function(bamDir = NULL,
 #' @noRd
 #' @importFrom Rsubread exactSNP
 fisherCalleR <- function(bamDir = NULL,
-                         bamFile,
-                         fastaDir = NULL,
-                         faFile,
-                         baseq = 20,
-                         mindepth = 1, maxdepth = 1e6,
-                         qvalue = 12,
-                         trim = 0,
-                         threads = 1,
-                         outputVCF = NULL,
-                         workDir = NULL) {
-  ### Setting the working directory.
-  if (is.null(x = workDir)) {
-    workDir <- getwd()
-  }
-  ### Full path to the BAM file.
-  if (is.null(x = bamDir)) {
-    path1 <- workDir
-  } else {
-    path1 <- paste(workDir, bamDir, sep = "/")
-  }
-  ### Full path to the reference genome.
-  if (is.null(x = fastaDir)) {
-    path2 <- workDir
-  } else {
-    path2 <- paste(workDir, fastaDir, sep = "/")
-  }
-  ### Setting the BAM file.
-  bam <- paste(path1, bamFile, sep = "/")
-  ### Setting the FASTA file.
-  fa <- paste(path2, faFile, sep = "/")
-  ### Setting the output VCF file.
-  if (is.null(x = outputVCF)) {
-    vcf <- paste0(sub(".bam$", "", bam), ".fisherCalleR.SNVs.vcf")
-  } else {
-    vcf <- paste0(sub(".bam$", "", bam), ".", outputVCF, ".vcf")
-  }
-  ### Detection of SNVs.
-  SNVs <- exactSNP(
-    readFile = bam,
-    isBAM = TRUE,
-    refGenomeFile = fa,
-    minBaseQuality = baseq,
-    minReads = mindepth,
-    maxReads = maxdepth,
-    qvalueCutoff = qvalue,
-    nTrimmedBases = trim,
-    nthreads = threads,
-    outputFile = vcf
-  )
-  ### Returning nothing: the VCF file is the only output.
-  invisible(NULL)
+    bamFile,
+    fastaDir = NULL,
+    faFile,
+    baseq = 20,
+    mindepth = 1, maxdepth = 1e6,
+    qvalue = 12,
+    trim = 0,
+    threads = 1,
+    outputVCF = NULL,
+    workDir = NULL) {
+    ### Setting the working directory.
+    if (is.null(x = workDir)) {
+        workDir <- getwd()
+    }
+    ### Full path to the BAM file.
+    if (is.null(x = bamDir)) {
+        path1 <- workDir
+    } else {
+        path1 <- paste(workDir, bamDir, sep = "/")
+    }
+    ### Full path to the reference genome.
+    if (is.null(x = fastaDir)) {
+        path2 <- workDir
+    } else {
+        path2 <- paste(workDir, fastaDir, sep = "/")
+    }
+    ### Setting the BAM file.
+    bam <- paste(path1, bamFile, sep = "/")
+    ### Setting the FASTA file.
+    fa <- paste(path2, faFile, sep = "/")
+    ### Setting the output VCF file.
+    if (is.null(x = outputVCF)) {
+        vcf <- paste0(sub(".bam$", "", bam), ".fisherCalleR.SNVs.vcf")
+    } else {
+        vcf <- paste0(sub(".bam$", "", bam), ".", outputVCF, ".vcf")
+    }
+    ### Detection of SNVs.
+    SNVs <- exactSNP(
+        readFile = bam,
+        isBAM = TRUE,
+        refGenomeFile = fa,
+        minBaseQuality = baseq,
+        minReads = mindepth,
+        maxReads = maxdepth,
+        qvalueCutoff = qvalue,
+        nTrimmedBases = trim,
+        nthreads = threads,
+        outputFile = vcf
+    )
+    ### Returning nothing: the VCF file is the only output.
+    invisible(NULL)
 }
 
 #' Call single nucleotide variations using different statistical tests
@@ -371,165 +371,165 @@ fisherCalleR <- function(bamDir = NULL,
 #' @export
 #' @importFrom data.table data.table
 callSNVs <- function(
-    fr_data,
-    criteria = "entropy",
-    vcfDir = NULL,
-    outputVCF,
-    # common arguments to be passed to "fisherRSubread" and "gatk"
-    bamDir = NULL,
-    bamFile = NA,
-    fastaDir = NULL,
-    faFile = NA,
-    # specific arguments to be passed to "fisherRSubread"
-    baseq = 20,
-    mindepth = 1,
-    maxdepth = 1e6,
-    qvalue = 12,
-    trim = 0,
-    threads = 1,
-    # specific arguments to be passed to "gatk"
-    postfix = NA,
-    intervals = NULL,
-    pcr_model = NA,
-    soft_clip = TRUE,
-    ERC = "NONE",
-    cores = "MAX",
-    SE = TRUE,
-    gatk_path = NULL,
-    workDir = NULL,
-    # specific arguments to be passed to "ml"
-    model = "rpart",
-    pvalue = FALSE) {
-  ### Validation of the input criteria.
-  criteria <- match.arg(arg = criteria, choices = SUPPORTED_CALLERS)
-  ### Validation of input arguments depending on the criterion.
-  if (criteria %in% SUPPORTED_TABLE_CALLERS && missing(fr_data)) {
-    stop(
-      "fr_data is required for criteria = '", criteria, "'. ",
-      "Use collectBasesPileup() to generate it from a BAM file."
-    )
-  }
-  if (criteria %in% SUPPORTED_BAM_CALLERS && is.na(bamFile)) {
-    stop("bamFile is required for criteria = '", criteria, "'.")
-  }
-  ### Setting the working directory.
-  if (is.null(x = workDir)) {
-    workDir <- getwd()
-  }
-  ### Retrieving of the frequency table (for table-based criteria).
-  if (criteria %in% SUPPORTED_TABLE_CALLERS) {
-    if (is.object(x = fr_data)) {
-      fr_table <- fr_data
-    } else {
-      path <- paste(workDir, fr_data, sep = "/")
-      frt <- tools::file_ext(x = path)
-      if (!frt %in% "csv") {
-        stop("Invalid format of CSV file")
-      }
-      if (!file.exists(path)) {
-        stop("File not found:", path)
-      }
-      fr_table <- read.csv(file = path, header = TRUE)
+        fr_data,
+        criteria = "entropy",
+        vcfDir = NULL,
+        outputVCF,
+        # common arguments to be passed to "fisherRSubread" and "gatk"
+        bamDir = NULL,
+        bamFile = NA,
+        fastaDir = NULL,
+        faFile = NA,
+        # specific arguments to be passed to "fisherRSubread"
+        baseq = 20,
+        mindepth = 1,
+        maxdepth = 1e6,
+        qvalue = 12,
+        trim = 0,
+        threads = 1,
+        # specific arguments to be passed to "gatk"
+        postfix = NA,
+        intervals = NULL,
+        pcr_model = NA,
+        soft_clip = TRUE,
+        ERC = "NONE",
+        cores = "MAX",
+        SE = TRUE,
+        gatk_path = NULL,
+        workDir = NULL,
+        # specific arguments to be passed to "ml"
+        model = "rpart",
+        pvalue = FALSE) {
+    ### Validation of the input criteria.
+    criteria <- match.arg(arg = criteria, choices = SUPPORTED_CALLERS)
+    ### Validation of input arguments depending on the criterion.
+    if (criteria %in% SUPPORTED_TABLE_CALLERS && missing(fr_data)) {
+        stop(
+            "fr_data is required for criteria = '", criteria, "'. ",
+            "Use collectBasesPileup() to generate it from a BAM file."
+        )
     }
-  }
-  ### Dispatch to the low-level function.
-  invisible(switch(criteria,
-                   binomial = ,
-                   counting = ,
-                   entropy = ,
-                   fisher = ,
-                   poisson = {
-                     ##  Retrieving of the frequency table.
-                     if (is.object(x = fr_data)) {
-                       fr_table <- fr_data
-                     } else {
-                       #   Full path to the CSV file.
-                       path <- paste(workDir, fr_data, sep = "/")
-                       #   Retrieving and validation of the file extension.
-                       frt <- tools::file_ext(x = path)
-                       if (!frt %in% "csv") {
-                         stop("Invalid format of CSV file")
-                       }
-                       #   Does the file actually exist in the specified location?
-                       if (!file.exists(path)) {
-                         stop("File not found:", path)
-                       }
-                       #   Loading of the CSV file as an object of class data.frame.
-                       fr_table <- read.csv(file = path, header = TRUE)
-                     }
-                     ##  Perform the test based on the specified criterion.
-                     if (criteria == "entropy") {
-                       result <- snp_entropy_cpp_parallel(fr_table, p_value = TRUE)
-                     } else {
-                       tests <- list(
-                         counting = snp_counting_cpp_parallel,
-                         binomial = snp_binomial_cpp_parallel,
-                         fisher = snp_fisher_cpp_parallel,
-                         poisson = snp_poisson_cpp_parallel
-                       )
-                       result <- tests[[criteria]](fr_table)
-                     }
-                     ##  Transformation and writing of the results to VCF file.
-                     ##  The result column is renamed to the test name so that
-                     ##  generateVCF() can identify which test produced it and
-                     ##  apply the correct QUAL transformation (Phred for p-value
-                     ##  tests, raw values for counting).
-                     input <- data.table(cbind(fr_table, result))
-                     colnames(input)[ncol(input)] <- criteria
-                     generateVCF(
-                       input = input,
-                       version = "4.0",
-                       vcfDir = vcfDir,
-                       outputVCF = outputVCF,
-                       workDir = workDir
-                     )
-                   },
-                   fisherRSubread = {
-                     fisherCalleR(
-                       bamDir = bamDir,
-                       bamFile = bamFile,
-                       fastaDir = fastaDir,
-                       faFile = faFile,
-                       baseq = baseq,
-                       mindepth = mindepth,
-                       maxdepth = maxdepth,
-                       qvalue = qvalue,
-                       trim = trim,
-                       threads = threads,
-                       outputVCF = outputVCF,
-                       workDir = workDir
-                     )
-                   },
-                   gatk = {
-                     gatkCalleR(
-                       bamDir = bamDir,
-                       bamFile = bamFile,
-                       postfix = postfix,
-                       fastaDir = fastaDir,
-                       faFile = faFile,
-                       intervals = intervals,
-                       pcr_model = pcr_model,
-                       soft_clip = soft_clip,
-                       ERC = ERC,
-                       cores = cores,
-                       SE = SE,
-                       gatk_path = gatk_path,
-                       workDir = workDir
-                     )
-                   },
-                   ml = {
-                     mlCalleR(
-                       fr_table = fr_table,
-                       model = model,
-                       pvalue = pvalue,
-                       vcfDir = vcfDir,
-                       outputVCF = outputVCF,
-                       workDir = workDir
-                     )
-                   }
-  ))
-  ### Returning nothing: the VCF file is the only output.
-  invisible(NULL)
+    if (criteria %in% SUPPORTED_BAM_CALLERS && is.na(bamFile)) {
+        stop("bamFile is required for criteria = '", criteria, "'.")
+    }
+    ### Setting the working directory.
+    if (is.null(x = workDir)) {
+        workDir <- getwd()
+    }
+    ### Retrieving of the frequency table (for table-based criteria).
+    if (criteria %in% SUPPORTED_TABLE_CALLERS) {
+        if (is.object(x = fr_data)) {
+            fr_table <- fr_data
+        } else {
+            path <- paste(workDir, fr_data, sep = "/")
+            frt <- tools::file_ext(x = path)
+            if (!frt %in% "csv") {
+                stop("Invalid format of CSV file")
+            }
+            if (!file.exists(path)) {
+                stop("File not found:", path)
+            }
+            fr_table <- read.csv(file = path, header = TRUE)
+        }
+    }
+    ### Dispatch to the low-level function.
+    invisible(switch(criteria,
+        binomial = ,
+        counting = ,
+        entropy = ,
+        fisher = ,
+        poisson = {
+            ##  Retrieving of the frequency table.
+            if (is.object(x = fr_data)) {
+                fr_table <- fr_data
+            } else {
+                #   Full path to the CSV file.
+                path <- paste(workDir, fr_data, sep = "/")
+                #   Retrieving and validation of the file extension.
+                frt <- tools::file_ext(x = path)
+                if (!frt %in% "csv") {
+                    stop("Invalid format of CSV file")
+                }
+                #   Does the file actually exist in the specified location?
+                if (!file.exists(path)) {
+                    stop("File not found:", path)
+                }
+                #   Loading of the CSV file as an object of class data.frame.
+                fr_table <- read.csv(file = path, header = TRUE)
+            }
+            ##  Perform the test based on the specified criterion.
+            if (criteria == "entropy") {
+                result <- snp_entropy_cpp_parallel(fr_table, p_value = TRUE)
+            } else {
+                tests <- list(
+                    counting = snp_counting_cpp_parallel,
+                    binomial = snp_binomial_cpp_parallel,
+                    fisher = snp_fisher_cpp_parallel,
+                    poisson = snp_poisson_cpp_parallel
+                )
+                result <- tests[[criteria]](fr_table)
+            }
+            ##  Transformation and writing of the results to VCF file.
+            ##  The result column is renamed to the test name so that
+            ##  generateVCF() can identify which test produced it and
+            ##  apply the correct QUAL transformation (Phred for p-value
+            ##  tests, raw values for counting).
+            input <- data.table(cbind(fr_table, result))
+            colnames(input)[ncol(input)] <- criteria
+            generateVCF(
+                input = input,
+                version = "4.0",
+                vcfDir = vcfDir,
+                outputVCF = outputVCF,
+                workDir = workDir
+            )
+        },
+        fisherRSubread = {
+            fisherCalleR(
+                bamDir = bamDir,
+                bamFile = bamFile,
+                fastaDir = fastaDir,
+                faFile = faFile,
+                baseq = baseq,
+                mindepth = mindepth,
+                maxdepth = maxdepth,
+                qvalue = qvalue,
+                trim = trim,
+                threads = threads,
+                outputVCF = outputVCF,
+                workDir = workDir
+            )
+        },
+        gatk = {
+            gatkCalleR(
+                bamDir = bamDir,
+                bamFile = bamFile,
+                postfix = postfix,
+                fastaDir = fastaDir,
+                faFile = faFile,
+                intervals = intervals,
+                pcr_model = pcr_model,
+                soft_clip = soft_clip,
+                ERC = ERC,
+                cores = cores,
+                SE = SE,
+                gatk_path = gatk_path,
+                workDir = workDir
+            )
+        },
+        ml = {
+            mlCalleR(
+                fr_table = fr_table,
+                model = model,
+                pvalue = pvalue,
+                vcfDir = vcfDir,
+                outputVCF = outputVCF,
+                workDir = workDir
+            )
+        }
+    ))
+    ### Returning nothing: the VCF file is the only output.
+    invisible(NULL)
 }
 
 
@@ -555,13 +555,12 @@ callSNVs <- function(
 #' @importFrom data.table data.table
 #' @import randomForest
 #' @import LiblineaR
-mlCalleR <- function(
-        fr_table,
-        model = "rpart",
-        pvalue = FALSE,
-        vcfDir = NULL,
-        outputVCF,
-        workDir = NULL) {
+mlCalleR <- function(fr_table,
+    model = "rpart",
+    pvalue = FALSE,
+    vcfDir = NULL,
+    outputVCF,
+    workDir = NULL) {
     ### Validation of the input model.
     if (!model %in% SUPPORTED_ML_MODELS) {
         stop(paste(
@@ -774,11 +773,12 @@ mlCalleR <- function(
 #' @keywords internal
 #' @noRd
 #' @importFrom data.table fread
-generateVCF <- function(input,
-    version = "4.0",
-    vcfDir = NULL,
-    outputVCF,
-    workDir = NULL) {
+generateVCF <- function(
+        input,
+        version = "4.0",
+        vcfDir = NULL,
+        outputVCF,
+        workDir = NULL) {
     ### Setting the working directory.
     if (is.null(x = workDir)) {
         workDir <- getwd()
@@ -909,13 +909,13 @@ generateVCF <- function(input,
             writeLines(text = meta, con = meta_file)
             close(con = meta_file)
             write.table(
-              x = VCF[, seq_len(8)],
-              file = vcf_name,
-              sep = "\t",
-              quote = FALSE,
-              col.names = FALSE,
-              row.names = FALSE,
-              append = TRUE
+                x = VCF[, seq_len(8)],
+                file = vcf_name,
+                sep = "\t",
+                quote = FALSE,
+                col.names = FALSE,
+                row.names = FALSE,
+                append = TRUE
             )
         }
     }

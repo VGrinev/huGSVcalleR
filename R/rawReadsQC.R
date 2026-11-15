@@ -461,29 +461,30 @@ readFASTQ <- function(
 #' @importFrom methods as
 #' @importFrom utils read.table
 #' @importFrom IRanges narrow
-cleanRawReads <- function(fastqDir = NULL,
-    fastq1,
-    fastq2 = NULL,
-    adapters = NULL,
-    error = 0.2,
-    min_match_flank = 3L,
-    anchored = TRUE,
-    indels = FALSE,
-    tr_score = NULL,
-    tr_start = 10,
-    tr_end = 30,
-    phred = NA,
-    k = 3,
-    halfwidth = NULL,
-    successive = TRUE,
-    readl = 0,
-    readq = 0,
-    readn = 0,
-    dustScore = NULL,
-    batchSize = NA,
-    postfix = "filtered",
-    overwrite = FALSE,
-    workDir = NULL) {
+cleanRawReads <- function(
+        fastqDir = NULL,
+        fastq1,
+        fastq2 = NULL,
+        adapters = NULL,
+        error = 0.2,
+        min_match_flank = 3L,
+        anchored = TRUE,
+        indels = FALSE,
+        tr_score = NULL,
+        tr_start = 10,
+        tr_end = 30,
+        phred = NA,
+        k = 3,
+        halfwidth = NULL,
+        successive = TRUE,
+        readl = 0,
+        readq = 0,
+        readn = 0,
+        dustScore = NULL,
+        batchSize = NA,
+        postfix = "filtered",
+        overwrite = FALSE,
+        workDir = NULL) {
     ### Setting the working directory.
     if (is.null(x = workDir)) {
         workDir <- getwd()
@@ -532,13 +533,13 @@ cleanRawReads <- function(fastqDir = NULL,
     ##  Step 2, trimming of the low quality ends.
     #   Fixed trimming.
     if (is.null(x = tr_score)) {
-      keep <- width(x = FQ1) > (tr_start + tr_end)
-      FQ1 <- FQ1[keep]
-      start_pos <- tr_start + 1
-      end_pos <- if (tr_end > 0) -tr_end else -1L
-      FQ1 <- narrow(x = FQ1, start = start_pos, end = end_pos)
+        keep <- width(x = FQ1) > (tr_start + tr_end)
+        FQ1 <- FQ1[keep]
+        start_pos <- tr_start + 1
+        end_pos <- if (tr_end > 0) -tr_end else -1L
+        FQ1 <- narrow(x = FQ1, start = start_pos, end = end_pos)
     } else {
-    #   Dynamic trimming.
+        #   Dynamic trimming.
         PhSs <- read.table(
             file = paste(workDir, phred, sep = "/"),
             sep = "\t",
@@ -622,11 +623,11 @@ cleanRawReads <- function(fastqDir = NULL,
         ##  Step 2, trimming of the low quality ends.
         #   Fixed trimming.
         if (is.null(x = tr_score)) {
-          keep <- width(x = FQ2) > (tr_start + tr_end)
-          FQ2 <- FQ2[keep]
-          start_pos <- tr_start + 1
-          end_pos <- if (tr_end > 0) -tr_end else -1L
-          FQ2 <- narrow(x = FQ2, start = start_pos, end = end_pos)
+            keep <- width(x = FQ2) > (tr_start + tr_end)
+            FQ2 <- FQ2[keep]
+            start_pos <- tr_start + 1
+            end_pos <- if (tr_end > 0) -tr_end else -1L
+            FQ2 <- narrow(x = FQ2, start = start_pos, end = end_pos)
         } else {
             #   Dynamic trimming.
             FQ2 <- trimEnds(

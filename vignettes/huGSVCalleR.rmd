@@ -73,11 +73,13 @@ The first step of any analysis is to load the raw FASTQ files and to assess thei
 ```{r module1-read}
 fq <- readFASTQ(
     fastqDir = NULL,
-    fastq    = basename(system.file("extdata", "test_R1.fastq",
-                                    package = "huGSVcalleR")),
-    n        = NULL,
-    workDir  = dirname(system.file("extdata", "test_R1.fastq",
-                                   package = "huGSVcalleR"))
+    fastq = basename(system.file("extdata", "test_R1.fastq",
+        package = "huGSVcalleR"
+    )),
+    n = NULL,
+    workDir = dirname(system.file("extdata", "test_R1.fastq",
+        package = "huGSVcalleR"
+    ))
 )
 str(fq, max.level = 1)
 ```
@@ -90,14 +92,16 @@ The function `assessQRawReads()` calculates the full set of quality metrics for 
 
 ```{r module1-assess}
 qa_r1 <- assessQRawReads(
-    fastqDir     = NULL,
-    fastq        = basename(system.file("extdata", "test_R1.fastq",
-                                        package = "huGSVcalleR")),
-    n            = NULL,
-    adapters     = NULL,
+    fastqDir = NULL,
+    fastq = basename(system.file("extdata", "test_R1.fastq",
+        package = "huGSVcalleR"
+    )),
+    n = NULL,
+    adapters = NULL,
     contaminants = NULL,
-    workDir      = dirname(system.file("extdata", "test_R1.fastq",
-                                       package = "huGSVcalleR"))
+    workDir = dirname(system.file("extdata", "test_R1.fastq",
+        package = "huGSVcalleR"
+    ))
 )
 str(qa_r1, max.level = 1)
 ```
@@ -135,18 +139,21 @@ The function `cleanRawReads()` performs up to seven filtering steps: adapter tri
 
 ```{r module1-clean}
 cleanRawReads(
-    fastqDir  = NULL,
-    fastq1    = basename(system.file("extdata", "test_R1.fastq",
-                                     package = "huGSVcalleR")),
-    fastq2    = basename(system.file("extdata", "test_R2.fastq",
-                                     package = "huGSVcalleR")),
-    adapters  = NULL,
-    tr_start  = 0,
-    tr_end    = 0,
-    postfix   = "filtered",
+    fastqDir = NULL,
+    fastq1 = basename(system.file("extdata", "test_R1.fastq",
+        package = "huGSVcalleR"
+    )),
+    fastq2 = basename(system.file("extdata", "test_R2.fastq",
+        package = "huGSVcalleR"
+    )),
+    adapters = NULL,
+    tr_start = 0,
+    tr_end = 0,
+    postfix = "filtered",
     overwrite = TRUE,
-    workDir   = dirname(system.file("extdata", "test_R1.fastq",
-                                    package = "huGSVcalleR"))
+    workDir = dirname(system.file("extdata", "test_R1.fastq",
+        package = "huGSVcalleR"
+    ))
 )
 ```
 
@@ -232,9 +239,13 @@ The third module unites seven service functions. For classical statistical tests
 
 ```{r module3-pileup}
 file.copy(system.file("extdata", "test.bam", package = "huGSVcalleR"),
-          file.path(workDir, "test.bam"), overwrite = TRUE)
+    file.path(workDir, "test.bam"),
+    overwrite = TRUE
+)
 file.copy(system.file("extdata", "test.bam.bai", package = "huGSVcalleR"),
-          file.path(workDir, "test.bam.bai"), overwrite = TRUE)
+    file.path(workDir, "test.bam.bai"),
+    overwrite = TRUE
+)
 
 filterBamFile(
     bamDir    = NULL,
