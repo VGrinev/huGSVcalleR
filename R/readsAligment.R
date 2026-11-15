@@ -701,34 +701,34 @@ reportQAlResults <- function(x,
 #' @importFrom Rsamtools sortBam indexBam
 #' @importFrom parallel detectCores
 sortBamFile <- function(bamDir,
-    bamFile,
-    byQname,
-    threads = detectCores(logical = TRUE) - 1,
-    workDir = NULL) {
-    ### Sorting and indexing of generated BAM file(-s).
-    for (i in seq_along(bamFile)) {
-        sortedBam <- sortBam(
-            file = paste(paste(workDir, bamDir, sep = "/"),
-                bamFile[i],
-                sep = "/"
-            ),
-            destination = sub(
-                pattern = ".bam",
-                replacement = "",
-                x = paste(
-                    paste(workDir,
-                        bamDir,
-                        sep = "/"
-                    ),
-                    bamFile[i],
-                    sep = "/"
-                )
-            ),
-            byQname = byQname,
-            nThreads = threads
-        )
-        invisible(utils::capture.output(indexBam(files = sortedBam),
-            type = "message"
-        ))
-    }
+                        bamFile,
+                        byQname,
+                        threads = detectCores(logical = TRUE) - 1,
+                        workDir = NULL)
+{
+  ### Setting the working directory.
+  if (is.null(x = workDir)) {
+    workDir <- getwd()
+  }
+  ### Full path to the BAM file.
+  if (is.null(x = bamDir)) {
+    path <- workDir
+  } else {
+    path <- paste(workDir, bamDir, sep = "/")
+  }
+  ### Sorting and indexing of generated BAM file(-s).
+  for (i in seq_along(bamFile)) {
+    sortedBam <- sortBam(
+      file = paste(path, bamFile[i], sep = "/"),
+      destination = sub(
+        "\\.bam$", ".sorted",
+        paste(path, bamFile[i], sep = "/")
+      ),
+      byQname = byQname,
+      nThreads = threads
+    )
+    invisible(utils::capture.output(indexBam(files = sortedBam),
+                                    type = "message"
+    ))
+  }
 }
