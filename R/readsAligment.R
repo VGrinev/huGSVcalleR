@@ -706,7 +706,7 @@ sortBamFile <- function(bamDir,
     threads = detectCores(logical = TRUE) - 1,
     workDir = NULL) {
     ### Sorting and indexing of generated BAM file(-s).
-    for (i in seq_along(x = bamFile)) {
+    for (i in seq_along(bamFile)) {
         sortedBam <- sortBam(
             file = paste(paste(workDir, bamDir, sep = "/"),
                 bamFile[i],
