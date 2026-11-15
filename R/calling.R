@@ -840,7 +840,7 @@ generateVCF <- function(input,
     T_sub <- T_sub[, -3]
     vcf_pre <- rbind(A, C, G, T_sub)
     if (version == "4.0") {
-        VCF <- unique(vcf_pre[, seq_len(ncol(x = vcf_pre) - 2)])
+        VCF <- unique(as.data.frame(vcf_pre)[, seq_len(ncol(x = vcf_pre) - 2)])
         VCF <- VCF[order(x = VCF$position), ]
         ALT <- vcf_pre[, paste(ALT, collapse = ","), by = position]
         ALT <- ALT[order(x = ALT$position), ]
@@ -904,7 +904,7 @@ generateVCF <- function(input,
         ##  Tests that return a p-value in [0, 1] and must be converted to
         ##  Phred-scaled QUAL (-10 * log10(p)).
         pvalue_tests <- c("binomial", "poisson", "fisher", "entropy")
-        for (i in seq_along(x = tests)) {
+        for (i in seq_along(tests)) {
             qual_values <- VCF[, tests[i]]
             if (is.numeric(qual_values) && tests[i] %in% pvalue_tests) {
                 # Phred-scaled QUAL for p-value tests
