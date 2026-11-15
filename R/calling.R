@@ -929,19 +929,18 @@ generateVCF <- function(input,
                 "vcf",
                 sep = "."
             )
-            empty_file <- file(description = vcf_name, open = "wt")
-            writeLines(text = meta, con = empty_file)
+            meta_file <- file(description = vcf_name, open = "wt")
+            writeLines(text = meta, con = meta_file)
+            close(con = meta_file)
             write.table(
-                x = rbind(VCF[seq_len(6), seq_len(8)], VCF[, seq_len(8)]),
-                file = vcf_name,
-                sep = "\t",
-                quote = FALSE,
-                col.names = FALSE,
-                row.names = FALSE
+              x = VCF[, seq_len(8)],
+              file = vcf_name,
+              sep = "\t",
+              quote = FALSE,
+              col.names = FALSE,
+              row.names = FALSE,
+              append = TRUE
             )
-            close(con = empty_file)
-            cleaning <- readLines(con = vcf_name)
-            writeLines(text = cleaning[-6], con = vcf_name)
         }
     }
 }
