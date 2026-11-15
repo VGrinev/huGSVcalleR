@@ -1097,7 +1097,10 @@ findAdapters <- function(
     }
     hits <- data.frame(cbind(positions, do.call(what = cbind, args = hits)))
     colnames(x = hits) <- c("positions", ADs$adapter_name)
-    hits[, -1] <- apply(X = hits[, -1], MARGIN = 2, FUN = as.numeric)
+    if (ncol(hits) > 1) {
+      hits[, -1] <- apply(X = hits[, -1, drop = FALSE],
+                          MARGIN = 2, FUN = as.numeric)
+    }
     ### Returning the final object.
     return(hits)
 }
