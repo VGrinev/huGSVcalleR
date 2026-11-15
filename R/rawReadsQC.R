@@ -461,30 +461,29 @@ readFASTQ <- function(
 #' @importFrom methods as
 #' @importFrom utils read.table
 #' @importFrom IRanges narrow
-cleanRawReads <- function(
-        fastqDir = NULL,
-        fastq1,
-        fastq2 = NULL,
-        adapters = NULL,
-        error = 0.2,
-        min_match_flank = 3L,
-        anchored = TRUE,
-        indels = FALSE,
-        tr_score = NULL,
-        tr_start = 10,
-        tr_end = 30,
-        phred = NA,
-        k = 3,
-        halfwidth = NULL,
-        successive = TRUE,
-        readl = 0,
-        readq = 0,
-        readn = 0,
-        dustScore = NULL,
-        batchSize = NA,
-        postfix = "filtered",
-        overwrite = FALSE,
-        workDir = NULL) {
+cleanRawReads <- function(fastqDir = NULL,
+    fastq1,
+    fastq2 = NULL,
+    adapters = NULL,
+    error = 0.2,
+    min_match_flank = 3L,
+    anchored = TRUE,
+    indels = FALSE,
+    tr_score = NULL,
+    tr_start = 10,
+    tr_end = 30,
+    phred = NA,
+    k = 3,
+    halfwidth = NULL,
+    successive = TRUE,
+    readl = 0,
+    readq = 0,
+    readn = 0,
+    dustScore = NULL,
+    batchSize = NA,
+    postfix = "filtered",
+    overwrite = FALSE,
+    workDir = NULL) {
     ### Setting the working directory.
     if (is.null(x = workDir)) {
         workDir <- getwd()
@@ -534,9 +533,9 @@ cleanRawReads <- function(
     #   Fixed trimming.
     if (is.null(x = tr_score)) {
         keep <- width(x = FQ1) > (tr_start + tr_end)
-        FQ1  <- FQ1[keep]
-        FQ1  <- narrow(x = FQ1, start = tr_start + 1, end = -tr_end)
-      } else {
+        FQ1 <- FQ1[keep]
+        FQ1 <- narrow(x = FQ1, start = tr_start + 1, end = -tr_end)
+    } else {
         #   Dynamic trimming.
         PhSs <- read.table(
             file = paste(workDir, phred, sep = "/"),
@@ -621,9 +620,9 @@ cleanRawReads <- function(
         ##  Step 2, trimming of the low quality ends.
         #   Fixed trimming.
         if (is.null(x = tr_score)) {
-          keep <- width(x = FQ2) > (tr_start + tr_end)
-          FQ2  <- FQ2[keep]
-          FQ2  <- narrow(x = FQ2, start = tr_start + 1, end = -tr_end)
+            keep <- width(x = FQ2) > (tr_start + tr_end)
+            FQ2 <- FQ2[keep]
+            FQ2 <- narrow(x = FQ2, start = tr_start + 1, end = -tr_end)
         } else {
             #   Dynamic trimming.
             FQ2 <- trimEnds(
@@ -1023,12 +1022,11 @@ cutRigthAdapter <- function(
 #' @importFrom methods is
 #' @importFrom utils read.table
 #' @importFrom tools file_ext
-findAdapters <- function(
-        fastqDir = NULL,
-        fastq,
-        n = NULL,
-        adapters,
-        workDir = NULL) {
+findAdapters <- function(fastqDir = NULL,
+    fastq,
+    n = NULL,
+    adapters,
+    workDir = NULL) {
     ### Setting the working directory.
     if (is.null(x = workDir)) {
         workDir <- getwd()
@@ -1102,8 +1100,10 @@ findAdapters <- function(
     hits <- data.frame(cbind(positions, do.call(what = cbind, args = hits)))
     colnames(x = hits) <- c("positions", ADs$adapter_name)
     if (ncol(hits) > 1) {
-      hits[, -1] <- apply(X = hits[, -1, drop = FALSE],
-                          MARGIN = 2, FUN = as.numeric)
+        hits[, -1] <- apply(
+            X = hits[, -1, drop = FALSE],
+            MARGIN = 2, FUN = as.numeric
+        )
     }
     ### Returning the final object.
     return(hits)

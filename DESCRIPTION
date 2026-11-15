@@ -71,18 +71,13 @@ LinkingTo:
     Rcpp,
     RcppParallel
 Suggests:
-    testthat,
+    testthat (>= 3.0.0),
     knitr,
     rmarkdown,
     BSgenome.Hsapiens.UCSC.hg38 (>= 1.4.5),
     org.Hs.eg.db (>= 3.21.0),
-    TxDb.Hsapiens.UCSC.hg38.knownGene (>= 3.21.0),
+    TxDb.Hsapiens.UCSC.hg38.knownGene (>= 3.21.0)
 VignetteBuilder: knitr
 URL: https://github.com/VGrinev/huGSVcalleR
 BugReports: https://github.com/VGrinev/huGSVcalleR/issues
-
-    
-
-
-
-
+Config/testthat/edition: 3

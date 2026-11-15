@@ -1,0 +1,2 @@
+adapter_id	adapter_name	adapter_sequence
+1	TestAdapter	AGATCGGAAGAGC
