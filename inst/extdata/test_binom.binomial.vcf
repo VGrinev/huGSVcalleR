@@ -3,4 +3,6 @@
 ##INFO=<ID=MMsum,Number=1,Type=Integer,Description="Number of supporting reads for alternative allele(-s)">
 ##INFO=<ID=MM,Number=1,Type=String,Description="Number of supporting reads for each alternative allele">
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO
+chr1	100	chr1:100_A/G	A	G	83.4681	.	DP=10;MMsum=2;MM=2
+chr1	200	chr1:200_C/G	C	G	129.2084	.	DP=10;MMsum=3;MM=3
 chr1	300	chr1:300_G/T	G	T	40.0002	.	DP=10;MMsum=1;MM=1
