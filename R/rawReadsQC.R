@@ -533,8 +533,10 @@ cleanRawReads <- function(
     ##  Step 2, trimming of the low quality ends.
     #   Fixed trimming.
     if (is.null(x = tr_score)) {
-        FQ1 <- narrow(x = FQ1, start = tr_start + 1, end = -tr_end)
-    } else {
+        keep <- width(x = FQ1) > (tr_start + tr_end)
+        FQ1  <- FQ1[keep]
+        FQ1  <- narrow(x = FQ1, start = tr_start + 1, end = -tr_end)
+      } else {
         #   Dynamic trimming.
         PhSs <- read.table(
             file = paste(workDir, phred, sep = "/"),
@@ -619,7 +621,9 @@ cleanRawReads <- function(
         ##  Step 2, trimming of the low quality ends.
         #   Fixed trimming.
         if (is.null(x = tr_score)) {
-            FQ2 <- narrow(x = FQ2, start = tr_start + 1, end = -tr_end)
+          keep <- width(x = FQ2) > (tr_start + tr_end)
+          FQ2  <- FQ2[keep]
+          FQ2  <- narrow(x = FQ2, start = tr_start + 1, end = -tr_end)
         } else {
             #   Dynamic trimming.
             FQ2 <- trimEnds(
