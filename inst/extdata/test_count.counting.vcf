@@ -1,0 +1,5 @@
+##fileformat=VCFv4.0
+##INFO=<ID=DP,Number=1,Type=Integer,Description="Read Depth">
+##INFO=<ID=MMsum,Number=1,Type=Integer,Description="Number of supporting reads for alternative allele(-s)">
+##INFO=<ID=MM,Number=1,Type=String,Description="Number of supporting reads for each alternative allele">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO
