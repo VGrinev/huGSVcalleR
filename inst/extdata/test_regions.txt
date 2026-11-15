@@ -1,0 +1,2 @@
+seqnames	start	end	strand
+chr1	100	400	+
