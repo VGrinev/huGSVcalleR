@@ -894,7 +894,7 @@ developAnnotations <- function(gtfDir = NULL,
 .combineTranscripts <- function(coding, noncoding) {
     GTFs <- c(coding, noncoding)
     GTFs <- split(x = GTFs, f = GTFs$gene_id)
-    for (i in seq_along( GTFs)) {
+    for (i in seq_along(GTFs)) {
         GTFs[[i]] <- c(
             GTFs[[i]][1],
             GTFs[[i]][GTFs[[i]]$type != "gene", ]
@@ -1009,27 +1009,27 @@ developAnnotations <- function(gtfDir = NULL,
 #' @keywords internal
 #' @noRd
 .buildCdsExons <- function(tr, start_codon, stop_codon) {
-  strand_val <- as.character(x = strand(x = tr))[1]
-  if (strand_val == "+") {
-    cds_start <- min(x = start_codon)
-    cds_end <- min(x = stop_codon) - 1
-  } else {
-    cds_start <- max(x = stop_codon) + 1
-    cds_end <- max(x = start_codon)
-  }
-  CDS <- data.frame(
-    seqnames = as.character(x = seqnames(x = tr))[1],
-    start = cds_start,
-    end = cds_end,
-    strand = strand_val
-  )
-  CDS <- makeGRangesFromDataFrame(df = CDS)
-  hits <- findOverlaps(query = CDS, subject = tr, type = "any")
-  CDS_exons <- tr[subjectHits(x = hits)]
-  CDS_exons$type <- "CDS"
-  start(x = CDS_exons)[1] <- start(x = CDS)
-  end(x = CDS_exons)[length(x = CDS_exons)] <- end(x = CDS)
-  CDS_exons
+    strand_val <- as.character(x = strand(x = tr))[1]
+    if (strand_val == "+") {
+        cds_start <- min(x = start_codon)
+        cds_end <- min(x = stop_codon) - 1
+    } else {
+        cds_start <- max(x = stop_codon) + 1
+        cds_end <- max(x = start_codon)
+    }
+    CDS <- data.frame(
+        seqnames = as.character(x = seqnames(x = tr))[1],
+        start = cds_start,
+        end = cds_end,
+        strand = strand_val
+    )
+    CDS <- makeGRangesFromDataFrame(df = CDS)
+    hits <- findOverlaps(query = CDS, subject = tr, type = "any")
+    CDS_exons <- tr[subjectHits(x = hits)]
+    CDS_exons$type <- "CDS"
+    start(x = CDS_exons)[1] <- start(x = CDS)
+    end(x = CDS_exons)[length(x = CDS_exons)] <- end(x = CDS)
+    CDS_exons
 }
 
 #' Build codon range
@@ -1073,48 +1073,48 @@ developAnnotations <- function(gtfDir = NULL,
 #' @keywords internal
 #' @noRd
 .buildUtrs <- function(tr, CDS_exons, strand) {
-  UTRs <- disjoin(c(tr, CDS_exons))
-  hits <- findOverlaps(query = UTRs, subject = CDS_exons, type = "any")
-  UTRs <- UTRs[-queryHits(x = hits)]
-  if (length(x = UTRs) == 0) {
-    return(list(five_prime_utr = UTRs, three_prime_utr = UTRs))
-  }
-  cds_start <- min(x = start(x = CDS_exons))
-  cds_end <- max(x = end(x = CDS_exons))
-  if (strand == "+") {
-    is_five <- end(x = UTRs) < cds_start
-    is_three <- start(x = UTRs) > cds_end
-  } else {
-    is_five <- start(x = UTRs) > cds_end
-    is_three <- end(x = UTRs) < cds_start
-  }
-  five_prime_utr <- UTRs[is_five]
-  three_prime_utr <- UTRs[is_three]
-  if (length(x = five_prime_utr) > 0) {
-    hits <- findOverlaps(
-      query = five_prime_utr, subject = tr, type = "any"
-    )
-    mcols(x = five_prime_utr) <-
-      mcols(x = tr[subjectHits(x = hits)])
-    five_prime_utr$type <- "five_prime_utr"
-  }
-  if (length(x = three_prime_utr) > 0) {
-    hits <- findOverlaps(
-      query = three_prime_utr, subject = tr, type = "any"
-    )
-    mcols(x = three_prime_utr) <-
-      mcols(x = tr[subjectHits(x = hits)])
-    three_prime_utr$type <- "three_prime_utr"
-    if (strand == "+") {
-      start(x = three_prime_utr) <- start(x = three_prime_utr) + 3
-    } else {
-      end(x = three_prime_utr) <- end(x = three_prime_utr) - 3
+    UTRs <- disjoin(c(tr, CDS_exons))
+    hits <- findOverlaps(query = UTRs, subject = CDS_exons, type = "any")
+    UTRs <- UTRs[-queryHits(x = hits)]
+    if (length(x = UTRs) == 0) {
+        return(list(five_prime_utr = UTRs, three_prime_utr = UTRs))
     }
-  }
-  list(
-    five_prime_utr = five_prime_utr,
-    three_prime_utr = three_prime_utr
-  )
+    cds_start <- min(x = start(x = CDS_exons))
+    cds_end <- max(x = end(x = CDS_exons))
+    if (strand == "+") {
+        is_five <- end(x = UTRs) < cds_start
+        is_three <- start(x = UTRs) > cds_end
+    } else {
+        is_five <- start(x = UTRs) > cds_end
+        is_three <- end(x = UTRs) < cds_start
+    }
+    five_prime_utr <- UTRs[is_five]
+    three_prime_utr <- UTRs[is_three]
+    if (length(x = five_prime_utr) > 0) {
+        hits <- findOverlaps(
+            query = five_prime_utr, subject = tr, type = "any"
+        )
+        mcols(x = five_prime_utr) <-
+            mcols(x = tr[subjectHits(x = hits)])
+        five_prime_utr$type <- "five_prime_utr"
+    }
+    if (length(x = three_prime_utr) > 0) {
+        hits <- findOverlaps(
+            query = three_prime_utr, subject = tr, type = "any"
+        )
+        mcols(x = three_prime_utr) <-
+            mcols(x = tr[subjectHits(x = hits)])
+        three_prime_utr$type <- "three_prime_utr"
+        if (strand == "+") {
+            start(x = three_prime_utr) <- start(x = three_prime_utr) + 3
+        } else {
+            end(x = three_prime_utr) <- end(x = three_prime_utr) - 3
+        }
+    }
+    list(
+        five_prime_utr = five_prime_utr,
+        three_prime_utr = three_prime_utr
+    )
 }
 
 #' Check that Perl is available
@@ -1125,14 +1125,14 @@ developAnnotations <- function(gtfDir = NULL,
 #' @keywords internal
 #' @noRd
 .checkPerlAvailable <- function() {
-  if (Sys.which("perl") == "") {
-    stop(
-      "Perl not found in PATH. scoreSSs() requires Perl ",
-      "for MaxEntScan. Install Perl (e.g., Strawberry Perl on ",
-      "Windows) and ensure it is available in PATH."
-    )
-  }
-  invisible(NULL)
+    if (Sys.which("perl") == "") {
+        stop(
+            "Perl not found in PATH. scoreSSs() requires Perl ",
+            "for MaxEntScan. Install Perl (e.g., Strawberry Perl on ",
+            "Windows) and ensure it is available in PATH."
+        )
+    }
+    invisible(NULL)
 }
 
 #' Assemble the MaxEntScan score table
@@ -1145,15 +1145,15 @@ developAnnotations <- function(gtfDir = NULL,
 #' @keywords internal
 #' @noRd
 .assembleScoreTable <- function(seqSSs, scores) {
-  scores <- cbind(
-    names(x = seqSSs),
-    as.vector(x = as.character(x = seqSSs)),
-    scores
-  )
-  colnames(x = scores) <- c("ss_id", "ss_seq", "max.ent_score")
-  scores <- data.frame(scores)
-  scores[, 3] <- as.numeric(scores[, 3])
-  scores[!duplicated(x = scores), ]
+    scores <- cbind(
+        names(x = seqSSs),
+        as.vector(x = as.character(x = seqSSs)),
+        scores
+    )
+    colnames(x = scores) <- c("ss_id", "ss_seq", "max.ent_score")
+    scores <- data.frame(scores)
+    scores[, 3] <- as.numeric(scores[, 3])
+    scores[!duplicated(x = scores), ]
 }
 
 #' Build transcript range
@@ -1208,43 +1208,72 @@ developAnnotations <- function(gtfDir = NULL,
 #' @importFrom GenomicRanges makeGRangesFromDataFrame seqnames start
 #'     end strand
 #' @importFrom methods is
-extractSeqSSs <- function(x,
-    genome = "BSgenome.Hsapiens.UCSC.hg38",
-    workDir = NULL) {
+extractSeqSSs <- function(
+        x,
+        genome = "BSgenome.Hsapiens.UCSC.hg38",
+        workDir = NULL) {
     ### Setting the working directory.
     if (is.null(x = workDir)) {
         workDir <- getwd()
     }
     ### Loading of the genomic coordinates of splice sites.
-    if (is.object(x = x)) {
-        coordsSSs <- x
-    } else {
-        frt <- tools::file_ext(x = x)
-        if (!frt %in% "txt") {
-            stop("Invalid file format")
-        }
-        coordsSSs <- read.table(
-            file = paste(workDir, x, sep = "/"),
-            sep = "\t",
-            header = TRUE,
-            quote = "\"",
-            as.is = TRUE
-        )
-        coordsSSs <- makeGRangesFromDataFrame(
-            df = coordsSSs,
-            keep.extra.columns = TRUE
+    coordsSSs <- .loadSpliceSiteCoords(x, workDir)
+    ### Loading of the reference genome object.
+    if (!requireNamespace(genome, quietly = TRUE)) {
+        stop(
+            "Package ", genome, " is not installed. ",
+            "Install it with BiocManager::install('", genome, "')."
         )
     }
+    genome_obj <- get(x = genome, envir = asNamespace(genome))
     ### Extraction of splice site sequences from the reference genome.
-  if (!requireNamespace(genome, quietly = TRUE)) {
-    stop(
-      "Package ", genome, " is not installed. ",
-      "Install it with BiocManager::install('", genome, "')."
+    seqSSs <- getSeq(x = genome_obj, names = coordsSSs)
+    names(x = seqSSs) <- .spliceSiteSeqNames(coordsSSs)
+    ### Returning the final object.
+    return(seqSSs)
+}
+
+#' Load splice site coordinates
+#' @description Internal helper for extractSeqSSs(). Returns a GRanges
+#'     object either directly (when x is already an object) or by reading
+#'     a tab-delimited TXT file.
+#' @param x GRanges object or character string with the file name.
+#' @param workDir character string with the working directory.
+#' @return GRanges object with splice site coordinates.
+#' @author Vasily V. Grinev, Nadzeya A. Boyeva.
+#' @keywords internal
+#' @noRd
+.loadSpliceSiteCoords <- function(x, workDir) {
+    if (is.object(x = x)) {
+        return(x)
+    }
+    frt <- tools::file_ext(x = x)
+    if (!frt %in% "txt") {
+        stop("Invalid file format")
+    }
+    coordsSSs <- read.table(
+        file = paste(workDir, x, sep = "/"),
+        sep = "\t",
+        header = TRUE,
+        quote = "\"",
+        as.is = TRUE
     )
-  }
-  genome_obj <- get(x = genome, envir = asNamespace(genome))
-  seqSSs <- getSeq(x = genome_obj, names = coordsSSs)
-  names(x = seqSSs) <- paste(
+    makeGRangesFromDataFrame(
+        df = coordsSSs,
+        keep.extra.columns = TRUE
+    )
+}
+
+#' Build splice site sequence names
+#' @description Internal helper for extractSeqSSs(). Builds the sequence
+#'     names in the form "chr:start-end_strand".
+#' @param coordsSSs GRanges object with splice site coordinates.
+#' @return character vector with sequence names.
+#' @author Vasily V. Grinev, Nadzeya A. Boyeva.
+#' @keywords internal
+#' @noRd
+.spliceSiteSeqNames <- function(coordsSSs) {
+    paste(
         paste(seqnames(x = coordsSSs),
             paste(start(x = coordsSSs),
                 end(x = coordsSSs),
@@ -1255,10 +1284,7 @@ extractSeqSSs <- function(x,
         strand(x = coordsSSs),
         sep = "_str"
     )
-    ### Returning the final object.
-    return(seqSSs)
 }
-
 
 #' Extract genomic coordinates of splice sites from exon-exon junctions
 #' @description Extraction of the genomic coordinates of splice sites
@@ -1593,7 +1619,7 @@ introduceSNVtoAAs <- function(vcfDir = NULL,
     ALT <- as.character(x = unlist(x = rowRanges(x = vcf)$ALT))
     vcf <- vcf[
         rep(
-            x = seq_along( vcf),
+            x = seq_along(vcf),
             times = lengths(x = rowRanges(x = vcf)$ALT)
         ),
     ]
@@ -1852,21 +1878,21 @@ introduceSNVtoSSs <- function(
 #' @keywords internal
 #' @noRd
 .loadSpliceSites <- function(x, workDir) {
-  if (is.object(x = x)) {
-    return(x)
-  }
-  frt <- tools::file_ext(x = x)
-  if (!frt %in% "txt") {
-    stop("Invalid file format")
-  }
-  spl.sites <- read.table(
-    file = paste(workDir, x, sep = "/"),
-    sep = "\t",
-    header = TRUE,
-    quote = "\"",
-    as.is = TRUE
-  )
-  makeGRangesFromDataFrame(df = spl.sites, keep.extra.columns = TRUE)
+    if (is.object(x = x)) {
+        return(x)
+    }
+    frt <- tools::file_ext(x = x)
+    if (!frt %in% "txt") {
+        stop("Invalid file format")
+    }
+    spl.sites <- read.table(
+        file = paste(workDir, x, sep = "/"),
+        sep = "\t",
+        header = TRUE,
+        quote = "\"",
+        as.is = TRUE
+    )
+    makeGRangesFromDataFrame(df = spl.sites, keep.extra.columns = TRUE)
 }
 
 #' Build the result object for introduceSNVtoSSs()
@@ -1988,14 +2014,14 @@ introduceSNVtoSSs <- function(
 #' @importFrom Biostrings readDNAStringSet width uniqueLetters
 #' @importFrom methods is
 scoreSSs <- function(x, type, workDir = NULL) {
-  if (is.null(x = workDir)) {
-    workDir <- getwd()
-  }
-  seqSSs <- .loadSpliceSiteSequences(x, workDir)
-  .checkPerlAvailable()
-  .validateSpliceSiteSequences(seqSSs, type)
-  scores <- .runMaxEntScan(seqSSs, type, workDir)
-  .assembleScoreTable(seqSSs, scores)
+    if (is.null(x = workDir)) {
+        workDir <- getwd()
+    }
+    seqSSs <- .loadSpliceSiteSequences(x, workDir)
+    .checkPerlAvailable()
+    .validateSpliceSiteSequences(seqSSs, type)
+    scores <- .runMaxEntScan(seqSSs, type, workDir)
+    .assembleScoreTable(seqSSs, scores)
 }
 
 #' Load splice site sequences
@@ -2008,17 +2034,17 @@ scoreSSs <- function(x, type, workDir = NULL) {
 #' @keywords internal
 #' @noRd
 .loadSpliceSiteSequences <- function(x, workDir) {
-  if (is.object(x = x)) {
-    return(x)
-  }
-  frt <- tools::file_ext(x = x)
-  if (!frt %in% c("fa", "fasta")) {
-    stop("Invalid file format")
-  }
-  readDNAStringSet(
-    filepath = paste(workDir, x, sep = "/"),
-    format = frt
-  )
+    if (is.object(x = x)) {
+        return(x)
+    }
+    frt <- tools::file_ext(x = x)
+    if (!frt %in% c("fa", "fasta")) {
+        stop("Invalid file format")
+    }
+    readDNAStringSet(
+        filepath = paste(workDir, x, sep = "/"),
+        format = frt
+    )
 }
 
 #' Validate splice site sequences
@@ -2072,33 +2098,33 @@ scoreSSs <- function(x, type, workDir = NULL) {
 #' @keywords internal
 #' @noRd
 .runMaxEntScan <- function(seqSSs, type, workDir) {
-  script_name <- if (type == 3) "score3.pl" else "score5.pl"
-  script_path <- system.file("extdata", script_name, package = "huGSVcalleR")
-  if (!nzchar(script_path) || !file.exists(script_path)) {
-    stop(
-      "MaxEntScan script not found: ", script_name,
-      ". Expected in inst/extdata/."
+    script_name <- if (type == 3) "score3.pl" else "score5.pl"
+    script_path <- system.file("extdata", script_name, package = "huGSVcalleR")
+    if (!nzchar(script_path) || !file.exists(script_path)) {
+        stop(
+            "MaxEntScan script not found: ", script_name,
+            ". Expected in inst/extdata/."
+        )
+    }
+    tmp_file <- tempfile(pattern = "seqSSs_", fileext = ".txt")
+    on.exit(unlink(tmp_file), add = TRUE)
+    writeLines(as.character(seqSSs), con = tmp_file)
+    scores <- system2(
+        command = "perl",
+        args = c(script_path, tmp_file),
+        stdout = TRUE,
+        stderr = TRUE
     )
-  }
-  tmp_file <- tempfile(pattern = "seqSSs_", fileext = ".txt")
-  on.exit(unlink(tmp_file), add = TRUE)
-  writeLines(as.character(seqSSs), con = tmp_file)
-  scores <- system2(
-    command = "perl",
-    args = c(script_path, tmp_file),
-    stdout = TRUE,
-    stderr = TRUE
-  )
-  status <- attr(scores, "status")
-  if (!is.null(status) && status != 0) {
-    stop(
-      "MaxEntScan failed with status ", status, ": ",
-      paste(scores, collapse = "\n")
-    )
-  }
-  scores <- scores[!grepl("^\\s*$", scores)]
-  if (length(scores) == 0) {
-    stop("MaxEntScan returned no scores.")
-  }
-  sub(pattern = "^[^\t]*\t", replacement = "", x = scores)
+    status <- attr(scores, "status")
+    if (!is.null(status) && status != 0) {
+        stop(
+            "MaxEntScan failed with status ", status, ": ",
+            paste(scores, collapse = "\n")
+        )
+    }
+    scores <- scores[!grepl("^\\s*$", scores)]
+    if (length(scores) == 0) {
+        stop("MaxEntScan returned no scores.")
+    }
+    sub(pattern = "^[^\t]*\t", replacement = "", x = scores)
 }

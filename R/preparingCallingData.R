@@ -336,12 +336,14 @@ collectBasesPileup <- function(
 #' @noRd
 .summarizePileupCounts <- function(pileup_data) {
     temp_stat <- pileup_data %>%
-        mutate(reference = 0, A = 0, C = 0, G = 0, T = 0) %>%
+        mutate(reference = 0, A = 0, C = 0, G = 0, T_count = 0) %>%
         mutate(
             A = case_when(nucleotide == "A" ~ count, TRUE ~ .data$A),
             C = case_when(nucleotide == "C" ~ count, TRUE ~ .data$C),
             G = case_when(nucleotide == "G" ~ count, TRUE ~ .data$G),
-            T = case_when(nucleotide == "T" ~ count, TRUE ~ .data$T)
+            T_count = case_when(
+                nucleotide == "T" ~ count, TRUE ~ .data$T_count
+            )
         )
     temp_stat <- as.data.table(temp_stat)
     temp_stat <- temp_stat[,
@@ -352,7 +354,7 @@ collectBasesPileup <- function(
             A = sum(x = A),
             C = sum(x = C),
             G = sum(x = G),
-            T = sum(x = get("T"))
+            T_count = sum(x = T_count)
         ),
         by = position
     ]
@@ -364,7 +366,7 @@ collectBasesPileup <- function(
         A = A,
         C = C,
         G = G,
-        T = T
+        T_count = T_count
     )]
 }
 
