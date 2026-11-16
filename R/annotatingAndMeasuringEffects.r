@@ -75,74 +75,174 @@ annotateDbSNP <- function(
     chrToNC = FALSE,
     chrID,
     workDir = NULL) {
-  ### Setting the working directory.
-  if (is.null(x = workDir)) {
-    workDir <- getwd()
-  }
-  ### Setting the annotation directory.
-  if (is.null(x = annoDir)) {
-    annoDir <- workDir
-  } else {
-    annoDir <- paste(workDir, annoDir, sep = "/")
-  }
-  ### Setting the database directory.
-  if (is.null(x = dbDir)) {
-    dbDir <- workDir
-  } else {
-    dbDir <- paste(workDir, dbDir, sep = "/")
-  }
+  ### Resolving the annotation and database directories.
+  paths <- .resolveAnnotationPaths(annoDir, dbDir, workDir)
   ### Loading of basic SNVs annotation.
   SNVs <- read.table(
-    file = paste(annoDir, annoFile, sep = "/"),
+    file = paste(paths$annoDir, annoFile, sep = "/"),
     header = TRUE,
     sep = "\t"
   )
-  ### Convertion chr to NCBI chromosome ID (if requested).
+  ### Conversion chr -> NCBI chromosome ID (if requested).
+  chr.backup <- NULL
   if (isTRUE(chrToNC)) {
-    NC <- read.table(
-      file = paste(dbDir, chrID, sep = "/"),
-      header = TRUE,
-      sep = "\t"
-    )
     chr.backup <- SNVs$seqnames
-    SNVs <- .convertChrToNCBI(SNVs, NC)
+    SNVs <- .applyChrToNC(SNVs, paths$dbDir, chrID)
   }
+  ### Query ranges for dbSNP subsetting and overlap search.
+  qry <- .buildSnvQueryRanges(SNVs)
   ### Loading of dbSNP annotation and finding overlaps.
-  fields <- c(
+  fields <- .dbSnpInfoFields()
+  ref.snp <- .loadDbSnpVcf(paths$dbDir, dbFile, genome, qry, fields)
+  ### Pair-by-pair comparison of ALT alleles.
+  hits.ref <- .findDbSnpOverlaps(qry, ref.snp)
+  alt.hits <- .compareAltAlleles(SNVs, ref.snp, hits.ref)
+  ### Extracting dbSNP fields and building the final data.frame.
+  hits.to <- .extractDbSNPFields(ref.snp, hits.ref, alt.hits, fields)
+  anno <- .buildDbSNPAnnoFrame(SNVs, hits.to, hits.ref, alt.hits)
+  ### Restoring chromosome names.
+  if (isTRUE(chrToNC)) {
+    anno$seqnames <- chr.backup
+  }
+  ### Writing the output file.
+  .writeDbSnpAnnotation(anno, workDir, annoFile, output)
+}
+
+#' Resolve annotation and database directories
+#' @description Internal helper for annotateDbSNP(). Returns the absolute
+#'     paths to the annotation and database directories.
+#' @param annoDir character string or NULL.
+#' @param dbDir character string or NULL.
+#' @param workDir character string or NULL.
+#' @return list with annoDir and dbDir.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.resolveAnnotationPaths <- function(annoDir, dbDir, workDir) {
+  if (is.null(x = workDir)) {
+    workDir <- getwd()
+  }
+  list(
+    workDir = workDir,
+    annoDir = if (is.null(x = annoDir)) {
+      workDir
+    } else {
+      paste(workDir, annoDir, sep = "/")
+    },
+    dbDir = if (is.null(x = dbDir)) {
+      workDir
+    } else {
+      paste(workDir, dbDir, sep = "/")
+    }
+  )
+}
+
+#' Apply UCSC-to-NCBI chromosome name conversion
+#' @description Internal helper for annotateDbSNP(). Reads the
+#'     correspondence table and converts sequence names.
+#' @param SNVs data.frame with basic SNVs annotation.
+#' @param dbDir character string with the database directory.
+#' @param chrID character string with the correspondence table name.
+#' @return data.frame with converted sequence names.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.applyChrToNC <- function(SNVs, dbDir, chrID) {
+  NC <- read.table(
+    file = paste(dbDir, chrID, sep = "/"),
+    header = TRUE,
+    sep = "\t"
+  )
+  .convertChrToNCBI(SNVs, NC)
+}
+
+#' Build GRanges with SNV query ranges
+#' @description Internal helper for annotateDbSNP(). Builds the query
+#'     ranges reused for VCF subsetting and overlap search.
+#' @param SNVs data.frame with basic SNVs annotation.
+#' @return GRanges object with query ranges.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.buildSnvQueryRanges <- function(SNVs) {
+  GRanges(
+    seqnames = SNVs$seqnames,
+    ranges = IRanges(start = SNVs$start, end = SNVs$end),
+    strand = SNVs$strand
+  )
+}
+
+#' Return the dbSNP INFO fields used by annotateDbSNP()
+#' @description Internal helper for annotateDbSNP(). Returns the fixed
+#'     list of extracted dbSNP fields.
+#' @return character vector with field names.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.dbSnpInfoFields <- function() {
+  c(
     "RS", "dbSNPBuildID", "SAO",
     "PM", "FREQ", "COMMON", "CLNHGVS", "CLNVI",
     "CLNORIGIN", "CLNSIG", "CLNDISDB", "CLNDN",
     "CLNREVSTAT", "CLNACC"
   )
-  ref.snp <- readVcf(
+}
+
+#' Load the dbSNP VCF subset
+#' @description Internal helper for annotateDbSNP(). Reads the dbSNP VCF
+#'     restricted to the query ranges and INFO fields.
+#' @param dbDir character string with the database directory.
+#' @param dbFile character string with the dbSNP VCF file name.
+#' @param genome character string with the genome version.
+#' @param qry GRanges object with query ranges.
+#' @param fields character vector with INFO fields.
+#' @return CollapsedVCF object with dbSNP annotation.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.loadDbSnpVcf <- function(dbDir, dbFile, genome, qry, fields) {
+  vcf <- readVcf(
     file = paste(dbDir, dbFile, sep = "/"),
     genome = genome,
-    param = ScanVcfParam(
-      info = fields,
-      which = GRanges(
-        seqnames = SNVs$seqnames,
-        ranges = IRanges(start = SNVs$start, end = SNVs$end),
-        strand = SNVs$strand
-      )
-    )
+    param = ScanVcfParam(info = fields, which = qry)
   )
   gc()
-  ### Finding overlaps between called SNVs and dbSNP.
-  hits.ref <- findOverlaps(
-    query = GRanges(
-      seqnames = SNVs$seqnames,
-      ranges = IRanges(start = SNVs$start, end = SNVs$end),
-      strand = SNVs$strand
-    ),
+  vcf
+}
+
+#' Find overlaps between SNVs and dbSNP
+#' @description Internal helper for annotateDbSNP(). Wraps findOverlaps()
+#'     with type = "equal".
+#' @param qry GRanges object with SNV query ranges.
+#' @param ref.snp CollapsedVCF object with dbSNP annotation.
+#' @return Hits object.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.findDbSnpOverlaps <- function(qry, ref.snp) {
+  findOverlaps(
+    query = qry,
     subject = rowRanges(ref.snp),
     type = "equal"
   )
-  ### Pair by pair comparison of ALT alleles.
+}
+
+#' Compare ALT alleles between SNVs and dbSNP
+#' @description Internal helper for annotateDbSNP(). Returns a logical
+#'     vector indicating which overlaps have matching ALT alleles.
+#' @param SNVs data.frame with basic SNVs annotation.
+#' @param ref.snp CollapsedVCF object with dbSNP annotation.
+#' @param hits.ref Hits object from findOverlaps().
+#' @return logical vector.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.compareAltAlleles <- function(SNVs, ref.snp, hits.ref) {
   alt.compare <- list(
     experimental = strsplit(SNVs$alt[hits.ref@from], ","),
     reference = fixed(ref.snp)[hits.ref@to, c("ALT")]
   )
-  alt.hits <- vapply(
+  vapply(
     seq_along(alt.compare[[1]]),
     function(i) {
       any(
@@ -152,14 +252,20 @@ annotateDbSNP <- function(
     },
     logical(1)
   )
-  ### Extracting dbSNP fields and building final data.frame.
-  hits.to <- .extractDbSNPFields(ref.snp, hits.ref, alt.hits, fields)
-  anno <- .buildDbSNPAnnoFrame(SNVs, hits.to, hits.ref, alt.hits)
-  ### Restoring chromosome names.
-  if (isTRUE(chrToNC)) {
-    anno$seqnames <- chr.backup
-  }
-  ### Writing output file.
+}
+
+#' Write dbSNP annotation table
+#' @description Internal helper for annotateDbSNP(). Resolves the output
+#'     file name and writes the annotation table.
+#' @param anno data.frame with merged annotation.
+#' @param workDir character string with the working directory.
+#' @param annoFile character string with the input annotation file name.
+#' @param output character string or NULL.
+#' @return invisible(NULL).
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.writeDbSnpAnnotation <- function(anno, workDir, annoFile, output) {
   outputFile <- .resolveDbSNPOutputFile(workDir, annoFile, output)
   write.table(
     x = anno,
@@ -169,6 +275,7 @@ annotateDbSNP <- function(
     col.names = TRUE,
     row.names = FALSE
   )
+  invisible(NULL)
 }
 
 #' Convert chromosome names from UCSC to NCBI style
