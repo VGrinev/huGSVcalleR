@@ -19,7 +19,7 @@
       results(results) {}
 
   void operator()(size_t begin, size_t end) {
-    double p = 9.0 / 20000.0; // TODO: Clarify
+    double p = 1.0 / 1000.0;
     for (size_t j = begin; j < end; ++j) {
       int N = A[j] + C[j] + G[j] +T[j];  // Сумма A, C, G, T
       std::string ref = as<std::string>(reference[j]);
