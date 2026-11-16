@@ -883,7 +883,8 @@ markDuplicatesGATK <- function(bamDir = NULL,
   metrics <- paste("-M",
                    paste(path,
                          paste(
-                           gsub(pattern = ".bam", replacement = "", x = bamFile),
+                           gsub(pattern = ".bam",
+                                replacement = "", x = bamFile),
                            postfix, "metrics.txt",
                            sep = "."
                          ),
@@ -1001,9 +1002,12 @@ recalibrateBamGATK <- function(
     workDir <- getwd()
   }
   ### Full paths to the input files.
-  path <- if (is.null(x = bamDir)) workDir else paste(workDir, bamDir, sep = "/")
-  path2 <- if (is.null(x = vcfDir)) workDir else paste(workDir, vcfDir, sep = "/")
-  path3 <- if (is.null(x = fastaDir)) workDir else paste(workDir, fastaDir, sep = "/")
+  path <- if (is.null(x = bamDir)) workDir else
+    paste(workDir, bamDir, sep = "/")
+  path2 <- if (is.null(x = vcfDir)) workDir else
+    paste(workDir, vcfDir, sep = "/")
+  path3 <- if (is.null(x = fastaDir)) workDir else
+    paste(workDir, fastaDir, sep = "/")
   ### Generation of BQSR table.
   if (isTRUE(x = createBQSR)) {
     .runBaseRecalibrator(path, bamFile, path2, vcfFile, path3, faFile,

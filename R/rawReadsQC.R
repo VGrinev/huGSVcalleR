@@ -77,8 +77,8 @@ assessQRawReads <- function(fastqDir = NULL,
     fastqDir = fastqDir, fastq = fastq, n = n,
     workDir = workDir
   )
-  RLs <- .computeReadLengths(reads)
   ##  Per entire reads quality.
+  RLs <- .computeReadLengths(reads)
   PERQs <- .computePerReadQuality(reads)
   ##  Per cycle quality of reads.
   if (is.null(x = n)) {
@@ -100,22 +100,30 @@ assessQRawReads <- function(fastqDir = NULL,
   ##  Overrepresented reads.
   ORs <- .computeOverrepresented(QA)
   ##  Identification of irrelevant sequences.
-  ASs <- NA
-  if (!is.null(x = adapters)) {
-    ASs <- findAdapters(
-      fastqDir = fastqDir, fastq = fastq, n = n,
-      adapters = adapters, workDir = workDir
-    )
-  }
-  FSs <- NA
-  if (!is.null(x = contaminants)) {
-    FSs <- findForeignSeqs(
-      fastqDir = fastqDir, fastq = fastq, n = n,
-      contaminants = contaminants, workDir = workDir
-    )
-  }
+  ASs <- .findAdaptersIfRequested(fastqDir, fastq, n, adapters, workDir)
+  FSs <- .findForeignSeqsIfRequested(
+    fastqDir, fastq, n, contaminants, workDir
+  )
   ### Quality metrics.
-  return(list(
+  .assembleQAObject(
+    sample_name, file_name, TNRs, TNBs,
+    RLs, PERQs, PCQRs, BCs, PCCBs,
+    GCs, DSs, FRs, ORs, ASs, FSs
+  )
+}
+
+#' Assemble the QA object returned by assessQRawReads()
+#' @description Internal helper for assessQRawReads(). Packs all computed
+#'     metrics into a single list.
+#' @param ... named metrics.
+#' @return list with QA metrics.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.assembleQAObject <- function(sample_name, file_name, TNRs, TNBs,
+                              RLs, PERQs, PCQRs, BCs, PCCBs,
+                              GCs, DSs, FRs, ORs, ASs, FSs) {
+  list(
     SN = sample_name,
     FN = file_name,
     TNRs = TNRs,
@@ -131,7 +139,52 @@ assessQRawReads <- function(fastqDir = NULL,
     ORs = ORs,
     ASs = ASs,
     FSs = FSs
-  ))
+  )
+}
+
+#' Find adapters if requested
+#' @description Internal helper for assessQRawReads(). Returns NA when
+#'     adapters = NULL.
+#' @param fastqDir character string or NULL.
+#' @param fastq character string.
+#' @param n integer or NULL.
+#' @param adapters character string or NULL.
+#' @param workDir character string.
+#' @return data.frame or NA.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.findAdaptersIfRequested <- function(fastqDir, fastq, n, adapters, workDir) {
+  if (is.null(x = adapters)) {
+    return(NA)
+  }
+  findAdapters(
+    fastqDir = fastqDir, fastq = fastq, n = n,
+    adapters = adapters, workDir = workDir
+  )
+}
+
+#' Find foreign sequences if requested
+#' @description Internal helper for assessQRawReads(). Returns NA when
+#'     contaminants = NULL.
+#' @param fastqDir character string or NULL.
+#' @param fastq character string.
+#' @param n integer or NULL.
+#' @param contaminants character string or NULL.
+#' @param workDir character string.
+#' @return data.frame or NA.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.findForeignSeqsIfRequested <- function(fastqDir, fastq, n, contaminants,
+                                        workDir) {
+  if (is.null(x = contaminants)) {
+    return(NA)
+  }
+  findForeignSeqs(
+    fastqDir = fastqDir, fastq = fastq, n = n,
+    contaminants = contaminants, workDir = workDir
+  )
 }
 
 #' Compute read length distribution
@@ -179,7 +232,26 @@ assessQRawReads <- function(fastqDir = NULL,
 #' @keywords internal
 #' @noRd
 .computePerCycleQuality <- function(QA) {
-  PCQRs <- do.call(
+  PCQRs <- .expandPerCycleQuality(QA)
+  m <- .binPerCycleQuality(PCQRs)
+  PCQRs <- data.frame(do.call(args = m, what = rbind))
+  colnames(x = PCQRs) <- c(
+    "cycles", "minimum", "Q1", "median", "Q3", "maximum"
+  )
+  PCQRs[, -1] <- apply(X = PCQRs[, -1], MARGIN = 2, FUN = as.numeric)
+  PCQRs
+}
+
+#' Expand per-cycle quality counts into raw scores
+#' @description Internal helper for .computePerCycleQuality(). Repeats each
+#'     observed quality score according to its count.
+#' @param QA ShortRead::qa() output.
+#' @return matrix of raw per-cycle quality scores.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.expandPerCycleQuality <- function(QA) {
+  do.call(
     what = rbind,
     args = lapply(
       X = split(
@@ -191,6 +263,17 @@ assessQRawReads <- function(fastqDir = NULL,
       }
     )
   )
+}
+
+#' Bin per-cycle quality scores in windows of 5 cycles
+#' @description Internal helper for .computePerCycleQuality(). Computes
+#'     quantiles for each 5-cycle window.
+#' @param PCQRs matrix of raw per-cycle quality scores.
+#' @return list of character/numeric vectors ready for rbind.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.binPerCycleQuality <- function(PCQRs) {
   m <- list()
   for (i in seq(from = 1, to = nrow(x = PCQRs), by = 5)) {
     if (i + 4 < nrow(x = PCQRs)) {
@@ -211,12 +294,7 @@ assessQRawReads <- function(fastqDir = NULL,
       )
     }
   }
-  PCQRs <- data.frame(do.call(args = m, what = rbind))
-  colnames(x = PCQRs) <- c(
-    "cycles", "minimum", "Q1", "median", "Q3", "maximum"
-  )
-  PCQRs[, -1] <- apply(X = PCQRs[, -1], MARGIN = 2, FUN = as.numeric)
-  PCQRs
+  m
 }
 
 #' Compute base composition
@@ -257,9 +335,28 @@ assessQRawReads <- function(fastqDir = NULL,
 #' @keywords internal
 #' @noRd
 .computePerCycleBases <- function(QA) {
+  PCCBs <- .expandPerCycleBases(QA)
+  m <- .binPerCycleBases(PCCBs)
+  PCCBs <- m[!is.na(x = m$cycles), ]
+  PCCBs[is.na(x = PCCBs$N), ]$N <- 0
+  PCCBs[, -1] <- apply(X = PCCBs[, -1], MARGIN = 2, FUN = as.numeric)
+  rownames(x = PCCBs) <- NULL
+  PCCBs[, -1] <- PCCBs[, -1] / rowSums(x = PCCBs[, -1])
+  PCCBs
+}
+
+#' Expand per-cycle base counts into raw base calls
+#' @description Internal helper for .computePerCycleBases(). Repeats each
+#'     observed base according to its count.
+#' @param QA ShortRead::qa() output.
+#' @return matrix of raw per-cycle base calls.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.expandPerCycleBases <- function(QA) {
   PCCBs <- QA[["perCycle"]]$baseCall[, -4]
   PCCBs$Base <- as.character(x = PCCBs$Base)
-  PCCBs <- do.call(
+  do.call(
     what = rbind,
     args = lapply(
       X = split(x = PCCBs, f = PCCBs$Cycle),
@@ -268,6 +365,17 @@ assessQRawReads <- function(fastqDir = NULL,
       }
     )
   )
+}
+
+#' Bin per-cycle base calls in windows of 5 cycles
+#' @description Internal helper for .computePerCycleBases(). Computes
+#'     per-window base counts.
+#' @param PCCBs matrix of raw per-cycle base calls.
+#' @return data.frame with cycles and base counts.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.binPerCycleBases <- function(PCCBs) {
   m <- data.frame(cycles = "", A = 0, C = 0, G = 0, T = 0, N = 0)
   for (i in seq(from = 1, to = nrow(x = PCCBs), by = 5)) {
     if (i + 4 < nrow(x = PCCBs)) {
@@ -286,12 +394,7 @@ assessQRawReads <- function(fastqDir = NULL,
       m[i, -1] <- bases[match(colnames(x = m), names(x = bases))][-1]
     }
   }
-  PCCBs <- m[!is.na(x = m$cycles), ]
-  PCCBs[is.na(x = PCCBs$N), ]$N <- 0
-  PCCBs[, -1] <- apply(X = PCCBs[, -1], MARGIN = 2, FUN = as.numeric)
-  rownames(x = PCCBs) <- NULL
-  PCCBs[, -1] <- PCCBs[, -1] / rowSums(x = PCCBs[, -1])
-  PCCBs
+  m
 }
 
 #' Compute GC composition
@@ -408,16 +511,29 @@ readFASTQ <- function(
     stop("Invalid file format")
   }
   ### Loading the FASTQ data.
-  if (is.null(x = n)) {
-    reads <- readLines(con = paste(path, fastq, sep = "/"))
-    FQs <- .parseFastqLines(reads, n = NULL)
-  } else {
-    reads <- readLines(con = paste(path, fastq, sep = "/"), n = n * 4)
-    FQs <- .parseFastqLines(reads, n = n)
-  }
-  rm(reads)
+  reads <- .readFastqLines(path, fastq, n)
+  FQs <- .parseFastqLines(reads, n = n)
   ### Returning the final object.
   return(FQs)
+}
+
+#' Read raw FASTQ lines
+#' @description Internal helper for readFASTQ(). Reads the requested number
+#'     of lines from a FASTQ file.
+#' @param path character string with the directory path.
+#' @param fastq character string with the FASTQ file name.
+#' @param n integer or NULL.
+#' @return character vector with raw lines.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.readFastqLines <- function(path, fastq, n) {
+  file_path <- paste(path, fastq, sep = "/")
+  if (is.null(x = n)) {
+    readLines(con = file_path)
+  } else {
+    readLines(con = file_path, n = n * 4)
+  }
 }
 
 #' Parse FASTQ lines into sequences and quality scores
@@ -584,106 +700,216 @@ cleanRawReads <- function(
     postfix = "filtered",
     overwrite = FALSE,
     workDir = NULL) {
-  ### Setting the working directory.
+  ### Setting the working directory and resolving the path.
   if (is.null(x = workDir)) {
     workDir <- getwd()
   }
-  ### Full path to the FASTQ file(-s).
   if (is.null(x = fastqDir)) {
     path <- workDir
   } else {
     path <- paste(workDir, fastqDir, sep = "/")
   }
-  ### Retrieving and validation of the FASTQ file(-s) extension.
-  frt1 <- tools::file_ext(x = fastq1)
-  if (!frt1 %in% c("fastq", "gz")) {
-    stop("Invalid format of FASTQ file 1")
-  }
+  ### Validation of the FASTQ file(-s) extension.
+  .validateFastqExtension(fastq1, 1)
   if (!is.null(x = fastq2)) {
-    frt2 <- tools::file_ext(x = fastq2)
-    if (!frt2 %in% c("fastq", "gz")) {
-      stop("Invalid format of FASTQ file 2")
-    }
+    .validateFastqExtension(fastq2, 2)
   }
-  ### Loading of the FASTQ file 1.
-  FQ1 <- readFastq(dirPath = path, pattern = fastq1, withIds = TRUE)
-  ### Raw reads processing.
-  if (!is.null(x = adapters)) {
-    FQ1 <- cutLeftAdapter(
-      fastq = FQ1, adapters = adapters, error = error,
-      min_match_flank = min_match_flank, anchored = anchored,
-      indels = indels, workDir = workDir
-    )
-    FQ1 <- cutRigthAdapter(
-      fastq = FQ1, adapters = adapters, error = error,
-      min_match_flank = min_match_flank, anchored = anchored,
-      indels = indels, workDir = workDir
-    )
+  ### Phred scores (loaded once, reused for both files).
+  PhSs <- NULL
+  if (!is.null(x = tr_score)) {
+    PhSs <- .loadPhredScores(workDir, phred)
   }
-  if (is.null(x = tr_score)) {
-    FQ1 <- .trimFixedLowQuality(FQ1, tr_start, tr_end)
-  } else {
-    PhSs <- read.table(
-      file = paste(workDir, phred, sep = "/"),
-      sep = "\t", header = TRUE, quote = "",
-      as.is = TRUE, comment.char = "z"
-    )
-    FQ1 <- .trimDynamicLowQuality(
-      FQ1, PhSs, tr_score, k, halfwidth, successive
-    )
-  }
-  FQ1 <- .applyReadFilters(FQ1, readl, readq, readn, dustScore, batchSize)
+  ### Processing of the first FASTQ file.
+  FQ1 <- .processSingleFastq(
+    path = path, fastq = fastq1,
+    adapters = adapters, error = error,
+    min_match_flank = min_match_flank,
+    anchored = anchored, indels = indels,
+    tr_score = tr_score, tr_start = tr_start, tr_end = tr_end,
+    PhSs = PhSs, k = k, halfwidth = halfwidth,
+    successive = successive,
+    readl = readl, readq = readq, readn = readn,
+    dustScore = dustScore, batchSize = batchSize,
+    workDir = workDir
+  )
+  ### Processing of the second FASTQ file, if paired-end.
+  FQ2 <- NULL
   if (!is.null(x = fastq2)) {
-    FQ2 <- readFastq(dirPath = path, pattern = fastq2, withIds = TRUE)
-    if (!is.null(x = adapters)) {
-      FQ2 <- cutLeftAdapter(
-        fastq = FQ2, adapters = adapters, error = error,
-        min_match_flank = min_match_flank, anchored = anchored,
-        indels = indels, workDir = workDir
-      )
-      FQ2 <- cutRigthAdapter(
-        fastq = FQ2, adapters = adapters, error = error,
-        min_match_flank = min_match_flank, anchored = anchored,
-        indels = indels, workDir = workDir
-      )
-    }
-    if (is.null(x = tr_score)) {
-      FQ2 <- .trimFixedLowQuality(FQ2, tr_start, tr_end)
-    } else {
-      FQ2 <- .trimDynamicLowQuality(
-        FQ2, PhSs, tr_score, k, halfwidth, successive
-      )
-    }
-    FQ2 <- .applyReadFilters(
-      FQ2, readl, readq, readn, dustScore, batchSize
+    FQ2 <- .processSingleFastq(
+      path = path, fastq = fastq2,
+      adapters = adapters, error = error,
+      min_match_flank = min_match_flank,
+      anchored = anchored, indels = indels,
+      tr_score = tr_score, tr_start = tr_start, tr_end = tr_end,
+      PhSs = PhSs, k = k, halfwidth = halfwidth,
+      successive = successive,
+      readl = readl, readq = readq, readn = readn,
+      dustScore = dustScore, batchSize = batchSize,
+      workDir = workDir
     )
     synced <- .synchronizePairedReads(FQ1, FQ2)
     FQ1 <- synced$FQ1
     FQ2 <- synced$FQ2
   }
   ### Writing the filtered FASTQ file(-s).
-  output1 <- paste(path,
-                   gsub(
-                     pattern = "fast.+",
-                     replacement = paste(postfix, "fastq.gz", sep = "."),
-                     x = fastq1
-                   ),
-                   sep = "/"
-  )
-  .checkOverwrite(output1, overwrite)
-  writeFastq(object = FQ1, file = output1, compress = TRUE)
+  .writeFilteredFastq(FQ1, path, fastq1, postfix, overwrite)
   if (!is.null(x = fastq2)) {
-    output2 <- paste(path,
-                     gsub(
-                       pattern = "fast.+",
-                       replacement = paste(postfix, "fastq.gz", sep = "."),
-                       x = fastq2
-                     ),
-                     sep = "/"
-    )
-    .checkOverwrite(output2, overwrite)
-    writeFastq(object = FQ2, file = output2)
+    .writeFilteredFastq(FQ2, path, fastq2, postfix, overwrite)
   }
+  invisible(NULL)
+}
+
+#' Validate FASTQ file extension
+#' @description Internal helper for cleanRawReads(). Stops if the file
+#'     extension is not 'fastq' or 'gz'.
+#' @param fastq character string with the FASTQ file name.
+#' @param index integer, 1 or 2, used in the error message.
+#' @return invisible(NULL).
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.validateFastqExtension <- function(fastq, index) {
+  frt <- tools::file_ext(x = fastq)
+  if (!frt %in% c("fastq", "gz")) {
+    stop("Invalid format of FASTQ file ", index)
+  }
+  invisible(NULL)
+}
+
+#' Load Phred score table
+#' @description Internal helper for cleanRawReads(). Reads the ASCII quality
+#'     score table once for reuse with both FASTQ files.
+#' @param workDir character string with the working directory.
+#' @param phred character string with the Phred table file name.
+#' @return data.frame with Phred scores.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.loadPhredScores <- function(workDir, phred) {
+  read.table(
+    file = paste(workDir, phred, sep = "/"),
+    sep = "\t", header = TRUE, quote = "",
+    as.is = TRUE, comment.char = "z"
+  )
+}
+
+#' Process a single FASTQ file
+#' @description Internal helper for cleanRawReads(). Reads, trims and
+#'     filters one FASTQ file.
+#' @param path character string with the directory path.
+#' @param fastq character string with the FASTQ file name.
+#' @param adapters character string or NULL.
+#' @param error numeric error rate.
+#' @param min_match_flank integer minimal match length.
+#' @param anchored logical, anchored search?
+#' @param indels logical, allow indels?
+#' @param tr_score integer or NULL.
+#' @param tr_start integer, left fixed trim.
+#' @param tr_end integer, right fixed trim.
+#' @param PhSs data.frame with Phred scores or NULL.
+#' @param k integer, failing nucleotides.
+#' @param halfwidth integer or NULL.
+#' @param successive logical.
+#' @param readl integer, min read length.
+#' @param readq integer, min read quality.
+#' @param readn integer, max ambiguous nucleotides.
+#' @param dustScore integer or NULL.
+#' @param batchSize integer or NA.
+#' @param workDir character string.
+#' @return ShortReadQ object with processed reads.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.processSingleFastq <- function(path, fastq, adapters, error,
+                                min_match_flank, anchored, indels,
+                                tr_score, tr_start, tr_end, PhSs,
+                                k, halfwidth, successive,
+                                readl, readq, readn,
+                                dustScore, batchSize, workDir) {
+  FQ <- readFastq(dirPath = path, pattern = fastq, withIds = TRUE)
+  FQ <- .trimAdaptersIfRequested(
+    FQ, adapters, error, min_match_flank, anchored, indels, workDir
+  )
+  if (is.null(x = tr_score)) {
+    FQ <- .trimFixedLowQuality(FQ, tr_start, tr_end)
+  } else {
+    FQ <- .trimDynamicLowQuality(
+      FQ, PhSs, tr_score, k, halfwidth, successive
+    )
+  }
+  .applyReadFilters(FQ, readl, readq, readn, dustScore, batchSize)
+}
+
+#' Trim adapters if requested
+#' @description Internal helper for .processSingleFastq(). Applies
+#'     cutLeftAdapter() and cutRigthAdapter() when adapters is not NULL.
+#' @param FQ ShortReadQ object.
+#' @param adapters character string or NULL.
+#' @param error numeric error rate.
+#' @param min_match_flank integer minimal match length.
+#' @param anchored logical, anchored search?
+#' @param indels logical, allow indels?
+#' @param workDir character string.
+#' @return ShortReadQ object.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.trimAdaptersIfRequested <- function(FQ, adapters, error, min_match_flank,
+                                     anchored, indels, workDir) {
+  if (is.null(x = adapters)) {
+    return(FQ)
+  }
+  FQ <- cutLeftAdapter(
+    fastq = FQ, adapters = adapters, error = error,
+    min_match_flank = min_match_flank, anchored = anchored,
+    indels = indels, workDir = workDir
+  )
+  cutRigthAdapter(
+    fastq = FQ, adapters = adapters, error = error,
+    min_match_flank = min_match_flank, anchored = anchored,
+    indels = indels, workDir = workDir
+  )
+}
+
+#' Write filtered FASTQ file
+#' @description Internal helper for cleanRawReads(). Resolves the output
+#'     name, checks overwrite and writes the FASTQ file.
+#' @param FQ ShortReadQ object.
+#' @param path character string with the directory path.
+#' @param fastq character string with the input FASTQ file name.
+#' @param postfix character string with the output postfix.
+#' @param overwrite logical.
+#' @return invisible(NULL).
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.writeFilteredFastq <- function(FQ, path, fastq, postfix, overwrite) {
+  output <- .resolveFilteredFastqName(path, fastq, postfix)
+  .checkOverwrite(output, overwrite)
+  writeFastq(object = FQ, file = output, compress = TRUE)
+  invisible(NULL)
+}
+
+#' Resolve filtered FASTQ output file name
+#' @description Internal helper for cleanRawReads(). Builds the output file
+#'     name from the input name and postfix.
+#' @param path character string with the directory path.
+#' @param fastq character string with the input FASTQ file name.
+#' @param postfix character string with the output postfix.
+#' @return character string with the output file name.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.resolveFilteredFastqName <- function(path, fastq, postfix) {
+  paste(
+    path,
+    gsub(
+      pattern = "fast.+",
+      replacement = paste(postfix, "fastq.gz", sep = "."),
+      x = fastq
+    ),
+    sep = "/"
+  )
 }
 
 #' Trim low-quality ends with fixed trimming
@@ -891,91 +1117,11 @@ cutLeftAdapter <- function(
   ### Retrieving of the FASTQ data.
   FQ <- .loadFastqObject(fastqDir, fastq, workDir)
   ### Loading of the adapter sequence(-s).
-  ADs <- read.table(
-    file = paste(workDir, adapters, sep = "/"),
-    sep = "\t", header = TRUE, quote = "\"", as.is = TRUE
-  )
+  ADs <- .loadAdapterTable(workDir, adapters)
   ### Left-end trimming of adapter sequence(-s).
-  for (i in seq_len(nrow(x = ADs))) {
-    FQ <- .trimLeftAdapterSingle(FQ, ADs[i, 3], error,
-                                 min_match_flank, anchored, indels)
-  }
-  ### Returning the final object.
-  return(FQ)
-}
-
-#' Load FASTQ object from file or return existing object
-#' @description Internal helper for cutLeftAdapter() and cutRigthAdapter().
-#'     Reads a FASTQ file if 'fastq' is a character string, or returns it
-#'     as-is if it is already a ShortReadQ object.
-#' @param fastqDir character string giving the directory name.
-#' @param fastq character string with file name or ShortReadQ object.
-#' @param workDir character string giving the path to working directory.
-#' @return ShortReadQ object.
-#' @author Vasily V. Grinev.
-#' @keywords internal
-#' @noRd
-.loadFastqObject <- function(fastqDir, fastq, workDir) {
-  if (is.object(x = fastq)) {
-    return(fastq)
-  }
-  if (is.null(x = fastqDir)) {
-    path <- paste(workDir, fastqDir, sep = "")
-  } else {
-    path <- paste(workDir, fastqDir, sep = "/")
-  }
-  frt <- tools::file_ext(x = fastq)
-  if (!frt %in% c("fastq", "gz")) {
-    stop("Invalid format of FASTQ file")
-  }
-  readFastq(dirPath = path, pattern = fastq, withIds = TRUE)
-}
-
-#' Trim a single adapter from the left end
-#' @description Internal helper for cutLeftAdapter(). Trims a single
-#'     adapter sequence from the 5' end of the reads.
-#' @param FQ ShortReadQ object.
-#' @param seq_l character string with adapter sequence.
-#' @param error numeric error rate.
-#' @param min_match_flank integer minimal match length.
-#' @param anchored logical, anchored search?
-#' @param indels logical, allow indels?
-#' @return ShortReadQ object with trimmed reads.
-#' @author Vasily V. Grinev.
-#' @keywords internal
-#' @noRd
-.trimLeftAdapterSingle <- function(FQ, seq_l, error, min_match_flank,
-                                   anchored, indels) {
-  if (error > 0) {
-    flank_seq <- as.integer(
-      x = seq_len(length.out = nchar(x = seq_l)) * error
-    )
-  } else {
-    flank_seq <- rep(
-      x = 0,
-      times = length(x = seq_len(length.out = nchar(x = seq_l)))
-    )
-  }
-  if (min_match_flank >= 1L) {
-    if (nchar(x = seq_l) > min_match_flank) {
-      flank_seq[seq_len(length.out = min_match_flank)] <- -1
-    } else {
-      return(FQ)
-    }
-  }
-  if (!anchored) {
-    maxlen <- max(width(x = FQ)) - nchar(x = seq_l)
-    if (maxlen > 0) {
-      seq_l <- paste0(
-        paste(rep(x = "N", times = maxlen), collapse = ""),
-        seq_l
-      )
-    }
-    flank_seq <- c(flank_seq, rep(x = 0, times = maxlen))
-  }
-  trimLRPatterns(
-    Lpattern = seq_l, subject = FQ,
-    max.Lmismatch = flank_seq, with.Lindels = indels
+  .trimAdaptersFromFastq(
+    FQ, ADs[, 3], .trimLeftAdapterSingle,
+    error, min_match_flank, anchored, indels
   )
 }
 
@@ -1048,17 +1194,120 @@ cutRigthAdapter <- function(
   ### Retrieving of the FASTQ data.
   FQ <- .loadFastqObject(fastqDir, fastq, workDir)
   ### Loading of the adapter sequence(-s).
-  ADs <- read.table(
+  ADs <- .loadAdapterTable(workDir, adapters)
+  ### Right-end trimming of adapter sequence(-s).
+  .trimAdaptersFromFastq(
+    FQ, ADs[, 3], .trimRightAdapterSingle,
+    error, min_match_flank, anchored, indels
+  )
+}
+
+#' Load FASTQ object from file or return existing object
+#' @description Internal helper for cutLeftAdapter() and cutRigthAdapter().
+#'     Reads a FASTQ file if 'fastq' is a character string, or returns it
+#'     as-is if it is already a ShortReadQ object.
+#' @param fastqDir character string giving the directory name.
+#' @param fastq character string with file name or ShortReadQ object.
+#' @param workDir character string giving the path to working directory.
+#' @return ShortReadQ object.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.loadFastqObject <- function(fastqDir, fastq, workDir) {
+  if (is.object(x = fastq)) {
+    return(fastq)
+  }
+  if (is.null(x = fastqDir)) {
+    path <- paste(workDir, fastqDir, sep = "")
+  } else {
+    path <- paste(workDir, fastqDir, sep = "/")
+  }
+  frt <- tools::file_ext(x = fastq)
+  if (!frt %in% c("fastq", "gz")) {
+    stop("Invalid format of FASTQ file")
+  }
+  readFastq(dirPath = path, pattern = fastq, withIds = TRUE)
+}
+
+#' Load adapter table
+#' @description Internal helper for cutLeftAdapter() and cutRigthAdapter().
+#'     Reads the tab-delimited adapter table.
+#' @param workDir character string with the working directory.
+#' @param adapters character string with the adapter table file name.
+#' @return data.frame with adapter sequences.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.loadAdapterTable <- function(workDir, adapters) {
+  read.table(
     file = paste(workDir, adapters, sep = "/"),
     sep = "\t", header = TRUE, quote = "\"", as.is = TRUE
   )
-  ### Right-end trimming of adapter sequence(-s).
-  for (i in seq_len(nrow(x = ADs))) {
-    FQ <- .trimRightAdapterSingle(FQ, ADs[i, 3], error,
-                                  min_match_flank, anchored, indels)
+}
+
+#' Apply a per-adapter trimming function in a loop
+#' @description Internal helper for cutLeftAdapter() and cutRigthAdapter().
+#'     Iterates over adapter sequences and applies the given trimming
+#'     function to the FASTQ object.
+#' @param FQ ShortReadQ object.
+#' @param sequences character vector with adapter sequences.
+#' @param trim_fun function to apply, e.g. .trimLeftAdapterSingle.
+#' @param error numeric error rate.
+#' @param min_match_flank integer minimal match length.
+#' @param anchored logical, anchored search?
+#' @param indels logical, allow indels?
+#' @return ShortReadQ object with trimmed reads.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.trimAdaptersFromFastq <- function(FQ, sequences, trim_fun, error,
+                                   min_match_flank, anchored, indels) {
+  for (i in seq_along(sequences)) {
+    FQ <- trim_fun(
+      FQ, sequences[i], error,
+      min_match_flank, anchored, indels
+    )
   }
-  ### Returning the final object.
-  return(FQ)
+  FQ
+}
+
+#' Trim a single adapter from the left end
+#' @description Internal helper for cutLeftAdapter(). Trims a single
+#'     adapter sequence from the 5' end of the reads.
+#' @param FQ ShortReadQ object.
+#' @param seq_l character string with adapter sequence.
+#' @param error numeric error rate.
+#' @param min_match_flank integer minimal match length.
+#' @param anchored logical, anchored search?
+#' @param indels logical, allow indels?
+#' @return ShortReadQ object with trimmed reads.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.trimLeftAdapterSingle <- function(FQ, seq_l, error, min_match_flank,
+                                   anchored, indels) {
+  flank_seq <- .buildAdapterMismatchProfile(seq_l, error)
+  if (min_match_flank >= 1L) {
+    if (nchar(x = seq_l) > min_match_flank) {
+      flank_seq[seq_len(length.out = min_match_flank)] <- -1
+    } else {
+      return(FQ)
+    }
+  }
+  if (!anchored) {
+    maxlen <- max(width(x = FQ)) - nchar(x = seq_l)
+    if (maxlen > 0) {
+      seq_l <- paste0(
+        paste(rep(x = "N", times = maxlen), collapse = ""),
+        seq_l
+      )
+    }
+    flank_seq <- c(flank_seq, rep(x = 0, times = maxlen))
+  }
+  trimLRPatterns(
+    Lpattern = seq_l, subject = FQ,
+    max.Lmismatch = flank_seq, with.Lindels = indels
+  )
 }
 
 #' Trim a single adapter from the right end
@@ -1076,16 +1325,7 @@ cutRigthAdapter <- function(
 #' @noRd
 .trimRightAdapterSingle <- function(FQ, seq_l, error, min_match_flank,
                                     anchored, indels) {
-  if (error > 0) {
-    flank_seq <- as.integer(
-      x = seq_len(length.out = nchar(x = seq_l)) * error
-    )
-  } else {
-    flank_seq <- rep(
-      x = 0,
-      times = length(x = seq_len(length.out = nchar(x = seq_l)))
-    )
-  }
+  flank_seq <- .buildAdapterMismatchProfile(seq_l, error)
   if (min_match_flank >= 1L) {
     if (nchar(x = seq_l) > min_match_flank) {
       flank_seq[seq_len(length.out = min_match_flank)] <- -1
@@ -1107,6 +1347,25 @@ cutRigthAdapter <- function(
     Rpattern = seq_l, subject = FQ,
     max.Rmismatch = flank_seq, with.Rindels = indels
   )
+}
+
+#' Build adapter mismatch profile
+#' @description Internal helper for .trimLeftAdapterSingle() and
+#'     .trimRightAdapterSingle(). Computes the maximum allowed mismatches
+#'     per adapter position.
+#' @param seq_l character string with adapter sequence.
+#' @param error numeric error rate.
+#' @return integer vector of allowed mismatches.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.buildAdapterMismatchProfile <- function(seq_l, error) {
+  n <- nchar(x = seq_l)
+  if (error > 0) {
+    as.integer(x = seq_len(length.out = n) * error)
+  } else {
+    rep(x = 0, times = n)
+  }
 }
 
 
@@ -1163,29 +1422,9 @@ findAdapters <- function(fastqDir = NULL,
     fastqDir = fastqDir, fastq = fastq, n = n, workDir = workDir
   )[[1]]
   ### Loading the adapter sequences.
-  ADs <- read.table(
-    file = paste(workDir, adapters, sep = "/"),
-    sep = "\t", header = TRUE, quote = "\"", as.is = TRUE
-  )
-  ### Computing the hits.
-  hits <- lapply(
-    seq_len(nrow(x = ADs)),
-    function(i) .computeAdapterHits(
-      reads, ADs$adapter_sequence[i]
-    )
-  )
-  ### Building the output data.frame.
-  positions <- .buildPositionBins(reads)
-  hits <- data.frame(cbind(positions, do.call(what = cbind, args = hits)))
-  colnames(x = hits) <- c("positions", ADs$adapter_name)
-  if (ncol(hits) > 1) {
-    hits[, -1] <- apply(
-      X = hits[, -1, drop = FALSE],
-      MARGIN = 2, FUN = as.numeric
-    )
-  }
-  ### Returning the final object.
-  return(hits)
+  ADs <- .loadAdapterTable(workDir, adapters)
+  ### Computing the hits and building the output data.frame.
+  .buildSequenceHitsTable(reads, ADs$adapter_sequence, ADs$adapter_name)
 }
 
 #' Compute hits for a single adapter
@@ -1215,6 +1454,34 @@ findAdapters <- function(fastqDir = NULL,
   )
   x <- data.frame(table(x))
   x$Freq / (length(x = reads) * 6)
+}
+
+#' Build the hits table for a set of sequences
+#' @description Internal helper for findAdapters() and findForeignSeqs().
+#'     Computes binned hits for each sequence and assembles the output
+#'     data.frame.
+#' @param reads DNAStringSet object with read sequences.
+#' @param sequences character vector with sequences to search.
+#' @param names character vector with column names.
+#' @return data.frame with positions and hit frequencies.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.buildSequenceHitsTable <- function(reads, sequences, names) {
+  hits <- lapply(
+    seq_along(sequences),
+    function(i) .computeAdapterHits(reads, sequences[i])
+  )
+  positions <- .buildPositionBins(reads)
+  hits <- data.frame(cbind(positions, do.call(what = cbind, args = hits)))
+  colnames(x = hits) <- c("positions", names)
+  if (ncol(x = hits) > 1) {
+    hits[, -1] <- apply(
+      X = hits[, -1, drop = FALSE],
+      MARGIN = 2, FUN = as.numeric
+    )
+  }
+  hits
 }
 
 #' Build position bins for adapter and contaminant hits
@@ -1300,24 +1567,9 @@ findForeignSeqs <- function(
     fastqDir = fastqDir, fastq = fastq, n = n, workDir = workDir
   )[[1]]
   ### Loading the foreign sequences.
-  FSs <- read.table(
-    file = paste(workDir, contaminants, sep = "/"),
-    sep = "\t", header = TRUE, quote = "\"", as.is = TRUE
-  )
-  ### Computing the hits.
-  hits <- lapply(
-    seq_len(nrow(x = FSs)),
-    function(i) .computeAdapterHits(
-      reads, FSs$foreign_sequence[i]
-    )
-  )
-  ### Building the output data.frame.
-  positions <- .buildPositionBins(reads)
-  hits <- data.frame(cbind(positions, do.call(what = cbind, args = hits)))
-  colnames(x = hits) <- c("positions", FSs$foreign_name)
-  hits[, -1] <- apply(X = hits[, -1], MARGIN = 2, FUN = as.numeric)
-  ### Returning the final object.
-  return(hits)
+  FSs <- .loadAdapterTable(workDir, contaminants)
+  ### Computing the hits and building the output data.frame.
+  .buildSequenceHitsTable(reads, FSs$foreign_sequence, FSs$foreign_name)
 }
 
 
@@ -1378,6 +1630,22 @@ reportQAResults <- function(x,
     file = paste(workDir, file_output, sep = "/"),
     height = nrow(x = tab) / 3
   )
+  gt <- .buildQATextReportGrob(tab, x$SN)
+  grid.draw(gt)
+  invisible(dev.off())
+  invisible(NULL)
+}
+
+#' Build textual QA report grob
+#' @description Internal helper for .saveQATextReport(). Builds the gTree
+#'     with the summary table and annotations.
+#' @param tab data.frame with QA metrics.
+#' @param sample_name character string with the sample name.
+#' @return gTree object.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.buildQATextReportGrob <- function(tab, sample_name) {
   theme <- ttheme_minimal(
     core = list(
       fg_params = list(hjust = 0, x = 0.03, fontsize = 10),
@@ -1398,13 +1666,14 @@ reportQAResults <- function(x,
     gp = gpar(col = "black", font = 2, fontsize = 12)
   )
   title2 <- textGrob(
-    label = sprintf("Sample: %s", x$SN),
+    label = sprintf("Sample: %s", sample_name),
     just = "centre", vjust = -63.5,
     gp = gpar(col = "black", fontsize = 11)
   )
   title3 <- textGrob(
     label = sprintf(paste("Date & Time:",
-                          format(x = Sys.time(), "%Y-%m-%d %X"), sep = " ")),
+                          format(x = Sys.time(), "%Y-%m-%d %X"),
+                          sep = " ")),
     just = "centre", vjust = -67.8,
     gp = gpar(col = "black", fontsize = 10)
   )
@@ -1413,10 +1682,7 @@ reportQAResults <- function(x,
     just = "centre", vjust = 88,
     gp = gpar(col = "black", fontsize = 8)
   )
-  gt <- gTree(children = gList(table, title1, title2, title3, note))
-  grid.draw(gt)
-  invisible(dev.off())
-  invisible(NULL)
+  gTree(children = gList(table, title1, title2, title3, note))
 }
 
 #' Build QA summary table
@@ -1494,7 +1760,7 @@ reportQAResults <- function(x,
   ORs <- DNAStringSet(x = x$ORs$sequence)
   names(x = ORs) <- paste(
     paste("seq",
-          formatC(x = seq_along(x = x$ORs$sequence),
+          formatC(x = seq_along(x$ORs$sequence),
                   width = 4, flag = "0"),
           sep = ""),
     x$ORs$count, sep = ", "
@@ -1554,15 +1820,30 @@ reportQAResults <- function(x,
   .plotGcComposition(x)
   .plotLowComplexity(x)
   .plotReadFrequency(x)
-  if (!is.null(x = nrow(x = x$ASs))) {
-    .plotContaminations(x$ASs, "Adapter contaminations",
-                        "Adapter frequency")
-  }
-  if (!is.null(x = nrow(x = x$FSs))) {
-    .plotContaminations(x$FSs, "Foreign sequence contaminations",
-                        "Sequence frequency")
-  }
+  .plotContaminationsIfPresent(x$ASs, "Adapter contaminations",
+                               "Adapter frequency")
+  .plotContaminationsIfPresent(x$FSs,
+                               "Foreign sequence contaminations",
+                               "Sequence frequency")
   invisible(dev.off())
+  invisible(NULL)
+}
+
+#' Plot contaminations if present
+#' @description Internal helper for reportQAResults(). Calls
+#'     .plotContaminations() only when the data.frame is not NULL and has
+#'     rows.
+#' @param data data.frame or NULL/NA.
+#' @param main character string with the plot title.
+#' @param ylab character string with the y-axis label.
+#' @return invisible(NULL).
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.plotContaminationsIfPresent <- function(data, main, ylab) {
+  if (!is.null(x = nrow(x = data))) {
+    .plotContaminations(data, main, ylab)
+  }
   invisible(NULL)
 }
 
@@ -1607,16 +1888,8 @@ reportQAResults <- function(x,
 #' @keywords internal
 #' @noRd
 .plotReadQualityThreshold <- function(x) {
-  per <- data.frame(
-    threshold = 0:ceiling(x = max(x = x$PERQs$means)),
-    percent = 0
-  )
-  per[1, 2] <- 100
+  per <- .computeQualityThresholdTable(x$PERQs$means)
   L <- length(x = x$PERQs$means)
-  for (i in seq_len(ceiling(x = max(x = x$PERQs$means)))) {
-    p <- length(x = x$PERQs$means[x$PERQs$means > i]) / L * 100
-    per[i + 1, 2] <- round(x = p, digits = 1)
-  }
   plot(per, type = "l", bty = "n",
        xlim = c(0, 40), ylim = c(0, 100), lwd = 1,
        col = rgb(red = 0, green = 114, blue = 178, maxColorValue = 255),
@@ -1628,22 +1901,70 @@ reportQAResults <- function(x,
   title(main = "Thresholding of reads quality", cex.main = 1.5)
   title(xlab = "Quality threshold", line = 2.5, cex.lab = 1.2)
   title(ylab = "Reads exceeding quality level, %", line = 2.8, cex.lab = 1.2)
+  .drawQualityThresholdBands()
+  .annotateQualityThreshold(x$PERQs$means, L)
+  invisible(NULL)
+}
+
+#' Compute quality threshold table
+#' @description Internal helper for .plotReadQualityThreshold(). Computes the
+#'     percentage of reads above each quality threshold.
+#' @param means numeric vector of per-read mean qualities.
+#' @return data.frame with threshold and percent columns.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.computeQualityThresholdTable <- function(means) {
+  per <- data.frame(
+    threshold = 0:ceiling(x = max(x = means)),
+    percent = 0
+  )
+  per[1, 2] <- 100
+  L <- length(x = means)
+  for (i in seq_len(ceiling(x = max(x = means)))) {
+    p <- length(x = means[means > i]) / L * 100
+    per[i + 1, 2] <- round(x = p, digits = 1)
+  }
+  per
+}
+
+#' Draw quality threshold bands
+#' @description Internal helper for .plotReadQualityThreshold(). Draws the
+#'     coloured background bands.
+#' @return invisible(NULL).
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.drawQualityThresholdBands <- function() {
   rect(xleft = 0, ybottom = 0, xright = 20, ytop = 100, border = NA,
        col = rgb(240, 228, 66, maxColorValue = 255, alpha = 40))
   rect(xleft = 20, ybottom = 0, xright = 30, ytop = 100, border = NA,
        col = rgb(230, 159, 0, maxColorValue = 255, alpha = 40))
   rect(xleft = 30, ybottom = 0, xright = 40, ytop = 100, border = NA,
        col = rgb(213, 94, 0, maxColorValue = 255, alpha = 70))
+  invisible(NULL)
+}
+
+#' Annotate quality threshold bands
+#' @description Internal helper for .plotReadQualityThreshold(). Draws the
+#'     Q20 and Q30 labels.
+#' @param means numeric vector of per-read mean qualities.
+#' @param L integer, total number of reads.
+#' @return invisible(NULL).
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.annotateQualityThreshold <- function(means, L) {
   text(x = 20, y = 20, srt = 90,
        labels = paste0(
          "Q20, ",
-         round(length(x$PERQs$means[x$PERQs$means > 20]) / L * 100, 1),
+         round(length(means[means > 20]) / L * 100, 1),
          "%"
        ))
   text(x = 30, y = 20, srt = 90,
        labels = paste0(
          "Q30, ",
-         round(length(x$PERQs$means[x$PERQs$means > 30]) / L * 100, 1),
+         round(length(means[means > 30]) / L * 100, 1),
          "%"
        ))
   invisible(NULL)
@@ -1670,29 +1991,55 @@ reportQAResults <- function(x,
     medlwd = 1, medcol = rgb(204, 121, 167, maxColorValue = 255),
     whisklty = "solid"
   )
-  axis(side = 1, at = seq_along(x = x$PCQRs[, 1]),
+  axis(side = 1, at = seq_along(x$PCQRs[, 1]),
        labels = FALSE, las = 2, lwd = 0.8)
   axis(side = 2, at = c(0, 10, 20, 30, 40),
        labels = c(0, 10, 20, 30, 40), las = 1, lwd = 0.8)
-  text(
-    x = seq(from = 1, to = length(x = x$PCQRs[, 1]), by = 2),
-    par("usr")[3] - 3, offset = -0.5, cex = 0.9,
-    labels = x$PCQRs[, 1][seq(from = 1,
-                              to = length(x = x$PCQRs[, 1]), by = 2)],
-    srt = 55, pos = 2, xpd = TRUE
-  )
+  .addCycleLabels(x$PCQRs[, 1], y_offset = 3)
   title(main = "Per cycle quality of reads", cex.main = 1.5)
   title(xlab = "Cycles", line = 3.7, cex.lab = 1.2)
   title(ylab = "Quality scores across of all bases", line = 2.3,
         cex.lab = 1.2)
+  .drawPerCycleQualityBands(length(x = x$PCQRs[, 1]))
+  invisible(NULL)
+}
+
+#' Add rotated cycle labels below a plot
+#' @description Internal helper for .plotPerCycleQuality() and
+#'     .plotPerCycleBaseComposition(). Draws every second cycle label.
+#' @param labels character vector with cycle labels.
+#' @param y_offset numeric, vertical offset below the plot.
+#' @return invisible(NULL).
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.addCycleLabels <- function(labels, y_offset) {
+  text(
+    x = seq(from = 1, to = length(x = labels), by = 2),
+    par("usr")[3] - y_offset, offset = -0.5, cex = 0.9,
+    labels = labels[seq(from = 1, to = length(x = labels), by = 2)],
+    srt = 55, pos = 2, xpd = TRUE
+  )
+  invisible(NULL)
+}
+
+#' Draw per-cycle quality bands
+#' @description Internal helper for .plotPerCycleQuality(). Draws the
+#'     coloured background bands.
+#' @param n_cycles integer, number of cycles.
+#' @return invisible(NULL).
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.drawPerCycleQualityBands <- function(n_cycles) {
   rect(xleft = 0.5, ybottom = 0,
-       xright = length(x = x$PCQRs[, 1]) + 0.5, ytop = 20, border = NA,
+       xright = n_cycles + 0.5, ytop = 20, border = NA,
        col = rgb(240, 228, 66, maxColorValue = 255, alpha = 40))
   rect(xleft = 0.5, ybottom = 20,
-       xright = length(x = x$PCQRs[, 1]) + 0.5, ytop = 30, border = NA,
+       xright = n_cycles + 0.5, ytop = 30, border = NA,
        col = rgb(230, 159, 0, maxColorValue = 255, alpha = 40))
   rect(xleft = 0.5, ybottom = 30,
-       xright = length(x = x$PCQRs[, 1]) + 0.5, ytop = 40, border = NA,
+       xright = n_cycles + 0.5, ytop = 40, border = NA,
        col = rgb(213, 94, 0, maxColorValue = 255, alpha = 70))
   invisible(NULL)
 }
@@ -1706,13 +2053,7 @@ reportQAResults <- function(x,
 #' @keywords internal
 #' @noRd
 .plotBaseComposition <- function(x) {
-  colrs <- c(
-    rgb(0, 114, 178, maxColorValue = 255),
-    rgb(213, 94, 0, maxColorValue = 255),
-    rgb(86, 180, 233, maxColorValue = 255),
-    rgb(230, 159, 0, maxColorValue = 255),
-    rgb(204, 121, 167, maxColorValue = 255)
-  )
+  colrs <- .nucleotideColors()
   bxp(
     z = list(
       stats = t(x$BCs$metrics[, -1]),
@@ -1732,6 +2073,23 @@ reportQAResults <- function(x,
   invisible(NULL)
 }
 
+#' Nucleotide colour palette
+#' @description Internal helper for base composition plots. Returns the
+#'     standard five-colour palette for A, C, G, T, N.
+#' @return character vector of colours.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.nucleotideColors <- function() {
+  c(
+    rgb(0, 114, 178, maxColorValue = 255),
+    rgb(213, 94, 0, maxColorValue = 255),
+    rgb(86, 180, 233, maxColorValue = 255),
+    rgb(230, 159, 0, maxColorValue = 255),
+    rgb(204, 121, 167, maxColorValue = 255)
+  )
+}
+
 #' Plot per-cycle base composition
 #' @description Internal helper for reportQAResults(). Draws the per-cycle
 #'     base composition lines.
@@ -1741,26 +2099,14 @@ reportQAResults <- function(x,
 #' @keywords internal
 #' @noRd
 .plotPerCycleBaseComposition <- function(x) {
-  colrs <- c(
-    rgb(0, 114, 178, maxColorValue = 255),
-    rgb(213, 94, 0, maxColorValue = 255),
-    rgb(86, 180, 233, maxColorValue = 255),
-    rgb(230, 159, 0, maxColorValue = 255),
-    rgb(204, 121, 167, maxColorValue = 255)
-  )
+  colrs <- .nucleotideColors()
   matplot(x$PCCBs[, -1], type = "l", lty = 1, lwd = 1, col = colrs,
           ylim = c(0, 1), ann = FALSE, axes = FALSE)
-  axis(side = 1, at = seq_along(x = x$PCCBs[, 1]),
+  axis(side = 1, at = seq_along(x$PCCBs[, 1]),
        labels = FALSE, las = 2, lwd = 0.8)
   axis(side = 2, at = c(0.0, 0.2, 0.4, 0.6, 0.8, 1.0),
        labels = c(0.0, 0.2, 0.4, 0.6, 0.8, 1.0), las = 1, lwd = 0.8)
-  text(
-    x = seq(from = 1, to = length(x = x$PCCBs[, 1]), by = 2),
-    par("usr")[3] - 0.08, offset = -0.5, cex = 0.9,
-    labels = x$PCCBs[, 1][seq(from = 1,
-                              to = length(x = x$PCCBs[, 1]), by = 2)],
-    srt = 55, pos = 2, xpd = TRUE
-  )
+  .addCycleLabels(x$PCCBs[, 1], y_offset = 0.08)
   title(main = "Per cycle composition of reads", cex.main = 1.5)
   title(xlab = "Cycles", line = 3.8, cex.lab = 1.2)
   title(ylab = "Base frequency", line = 2.3, cex.lab = 1.2)
@@ -1781,20 +2127,10 @@ reportQAResults <- function(x,
   plot(x$GCs$density, bty = "n", type = "l", lwd = 1, xlim = c(0, 1),
        ann = FALSE, axes = FALSE,
        col = rgb(0, 114, 178, maxColorValue = 255))
-  lines(density(x = rnorm(
-    n = length(x = x$GCs$frequency),
-    mean = mean(x = x$GCs$frequency),
-    sd = sd(x = x$GCs$frequency)
-  ))[seq_len(2)], xlim = c(0, 1), lwd = 1,
-  col = rgb(213, 94, 0, maxColorValue = 255))
+  .drawTheoreticalGcCurve(x$GCs$frequency)
   axis(side = 1, at = c(0.0, 0.2, 0.4, 0.6, 0.8, 1.0),
        labels = c(0.0, 0.2, 0.4, 0.6, 0.8, 1.0), lwd = 0.8)
-  axis(side = 2,
-       at = c(0.0, max(x = x$GCs$density[, 2]) / 4 * seq_len(4)),
-       labels = round(c(0.0,
-                        max(x = x$GCs$density[, 2]) / 4 * seq_len(4)),
-                      digits = 2),
-       las = 1, lwd = 0.8)
+  .drawGcDensityAxis(x$GCs$density)
   title(main = "GC composition of reads", cex.main = 1.5)
   title(xlab = "GC frequency", line = 2.5, cex.lab = 1.2)
   title(ylab = "Density", line = 2.8, cex.lab = 1.2)
@@ -1802,8 +2138,57 @@ reportQAResults <- function(x,
          col = c(rgb(213, 94, 0, maxColorValue = 255),
                  rgb(0, 114, 178, maxColorValue = 255)),
          lty = 1, lwd = 1, bty = "n")
+  .addKsTestAnnotation(x$GCs$frequency)
+  invisible(NULL)
+}
+
+#' Draw theoretical GC curve
+#' @description Internal helper for .plotGcComposition(). Adds the
+#'     normal-density reference curve.
+#' @param frequency numeric vector of GC frequencies.
+#' @return invisible(NULL).
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.drawTheoreticalGcCurve <- function(frequency) {
+  lines(density(x = rnorm(
+    n = length(x = frequency),
+    mean = mean(x = frequency),
+    sd = sd(x = frequency)
+  ))[seq_len(2)], xlim = c(0, 1), lwd = 1,
+  col = rgb(213, 94, 0, maxColorValue = 255))
+  invisible(NULL)
+}
+
+#' Draw GC density y-axis
+#' @description Internal helper for .plotGcComposition(). Adds the y-axis
+#'     with four evenly spaced ticks.
+#' @param density matrix with density coordinates.
+#' @return invisible(NULL).
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.drawGcDensityAxis <- function(density) {
+  axis(side = 2,
+       at = c(0.0, max(x = density[, 2]) / 4 * seq_len(4)),
+       labels = round(c(0.0,
+                        max(x = density[, 2]) / 4 * seq_len(4)),
+                      digits = 2),
+       las = 1, lwd = 0.8)
+  invisible(NULL)
+}
+
+#' Add KS-test annotation
+#' @description Internal helper for .plotGcComposition(). Runs the KS test
+#'     and adds its p-value as a legend.
+#' @param frequency numeric vector of GC frequencies.
+#' @return invisible(NULL).
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.addKsTestAnnotation <- function(frequency) {
   ks_p <- tryCatch(
-    ks.test(x = x$GCs$frequency, y = "pnorm")$p.value,
+    ks.test(x = frequency, y = "pnorm")$p.value,
     error = function(e) NA_real_,
     warning = function(w) NA_real_
   )
@@ -1837,16 +2222,29 @@ reportQAResults <- function(x,
   title(xlab = expression("Complexity, log"[10] * " (dusty scores)"),
         line = 2.75, cex.lab = 1.2)
   title(ylab = "Density", line = 3, cex.lab = 1.2)
-  legend(x = 3.3, y = max(x = x$DSs$density[, 2]),
-         legend = c("minimum:", "Q1:", "median:", "Q3:", "maximum:"),
-         lty = 0, bty = "n")
-  legend(x = 4.1, y = max(x = x$DSs$density[, 2]),
-         legend = round(x = log10(x = x$DSs$metrics), digits = 2),
-         lty = 0, bty = "n")
+  .addLowComplexityLegends(x$DSs)
   rect(xleft = 2.0, ybottom = 0, xright = 3.0,
        ytop = max(x = x$DSs$density[, 2]),
        density = 20, border = NA, lwd = 0.3,
        col = rgb(0, 158, 115, maxColorValue = 255))
+  invisible(NULL)
+}
+
+#' Add low-complexity legends
+#' @description Internal helper for .plotLowComplexity(). Adds the metric
+#'     legends.
+#' @param DSs list with low-complexity scores and density.
+#' @return invisible(NULL).
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.addLowComplexityLegends <- function(DSs) {
+  legend(x = 3.3, y = max(x = DSs$density[, 2]),
+         legend = c("minimum:", "Q1:", "median:", "Q3:", "maximum:"),
+         lty = 0, bty = "n")
+  legend(x = 4.1, y = max(x = DSs$density[, 2]),
+         legend = round(x = log10(x = DSs$metrics), digits = 2),
+         lty = 0, bty = "n")
   invisible(NULL)
 }
 
@@ -1886,15 +2284,11 @@ reportQAResults <- function(x,
 #' @keywords internal
 #' @noRd
 .plotContaminations <- function(data, main, ylab) {
-  colrs <- c(
-    "#88CCEE", "#CC6677", "#DDCC77", "#117733", "#332288",
-    "#AA4499", "#44AA99", "#999933", "#882255", "#661100",
-    "#6699CC", "#888888"
-  )
+  colrs <- .contaminationColors()
   matplot(data[, -1], ann = FALSE, axes = FALSE, ylim = c(0, 0.35),
           type = "l", lty = 1, lwd = 1,
           col = colrs[seq_len(ncol(x = data[, -1]))])
-  axis(side = 1, at = seq_along(x = data[, 1]), labels = FALSE,
+  axis(side = 1, at = seq_along(data[, 1]), labels = FALSE,
        lwd = 0.8)
   axis(side = 2,
        at = c(0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35),
@@ -1913,4 +2307,19 @@ reportQAResults <- function(x,
          col = colrs[seq_len(ncol(x = data[, -1]))],
          bty = "n")
   invisible(NULL)
+}
+
+#' Contamination colour palette
+#' @description Internal helper for .plotContaminations(). Returns the
+#'     twelve-colour palette used for contamination lines.
+#' @return character vector of colours.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.contaminationColors <- function() {
+  c(
+    "#88CCEE", "#CC6677", "#DDCC77", "#117733", "#332288",
+    "#AA4499", "#44AA99", "#999933", "#882255", "#661100",
+    "#6699CC", "#888888"
+  )
 }
