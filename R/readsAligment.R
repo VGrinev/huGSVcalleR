@@ -46,19 +46,21 @@
 #' @export
 #' @importFrom Rsubread align
 #' @importFrom Rsamtools indexBam
-alignDNASubread <- function(genome,
-    fastqDir, fastq1, fastq2 = NULL,
-    bamDir,
-    bamFile,
-    orientation = "fr",
-    threads = 1,
-    SV = FALSE,
-    workDir = NULL) {
+alignDNASubread <- function(
+        genome,
+        fastqDir, fastq1, fastq2 = NULL,
+        bamDir,
+        bamFile,
+        orientation = "fr",
+        threads = 1,
+        SV = FALSE,
+        workDir = NULL) {
     ### Assignment the basename of index file.
     ref <- paste(workDir, genome, sep = "/")
     ### Assignment the path to and name of FASTQ file(-s) including first reads.
     fq1 <- paste(paste(workDir, fastqDir, sep = "/"), fastq1, sep = "/")
-    ### Assignment the path to and name of FASTQ file(-s) including second reads.
+    ### Assignment the path to and name of FASTQ file(-s) including second
+    ### reads.
     if (is.null(x = fastq2) == FALSE) {
         fq2 <- paste(paste(workDir, fastqDir, sep = "/"), fastq2, sep = "/")
     } else {
@@ -260,12 +262,12 @@ reportQAlResults <- function(x,
     invisible(NULL)
 }
 
-#' Save textual alignment report
+#' Save alignment text report
 #' @description Internal helper for reportQAlResults(). Builds the summary
 #'     table and writes it as a PDF file.
 #' @param x list with alignment metrics.
 #' @param output character string with the output postfix, or NULL.
-#' @param workDir character string giving the path to working directory.
+#' @param workDir character string with the working directory.
 #' @return invisible(NULL).
 #' @author Vasily V. Grinev.
 #' @keywords internal
@@ -279,6 +281,22 @@ reportQAlResults <- function(x,
         filename = paste(workDir, file_output, sep = "/"),
         height = nrow(x = tab) / 3 + 1
     )
+    gt <- .buildAlTextReportGrob(tab, x$SN)
+    grid.draw(gt)
+    invisible(dev.off())
+    invisible(NULL)
+}
+
+#' Build alignment text report grob
+#' @description Internal helper for .saveAlTextReport(). Builds the gTree
+#'     with the summary table and annotations.
+#' @param tab data.frame with alignment metrics.
+#' @param sample_name character string with the sample name.
+#' @return gTree object.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.buildAlTextReportGrob <- function(tab, sample_name) {
     theme <- ttheme_minimal(
         core = list(
             fg_params = list(hjust = 0, x = 0.03, fontsize = 10),
@@ -299,7 +317,7 @@ reportQAlResults <- function(x,
         gp = gpar(col = "black", font = 2, fontsize = 12)
     )
     title2 <- textGrob(
-        label = sprintf("Sample: %s", x$SN),
+        label = sprintf("Sample: %s", sample_name),
         just = "centre", vjust = -33.5,
         gp = gpar(col = "black", fontsize = 11)
     )
@@ -316,10 +334,7 @@ reportQAlResults <- function(x,
         just = "centre", vjust = 47,
         gp = gpar(col = "black", fontsize = 8)
     )
-    gt <- gTree(children = gList(table, title1, title2, title3, note))
-    grid.draw(gt)
-    invisible(dev.off())
-    invisible(NULL)
+    gTree(children = gList(table, title1, title2, title3, note))
 }
 
 #' Build alignment summary table
@@ -466,13 +481,49 @@ reportQAlResults <- function(x,
 #' @author Vasily V. Grinev.
 #' @keywords internal
 #' @noRd
+#' Plot mapping quality threshold
+#' @description Internal helper for reportQAlResults(). Draws the threshold
+#'     plot of per-read mapping quality.
+#' @param x list with alignment metrics.
+#' @return invisible(NULL).
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
 .plotMappingQualityThreshold <- function(x) {
+    per <- .computeMappingQualityThresholdTable(x$MAPQs)
+    .drawMappingQualityThresholdPlot(per)
+    .drawMappingQualityThresholdBands()
+    .annotateMappingQualityThreshold(x$MAPQs)
+    invisible(NULL)
+}
+
+#' Compute mapping quality threshold table
+#' @description Internal helper for .plotMappingQualityThreshold().
+#'     Computes the percentage of reads at or above each MAPQ threshold.
+#' @param mapqs numeric vector of per-read mapping qualities.
+#' @return data.frame with threshold and percent columns.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.computeMappingQualityThresholdTable <- function(mapqs) {
     per <- data.frame(threshold = 0:40, percent = 0)
     per[1, 2] <- 100
-    L <- length(x = x$MAPQs)
+    L <- length(x = mapqs)
     for (i in seq_len(40)) {
-        per[i + 1, 2] <- length(x = x$MAPQs[x$MAPQs >= i]) / L * 100
+        per[i + 1, 2] <- length(x = mapqs[mapqs >= i]) / L * 100
     }
+    per
+}
+
+#' Draw the mapping quality threshold curve
+#' @description Internal helper for .plotMappingQualityThreshold(). Draws
+#'     the curve and the axes.
+#' @param per data.frame with threshold and percent columns.
+#' @return invisible(NULL).
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.drawMappingQualityThresholdPlot <- function(per) {
     plot(per,
         type = "l", bty = "n",
         xlim = c(0, 40), ylim = c(0, 100), lwd = 1,
@@ -490,6 +541,17 @@ reportQAlResults <- function(x,
     title(main = "Thresholding of mapping quality", cex.main = 1.5)
     title(xlab = "Quality threshold", line = 2.5, cex.lab = 1.2)
     title(ylab = "Reads exceeding quality level, %", line = 2.8, cex.lab = 1.2)
+    invisible(NULL)
+}
+
+#' Draw the mapping quality threshold bands
+#' @description Internal helper for .plotMappingQualityThreshold(). Draws
+#'     the coloured background bands.
+#' @return invisible(NULL).
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.drawMappingQualityThresholdBands <- function() {
     rect(
         xleft = 0, ybottom = 0, xright = 10, ytop = 100, border = NA,
         col = rgb(240, 228, 66, maxColorValue = 255, alpha = 30)
@@ -506,30 +568,29 @@ reportQAlResults <- function(x,
         xleft = 30, ybottom = 0, xright = 40, ytop = 100, border = NA,
         col = rgb(213, 94, 0, maxColorValue = 255, alpha = 80)
     )
-    text(
-        x = 10, y = 23, srt = 90, cex = 0.9,
-        labels = paste0(
-            "MAPQ10, ",
-            round(length(x$MAPQs[x$MAPQs >= 10]) / L * 100, 1),
-            "%"
+    invisible(NULL)
+}
+
+#' Annotate the mapping quality threshold bands
+#' @description Internal helper for .plotMappingQualityThreshold(). Draws
+#'     the MAPQ10, MAPQ20 and MAPQ30 labels.
+#' @param mapqs numeric vector of per-read mapping qualities.
+#' @return invisible(NULL).
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.annotateMappingQualityThreshold <- function(mapqs) {
+    L <- length(x = mapqs)
+    for (t in c(10, 20, 30)) {
+        text(
+            x = t, y = 23, srt = 90, cex = 0.9,
+            labels = paste0(
+                "MAPQ", t, ", ",
+                round(length(mapqs[mapqs >= t]) / L * 100, 1),
+                "%"
+            )
         )
-    )
-    text(
-        x = 20, y = 23, srt = 90, cex = 0.9,
-        labels = paste0(
-            "MAPQ20, ",
-            round(length(x$MAPQs[x$MAPQs >= 20]) / L * 100, 1),
-            "%"
-        )
-    )
-    text(
-        x = 30, y = 23, srt = 90, cex = 0.9,
-        labels = paste0(
-            "MAPQ30, ",
-            round(length(x$MAPQs[x$MAPQs >= 30]) / L * 100, 1),
-            "%"
-        )
-    )
+    }
     invisible(NULL)
 }
 
@@ -587,7 +648,7 @@ reportQAlResults <- function(x,
 
 #' Plot template length threshold
 #' @description Internal helper for reportQAlResults(). Draws the threshold
-#'     plot of template lengths.
+#'     plot of log10-transformed template lengths.
 #' @param x list with alignment metrics.
 #' @return invisible(NULL).
 #' @author Vasily V. Grinev.
@@ -595,6 +656,22 @@ reportQAlResults <- function(x,
 #' @noRd
 .plotTemplateLengthThreshold <- function(x) {
     p <- log10(x = x$TLENs + 1)
+    per <- .computeTemplateLengthThresholdTable(p)
+    .drawTemplateLengthThresholdPlot(per, ceiling(x = max(x = p)))
+    .drawTemplateLengthThresholdBands(ceiling(x = max(x = p)))
+    invisible(NULL)
+}
+
+#' Compute template length threshold table
+#' @description Internal helper for .plotTemplateLengthThreshold(). Computes
+#'     the percentage of reads at or above each log10 template length
+#'     threshold.
+#' @param p numeric vector of log10-transformed template lengths.
+#' @return data.frame with threshold and percent columns.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.computeTemplateLengthThresholdTable <- function(p) {
     tr <- c(0.0, ceiling(x = max(x = p)) / 100 * seq_len(100))
     per <- data.frame(threshold = tr, percent = 0)
     per[1, 2] <- 100
@@ -602,16 +679,29 @@ reportQAlResults <- function(x,
     for (i in seq_len(length(x = tr) - 1)) {
         per[i + 1, 2] <- length(x = p[p >= tr[i]]) / L * 100
     }
+    per
+}
+
+#' Draw the template length threshold curve
+#' @description Internal helper for .plotTemplateLengthThreshold(). Draws
+#'     the curve, axes and titles.
+#' @param per data.frame with threshold and percent columns.
+#' @param max_log10 numeric, ceiling of the maximum log10 template length.
+#' @return invisible(NULL).
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.drawTemplateLengthThresholdPlot <- function(per, max_log10) {
     plot(per,
         type = "l", bty = "n",
-        xlim = c(0, ceiling(x = max(x = p))), ylim = c(0, 100), lwd = 1,
+        xlim = c(0, max_log10), ylim = c(0, 100), lwd = 1,
         col = rgb(red = 0, green = 114, blue = 178, maxColorValue = 255),
         ann = FALSE, axes = FALSE
     )
     axis(
         side = 1,
-        at = c(0.0, ceiling(x = max(x = p)) / 4 * seq_len(4)),
-        labels = c(0.0, ceiling(x = max(x = p)) / 4 * seq_len(4)),
+        at = c(0.0, max_log10 / 4 * seq_len(4)),
+        labels = c(0.0, max_log10 / 4 * seq_len(4)),
         las = 1, lwd = 0.8
     )
     axis(
@@ -624,31 +714,32 @@ reportQAlResults <- function(x,
         line = 2.5, cex.lab = 1.2
     )
     title(ylab = "Templates exceeding length, %", line = 2.8, cex.lab = 1.2)
-    rect(
-        xleft = 0, ybottom = 0, xright = ceiling(x = max(x = p)),
-        ytop = 20, border = NA,
-        col = rgb(240, 228, 66, maxColorValue = 255, alpha = 30)
+    invisible(NULL)
+}
+
+#' Draw the template length threshold bands
+#' @description Internal helper for .plotTemplateLengthThreshold(). Draws
+#'     the five horizontal coloured background bands.
+#' @param max_log10 numeric, ceiling of the maximum log10 template length.
+#' @return invisible(NULL).
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.drawTemplateLengthThresholdBands <- function(max_log10) {
+    bounds <- list(
+        list(y0 = 0, y1 = 20, alpha = 30),
+        list(y0 = 20, y1 = 40, alpha = 40),
+        list(y0 = 40, y1 = 60, alpha = 50),
+        list(y0 = 60, y1 = 80, alpha = 70),
+        list(y0 = 80, y1 = 100, alpha = 90)
     )
-    rect(
-        xleft = 0, ybottom = 20, xright = ceiling(x = max(x = p)),
-        ytop = 40, border = NA,
-        col = rgb(230, 159, 0, maxColorValue = 255, alpha = 40)
-    )
-    rect(
-        xleft = 0, ybottom = 40, xright = ceiling(x = max(x = p)),
-        ytop = 60, border = NA,
-        col = rgb(213, 94, 0, maxColorValue = 255, alpha = 50)
-    )
-    rect(
-        xleft = 0, ybottom = 60, xright = ceiling(x = max(x = p)),
-        ytop = 80, border = NA,
-        col = rgb(213, 94, 0, maxColorValue = 255, alpha = 70)
-    )
-    rect(
-        xleft = 0, ybottom = 80, xright = ceiling(x = max(x = p)),
-        ytop = 100, border = NA,
-        col = rgb(213, 94, 0, maxColorValue = 255, alpha = 90)
-    )
+    for (b in bounds) {
+        rect(
+            xleft = 0, ybottom = b$y0,
+            xright = max_log10, ytop = b$y1, border = NA,
+            col = rgb(213, 94, 0, maxColorValue = 255, alpha = b$alpha)
+        )
+    }
     invisible(NULL)
 }
 

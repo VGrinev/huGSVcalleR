@@ -1137,21 +1137,9 @@ recalibrateBamGATK <- function(
         workDir <- getwd()
     }
     ### Full paths to the input files.
-    path <- if (is.null(x = bamDir)) {
-        workDir
-    } else {
-        paste(workDir, bamDir, sep = "/")
-    }
-    path2 <- if (is.null(x = vcfDir)) {
-        workDir
-    } else {
-        paste(workDir, vcfDir, sep = "/")
-    }
-    path3 <- if (is.null(x = fastaDir)) {
-        workDir
-    } else {
-        paste(workDir, fastaDir, sep = "/")
-    }
+    path <- .resolveGatkSubdir(bamDir, workDir)
+    path2 <- .resolveGatkSubdir(vcfDir, workDir)
+    path3 <- .resolveGatkSubdir(fastaDir, workDir)
     ### Generation of BQSR table.
     if (isTRUE(x = createBQSR)) {
         .runBaseRecalibrator(
@@ -1162,16 +1150,46 @@ recalibrateBamGATK <- function(
     ### Recalibration process.
     if (isTRUE(x = recalibrate)) {
         bqsr_name <- .resolveBqsrName(bamFile, createBQSR, nameBQSR)
-        se <- if (SE) {
-            paste(
-                gsub(pattern = ".bam", replacement = "", x = bamFile),
-                "STDERR.RECALIBRATION.TXT",
-                sep = "."
-            )
-        } else {
-            ""
-        }
+        se <- .resolveRecalibrationErrorName(bamFile, SE)
         .runApplyBQSR(path, bamFile, bqsr_name, postfix, se, gatk_path)
+    }
+}
+
+#' Resolve a GATK input subdirectory
+#' @description Internal helper for recalibrateBamGATK(). Returns workDir
+#'     when the subdirectory is NULL, or the joined path otherwise.
+#' @param dir character string with the subdirectory name, or NULL.
+#' @param workDir character string with the working directory.
+#' @return character string with the full path.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.resolveGatkSubdir <- function(dir, workDir) {
+    if (is.null(x = dir)) {
+        workDir
+    } else {
+        paste(workDir, dir, sep = "/")
+    }
+}
+
+#' Resolve recalibration standard error file name
+#' @description Internal helper for recalibrateBamGATK(). Builds the
+#'     STDERR.RECALIBRATION.TXT file name, or returns "" when SE = FALSE.
+#' @param bamFile character string with the BAM file name.
+#' @param SE logical, save standard error?
+#' @return character string with the standard error file name, or "".
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.resolveRecalibrationErrorName <- function(bamFile, SE) {
+    if (SE) {
+        paste(
+            gsub(pattern = ".bam", replacement = "", x = bamFile),
+            "STDERR.RECALIBRATION.TXT",
+            sep = "."
+        )
+    } else {
+        ""
     }
 }
 
