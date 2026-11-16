@@ -67,53 +67,53 @@
 #' @importFrom SummarizedExperiment rowRanges
 #' @importFrom VariantAnnotation geno info fixed "fixed<-"
 filterVariants <- function(
-    vcfDir = NULL,
-    vcfFile,
-    gr = NULL,
-    depth = 1,
-    vaf = NULL,
-    qd = NULL,
-    mq = NULL,
-    sor = NULL,
-    fs = NULL,
-    mqrs = NULL,
-    rpps = NULL,
-    score = NULL,
-    heterozyg = 0,
-    heterozyg1 = 0,
-    index = FALSE,
-    workDir = NULL) {
-  ### Setting the working directory and VCF directory.
-  paths <- .resolveVariantPaths(vcfDir, workDir)
-  ### Loading of the single nucleotide variations.
-  SNVs <- readVcf(file = paste(paths$vcfDir, vcfFile, sep = "/"))
-  ### Detecting available INFO and GENO fields.
-  info_fields <- colnames(info(x = SNVs))
-  geno_fields <- rownames(geno(x = SNVs))
-  ### Multi-stage filtering.
-  SNVs <- .applyVariantFilters(
-    SNVs = SNVs,
-    gr = gr,
-    depth = depth,
-    vaf = vaf,
-    qd = qd,
-    mq = mq,
-    sor = sor,
-    fs = fs,
-    mqrs = mqrs,
-    rpps = rpps,
-    score = score,
-    heterozyg = heterozyg,
-    heterozyg1 = heterozyg1,
-    info_fields = info_fields,
-    geno_fields = geno_fields,
-    workDir = paths$workDir
-  )
-  ### Replace "." with "PASS" in the FILTER field.
-  SNVs <- .replaceFilterPass(SNVs)
-  ### Saving and returning of the final object.
-  .writeFilteredVcf(SNVs, paths$vcfDir, vcfFile, index)
-  return(SNVs)
+        vcfDir = NULL,
+        vcfFile,
+        gr = NULL,
+        depth = 1,
+        vaf = NULL,
+        qd = NULL,
+        mq = NULL,
+        sor = NULL,
+        fs = NULL,
+        mqrs = NULL,
+        rpps = NULL,
+        score = NULL,
+        heterozyg = 0,
+        heterozyg1 = 0,
+        index = FALSE,
+        workDir = NULL) {
+    ### Setting the working directory and VCF directory.
+    paths <- .resolveVariantPaths(vcfDir, workDir)
+    ### Loading of the single nucleotide variations.
+    SNVs <- readVcf(file = paste(paths$vcfDir, vcfFile, sep = "/"))
+    ### Detecting available INFO and GENO fields.
+    info_fields <- colnames(info(x = SNVs))
+    geno_fields <- rownames(geno(x = SNVs))
+    ### Multi-stage filtering.
+    SNVs <- .applyVariantFilters(
+        SNVs = SNVs,
+        gr = gr,
+        depth = depth,
+        vaf = vaf,
+        qd = qd,
+        mq = mq,
+        sor = sor,
+        fs = fs,
+        mqrs = mqrs,
+        rpps = rpps,
+        score = score,
+        heterozyg = heterozyg,
+        heterozyg1 = heterozyg1,
+        info_fields = info_fields,
+        geno_fields = geno_fields,
+        workDir = paths$workDir
+    )
+    ### Replace "." with "PASS" in the FILTER field.
+    SNVs <- .replaceFilterPass(SNVs)
+    ### Saving and returning of the final object.
+    .writeFilteredVcf(SNVs, paths$vcfDir, vcfFile, index)
+    return(SNVs)
 }
 
 #' Resolve working directory and VCF directory
@@ -126,17 +126,17 @@ filterVariants <- function(
 #' @keywords internal
 #' @noRd
 .resolveVariantPaths <- function(vcfDir, workDir) {
-  if (is.null(x = workDir)) {
-    workDir <- getwd()
-  }
-  list(
-    workDir = workDir,
-    vcfDir = if (is.null(x = vcfDir)) {
-      workDir
-    } else {
-      paste(workDir, vcfDir, sep = "/")
+    if (is.null(x = workDir)) {
+        workDir <- getwd()
     }
-  )
+    list(
+        workDir = workDir,
+        vcfDir = if (is.null(x = vcfDir)) {
+            workDir
+        } else {
+            paste(workDir, vcfDir, sep = "/")
+        }
+    )
 }
 
 #' Apply the requested variant filters
@@ -164,32 +164,32 @@ filterVariants <- function(
 #' @keywords internal
 #' @noRd
 .applyVariantFilters <- function(SNVs, gr, depth, vaf, qd, mq, sor, fs,
-                                 mqrs, rpps, score, heterozyg, heterozyg1,
-                                 info_fields, geno_fields, workDir) {
-  if (!is.null(x = gr)) {
-    SNVs <- .filterByGenomicLocation(SNVs, gr, workDir)
-  }
-  if (!is.null(x = score)) {
-    SNVs <- .filterByQual(SNVs, score)
-  }
-  if (depth > 1 && "DP" %in% info_fields) {
-    SNVs <- .filterByDepth(SNVs, depth)
-  }
-  if (heterozyg > 0 && "MMsum" %in% info_fields) {
-    SNVs <- .filterByTotalHeterozygosity(SNVs, heterozyg)
-  }
-  if (heterozyg1 > 0 && "MM" %in% info_fields) {
-    SNVs <- .filterByFirstAlleleHeterozygosity(SNVs, heterozyg1)
-  }
-  if (!is.null(x = vaf) && "AD" %in% geno_fields) {
-    SNVs <- .filterByVaf(SNVs, vaf)
-  }
-  SNVs <- .applyGatkInfoFilters(
-    SNVs = SNVs,
-    qd = qd, mq = mq, sor = sor, fs = fs, mqrs = mqrs, rpps = rpps,
-    info_fields = info_fields
-  )
-  SNVs
+    mqrs, rpps, score, heterozyg, heterozyg1,
+    info_fields, geno_fields, workDir) {
+    if (!is.null(x = gr)) {
+        SNVs <- .filterByGenomicLocation(SNVs, gr, workDir)
+    }
+    if (!is.null(x = score)) {
+        SNVs <- .filterByQual(SNVs, score)
+    }
+    if (depth > 1 && "DP" %in% info_fields) {
+        SNVs <- .filterByDepth(SNVs, depth)
+    }
+    if (heterozyg > 0 && "MMsum" %in% info_fields) {
+        SNVs <- .filterByTotalHeterozygosity(SNVs, heterozyg)
+    }
+    if (heterozyg1 > 0 && "MM" %in% info_fields) {
+        SNVs <- .filterByFirstAlleleHeterozygosity(SNVs, heterozyg1)
+    }
+    if (!is.null(x = vaf) && "AD" %in% geno_fields) {
+        SNVs <- .filterByVaf(SNVs, vaf)
+    }
+    SNVs <- .applyGatkInfoFilters(
+        SNVs = SNVs,
+        qd = qd, mq = mq, sor = sor, fs = fs, mqrs = mqrs, rpps = rpps,
+        info_fields = info_fields
+    )
+    SNVs
 }
 
 #' Apply GATK-specific INFO filters
@@ -209,26 +209,26 @@ filterVariants <- function(
 #' @keywords internal
 #' @noRd
 .applyGatkInfoFilters <- function(SNVs, qd, mq, sor, fs, mqrs, rpps,
-                                  info_fields) {
-  if (!is.null(x = qd) && "QD" %in% info_fields) {
-    SNVs <- .filterByInfoGreater(SNVs, "QD", qd)
-  }
-  if (!is.null(x = mq) && "MQ" %in% info_fields) {
-    SNVs <- .filterByInfoGreater(SNVs, "MQ", mq)
-  }
-  if (!is.null(x = sor) && "SOR" %in% info_fields) {
-    SNVs <- .filterByInfoLess(SNVs, "SOR", sor)
-  }
-  if (!is.null(x = fs) && "FS" %in% info_fields) {
-    SNVs <- .filterByInfoLess(SNVs, "FS", fs)
-  }
-  if (!is.null(x = mqrs) && "MQRankSum" %in% info_fields) {
-    SNVs <- .filterByInfoGreater(SNVs, "MQRankSum", mqrs)
-  }
-  if (!is.null(x = rpps) && "ReadPosRankSum" %in% info_fields) {
-    SNVs <- .filterByInfoGreater(SNVs, "ReadPosRankSum", rpps)
-  }
-  SNVs
+    info_fields) {
+    if (!is.null(x = qd) && "QD" %in% info_fields) {
+        SNVs <- .filterByInfoGreater(SNVs, "QD", qd)
+    }
+    if (!is.null(x = mq) && "MQ" %in% info_fields) {
+        SNVs <- .filterByInfoGreater(SNVs, "MQ", mq)
+    }
+    if (!is.null(x = sor) && "SOR" %in% info_fields) {
+        SNVs <- .filterByInfoLess(SNVs, "SOR", sor)
+    }
+    if (!is.null(x = fs) && "FS" %in% info_fields) {
+        SNVs <- .filterByInfoLess(SNVs, "FS", fs)
+    }
+    if (!is.null(x = mqrs) && "MQRankSum" %in% info_fields) {
+        SNVs <- .filterByInfoGreater(SNVs, "MQRankSum", mqrs)
+    }
+    if (!is.null(x = rpps) && "ReadPosRankSum" %in% info_fields) {
+        SNVs <- .filterByInfoGreater(SNVs, "ReadPosRankSum", rpps)
+    }
+    SNVs
 }
 
 #' Write the filtered VCF
@@ -243,20 +243,20 @@ filterVariants <- function(
 #' @keywords internal
 #' @noRd
 .writeFilteredVcf <- function(SNVs, vcfDir, vcfFile, index) {
-  writeVcf(
-    obj = SNVs,
-    filename = paste(
-      vcfDir,
-      sub(
-        pattern = "\\.vcf$",
-        replacement = ".filtered.vcf",
-        x = vcfFile
-      ),
-      sep = "/"
-    ),
-    index = index
-  )
-  invisible(NULL)
+    writeVcf(
+        obj = SNVs,
+        filename = paste(
+            vcfDir,
+            sub(
+                pattern = "\\.vcf$",
+                replacement = ".filtered.vcf",
+                x = vcfFile
+            ),
+            sep = "/"
+        ),
+        index = index
+    )
+    invisible(NULL)
 }
 
 #' Filter by genomic location
@@ -270,21 +270,21 @@ filterVariants <- function(
 #' @keywords internal
 #' @noRd
 .filterByGenomicLocation <- function(SNVs, gr, workDir) {
-  intervals <- read.table(
-    file = paste(workDir, gr, sep = "/"),
-    sep = "\t",
-    header = TRUE,
-    quote = "\"",
-    as.is = TRUE
-  )
-  intervals <- makeGRangesFromDataFrame(df = intervals)
-  hits <- findOverlaps(
-    query = rowRanges(x = SNVs),
-    subject = intervals,
-    type = "within",
-    ignore.strand = TRUE
-  )
-  SNVs[queryHits(x = hits)]
+    intervals <- read.table(
+        file = paste(workDir, gr, sep = "/"),
+        sep = "\t",
+        header = TRUE,
+        quote = "\"",
+        as.is = TRUE
+    )
+    intervals <- makeGRangesFromDataFrame(df = intervals)
+    hits <- findOverlaps(
+        query = rowRanges(x = SNVs),
+        subject = intervals,
+        type = "within",
+        ignore.strand = TRUE
+    )
+    SNVs[queryHits(x = hits)]
 }
 
 #' Filter by QUAL
@@ -297,9 +297,9 @@ filterVariants <- function(
 #' @keywords internal
 #' @noRd
 .filterByQual <- function(SNVs, score) {
-  vals <- rowRanges(x = SNVs)$QUAL
-  keep <- !is.na(vals) & vals >= score
-  SNVs[keep]
+    vals <- rowRanges(x = SNVs)$QUAL
+    keep <- !is.na(vals) & vals >= score
+    SNVs[keep]
 }
 
 #' Filter by sequencing depth
@@ -312,9 +312,9 @@ filterVariants <- function(
 #' @keywords internal
 #' @noRd
 .filterByDepth <- function(SNVs, depth) {
-  vals <- info(x = SNVs)$DP
-  keep <- !is.na(vals) & vals >= depth
-  SNVs[keep]
+    vals <- info(x = SNVs)$DP
+    keep <- !is.na(vals) & vals >= depth
+    SNVs[keep]
 }
 
 #' Filter by total heterozygosity
@@ -327,9 +327,9 @@ filterVariants <- function(
 #' @keywords internal
 #' @noRd
 .filterByTotalHeterozygosity <- function(SNVs, heterozyg) {
-  ratio <- info(x = SNVs)$MMsum / info(x = SNVs)$DP
-  keep <- !is.na(ratio) & ratio >= heterozyg
-  SNVs[keep]
+    ratio <- info(x = SNVs)$MMsum / info(x = SNVs)$DP
+    keep <- !is.na(ratio) & ratio >= heterozyg
+    SNVs[keep]
 }
 
 #' Filter by first-allele heterozygosity
@@ -342,14 +342,14 @@ filterVariants <- function(
 #' @keywords internal
 #' @noRd
 .filterByFirstAlleleHeterozygosity <- function(SNVs, heterozyg1) {
-  MM <- vapply(
-    strsplit(as.character(info(x = SNVs)$MM), split = ","),
-    function(y) max(as.numeric(y), na.rm = TRUE),
-    numeric(1)
-  )
-  ratio <- MM / info(x = SNVs)$DP
-  keep <- !is.na(ratio) & ratio >= heterozyg1
-  SNVs[keep]
+    MM <- vapply(
+        strsplit(as.character(info(x = SNVs)$MM), split = ","),
+        function(y) max(as.numeric(y), na.rm = TRUE),
+        numeric(1)
+    )
+    ratio <- MM / info(x = SNVs)$DP
+    keep <- !is.na(ratio) & ratio >= heterozyg1
+    SNVs[keep]
 }
 
 #' Filter by variant allele frequency
@@ -362,17 +362,17 @@ filterVariants <- function(
 #' @keywords internal
 #' @noRd
 .filterByVaf <- function(SNVs, vaf) {
-  ad <- geno(x = SNVs)$AD
-  ad_mat <- do.call(rbind, ad)
-  if (ncol(ad_mat) < 2) {
-    return(SNVs)
-  }
-  ref <- ad_mat[, 1]
-  alt <- ad_mat[, 2]
-  af <- alt / (ref + alt)
-  af[is.na(x = af)] <- 0
-  keep <- !is.na(af) & af >= vaf
-  SNVs[keep]
+    ad <- geno(x = SNVs)$AD
+    ad_mat <- do.call(rbind, ad)
+    if (ncol(ad_mat) < 2) {
+        return(SNVs)
+    }
+    ref <- ad_mat[, 1]
+    alt <- ad_mat[, 2]
+    af <- alt / (ref + alt)
+    af[is.na(x = af)] <- 0
+    keep <- !is.na(af) & af >= vaf
+    SNVs[keep]
 }
 
 #' Filter by INFO field with greater-than comparison
@@ -386,9 +386,9 @@ filterVariants <- function(
 #' @keywords internal
 #' @noRd
 .filterByInfoGreater <- function(SNVs, field, threshold) {
-  vals <- info(x = SNVs)[[field]]
-  keep <- !is.na(vals) & vals >= threshold
-  SNVs[keep]
+    vals <- info(x = SNVs)[[field]]
+    keep <- !is.na(vals) & vals >= threshold
+    SNVs[keep]
 }
 
 #' Filter by INFO field with less-than comparison
@@ -402,9 +402,9 @@ filterVariants <- function(
 #' @keywords internal
 #' @noRd
 .filterByInfoLess <- function(SNVs, field, threshold) {
-  vals <- info(x = SNVs)[[field]]
-  keep <- !is.na(vals) & vals <= threshold
-  SNVs[keep]
+    vals <- info(x = SNVs)[[field]]
+    keep <- !is.na(vals) & vals <= threshold
+    SNVs[keep]
 }
 
 #' Replace "." with "PASS" in FILTER field
@@ -416,10 +416,10 @@ filterVariants <- function(
 #' @keywords internal
 #' @noRd
 .replaceFilterPass <- function(SNVs) {
-  fixed_SNVs <- fixed(x = SNVs)
-  fixed_SNVs$FILTER[fixed_SNVs$FILTER == "."] <- "PASS"
-  fixed(x = SNVs) <- fixed_SNVs
-  SNVs
+    fixed_SNVs <- fixed(x = SNVs)
+    fixed_SNVs$FILTER[fixed_SNVs$FILTER == "."] <- "PASS"
+    fixed(x = SNVs) <- fixed_SNVs
+    SNVs
 }
 
 
@@ -466,39 +466,39 @@ filterVariants <- function(
 #' @export
 #' @importFrom data.table fread as.data.table data.table fifelse
 benchmarkVariants <- function(vcfDir,
-                              ref_vcf,
-                              query_vcf,
-                              featureTable = FALSE,
-                              workDir = NULL) {
-  ### Setting the working directory.
-  if (is.null(x = workDir)) {
-    workDir <- getwd()
-  }
-  ### Setting the VCF directory.
-  if (is.null(x = vcfDir)) {
-    vcfDir <- workDir
-  } else {
-    vcfDir <- paste(workDir, vcfDir, sep = "/")
-  }
-  ### Loading of VCF data.
-  truth <- .readVcfAsDataTable(paste(vcfDir, ref_vcf, sep = "/"))
-  test <- .readVcfAsDataTable(paste(vcfDir, query_vcf, sep = "/"))
-  ### Developing a featureTable.
-  if (isTRUE(x = featureTable)) {
-    .writeBenchmarkFeatureTable(truth, test, query_vcf, ref_vcf, workDir)
-  }
-  ### Development and return of the final object.
-  rbind(
-    SNPs = .getBenchmarkMetrics(
-      truth_keys = truth[type == "SNP", key],
-      test_keys = test[type == "SNP", key]
-    ),
-    INDELs = .getBenchmarkMetrics(
-      truth_keys = truth[type == "INDEL", key],
-      test_keys = test[type == "INDEL", key]
-    ),
-    ALL = .getBenchmarkMetrics(truth_keys = truth$key, test_keys = test$key)
-  )
+    ref_vcf,
+    query_vcf,
+    featureTable = FALSE,
+    workDir = NULL) {
+    ### Setting the working directory.
+    if (is.null(x = workDir)) {
+        workDir <- getwd()
+    }
+    ### Setting the VCF directory.
+    if (is.null(x = vcfDir)) {
+        vcfDir <- workDir
+    } else {
+        vcfDir <- paste(workDir, vcfDir, sep = "/")
+    }
+    ### Loading of VCF data.
+    truth <- .readVcfAsDataTable(paste(vcfDir, ref_vcf, sep = "/"))
+    test <- .readVcfAsDataTable(paste(vcfDir, query_vcf, sep = "/"))
+    ### Developing a featureTable.
+    if (isTRUE(x = featureTable)) {
+        .writeBenchmarkFeatureTable(truth, test, query_vcf, ref_vcf, workDir)
+    }
+    ### Development and return of the final object.
+    rbind(
+        SNPs = .getBenchmarkMetrics(
+            truth_keys = truth[type == "SNP", key],
+            test_keys = test[type == "SNP", key]
+        ),
+        INDELs = .getBenchmarkMetrics(
+            truth_keys = truth[type == "INDEL", key],
+            test_keys = test[type == "INDEL", key]
+        ),
+        ALL = .getBenchmarkMetrics(truth_keys = truth$key, test_keys = test$key)
+    )
 }
 
 #' Read VCF file into a data.table
@@ -511,37 +511,37 @@ benchmarkVariants <- function(vcfDir,
 #' @keywords internal
 #' @noRd
 .readVcfAsDataTable <- function(input) {
-  if (is.character(x = input) && file.exists(x = input)) {
-    if (file.size(input) == 0) {
-      stop("VCF file is empty: ", input)
+    if (is.character(x = input) && file.exists(x = input)) {
+        if (file.size(input) == 0) {
+            stop("VCF file is empty: ", input)
+        }
+        vcf <- fread(
+            input,
+            skip = "##",
+            header = TRUE,
+            sep = "\t",
+            data.table = TRUE
+        )
+        if (ncol(vcf) < 8 || nrow(vcf) == 0) {
+            stop("VCF file contains no variant records: ", input)
+        }
+        colnames(x = vcf)[seq_len(8)] <- c(
+            "CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO"
+        )
+    } else if (is.data.frame(x = input)) {
+        vcf <- as.data.table(x = input)
+    } else {
+        stop("Input data must be a path to a file or data frame.")
     }
-    vcf <- fread(
-      input,
-      skip = "##",
-      header = TRUE,
-      sep = "\t",
-      data.table = TRUE
-    )
-    if (ncol(vcf) < 8 || nrow(vcf) == 0) {
-      stop("VCF file contains no variant records: ", input)
-    }
-    colnames(x = vcf)[seq_len(8)] <- c(
-      "CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO"
-    )
-  } else if (is.data.frame(x = input)) {
-    vcf <- as.data.table(x = input)
-  } else {
-    stop("Input data must be a path to a file or data frame.")
-  }
-  vcf <- vcf[, .(ALT = unlist(x = strsplit(x = ALT, split = ","))),
-             by = .(CHROM, POS = as.integer(x = POS), REF)
-  ]
-  vcf[, type := ifelse(
-    nchar(x = REF) == 1 & nchar(x = ALT) == 1,
-    "SNP", "INDEL"
-  )]
-  vcf[, key := paste0(CHROM, ":", POS, "_", REF, ">", ALT)]
-  vcf
+    vcf <- vcf[, .(ALT = unlist(x = strsplit(x = ALT, split = ","))),
+        by = .(CHROM, POS = as.integer(x = POS), REF)
+    ]
+    vcf[, type := ifelse(
+        nchar(x = REF) == 1 & nchar(x = ALT) == 1,
+        "SNP", "INDEL"
+    )]
+    vcf[, key := paste0(CHROM, ":", POS, "_", REF, ">", ALT)]
+    vcf
 }
 
 #' Compute benchmark metrics
@@ -554,27 +554,27 @@ benchmarkVariants <- function(vcfDir,
 #' @keywords internal
 #' @noRd
 .getBenchmarkMetrics <- function(truth_keys, test_keys) {
-  truth_keys <- unique(truth_keys)
-  test_keys <- unique(test_keys)
-  TP <- sum(test_keys %in% truth_keys)
-  FP <- sum(!test_keys %in% truth_keys)
-  FN <- sum(!truth_keys %in% test_keys)
-  precision <- if ((TP + FP) == 0) NA else TP / (TP + FP)
-  recall <- if ((TP + FN) == 0) NA else TP / (TP + FN)
-  f1 <- if (is.na(x = precision) || is.na(x = recall) ||
-            (precision + recall) == 0) {
-    NA
-  } else {
-    2 * precision * recall / (precision + recall)
-  }
-  data.frame(
-    TP = as.integer(x = TP),
-    FP = as.integer(x = FP),
-    FN = as.integer(x = FN),
-    Precision = round(x = precision, digits = 4),
-    Recall = round(x = recall, digits = 4),
-    F1 = round(x = f1, digits = 4)
-  )
+    truth_keys <- unique(truth_keys)
+    test_keys <- unique(test_keys)
+    TP <- sum(test_keys %in% truth_keys)
+    FP <- sum(!test_keys %in% truth_keys)
+    FN <- sum(!truth_keys %in% test_keys)
+    precision <- if ((TP + FP) == 0) NA else TP / (TP + FP)
+    recall <- if ((TP + FN) == 0) NA else TP / (TP + FN)
+    f1 <- if (is.na(x = precision) || is.na(x = recall) ||
+        (precision + recall) == 0) {
+        NA
+    } else {
+        2 * precision * recall / (precision + recall)
+    }
+    data.frame(
+        TP = as.integer(x = TP),
+        FP = as.integer(x = FP),
+        FN = as.integer(x = FN),
+        Precision = round(x = precision, digits = 4),
+        Recall = round(x = recall, digits = 4),
+        F1 = round(x = f1, digits = 4)
+    )
 }
 
 #' Write benchmark feature table
@@ -591,47 +591,47 @@ benchmarkVariants <- function(vcfDir,
 #' @keywords internal
 #' @noRd
 .writeBenchmarkFeatureTable <- function(truth, test, query_vcf, ref_vcf,
-                                        workDir) {
-  merged <- merge(
-    truth[, .(key, CHROM, POS, REF, ALT, type)],
-    test[, .(key, CHROM, POS, REF, ALT, type)],
-    by = "key", all = TRUE, suffixes = c(".truth", ".test")
-  )
-  merged[, tag := fifelse(
-    !is.na(x = CHROM.truth) & !is.na(x = CHROM.test), "TP",
-    fifelse(is.na(x = CHROM.truth) & !is.na(x = CHROM.test), "FP", "FN")
-  )]
-  clean <- data.frame(
-    CHROM = fifelse(
-      is.na(merged$CHROM.test),
-      merged$CHROM.truth,
-      merged$CHROM.test
-    ),
-    POS = fifelse(
-      is.na(merged$POS.test),
-      merged$POS.truth,
-      merged$POS.test
-    ),
-    REF = merged$REF.test,
-    REF.truth = merged$REF.truth,
-    ALT = merged$ALT.test,
-    type = fifelse(
-      is.na(merged$type.test),
-      merged$type.truth,
-      merged$type.test
-    ),
-    tag = merged$tag
-  )
-  outfile <- paste0(
-    sub(pattern = "\\.vcf$", replacement = "", x = query_vcf),
-    " vs ",
-    sub(pattern = "\\.vcf$", replacement = "", x = ref_vcf),
-    ", benchmarking results.csv"
-  )
-  write.csv(
-    x = clean,
-    file = paste(workDir, outfile, sep = "/"),
-    row.names = FALSE
-  )
-  invisible(NULL)
+    workDir) {
+    merged <- merge(
+        truth[, .(key, CHROM, POS, REF, ALT, type)],
+        test[, .(key, CHROM, POS, REF, ALT, type)],
+        by = "key", all = TRUE, suffixes = c(".truth", ".test")
+    )
+    merged[, tag := fifelse(
+        !is.na(x = CHROM.truth) & !is.na(x = CHROM.test), "TP",
+        fifelse(is.na(x = CHROM.truth) & !is.na(x = CHROM.test), "FP", "FN")
+    )]
+    clean <- data.frame(
+        CHROM = fifelse(
+            is.na(merged$CHROM.test),
+            merged$CHROM.truth,
+            merged$CHROM.test
+        ),
+        POS = fifelse(
+            is.na(merged$POS.test),
+            merged$POS.truth,
+            merged$POS.test
+        ),
+        REF = merged$REF.test,
+        REF.truth = merged$REF.truth,
+        ALT = merged$ALT.test,
+        type = fifelse(
+            is.na(merged$type.test),
+            merged$type.truth,
+            merged$type.test
+        ),
+        tag = merged$tag
+    )
+    outfile <- paste0(
+        sub(pattern = "\\.vcf$", replacement = "", x = query_vcf),
+        " vs ",
+        sub(pattern = "\\.vcf$", replacement = "", x = ref_vcf),
+        ", benchmarking results.csv"
+    )
+    write.csv(
+        x = clean,
+        file = paste(workDir, outfile, sep = "/"),
+        row.names = FALSE
+    )
+    invisible(NULL)
 }

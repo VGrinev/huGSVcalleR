@@ -52,45 +52,45 @@
 #' @noRd
 #' @importFrom parallel detectCores
 gatkCalleR <- function(bamDir = NULL,
-                       bamFile,
-                       postfix = NA,
-                       fastaDir = NULL,
-                       faFile,
-                       intervals = NULL,
-                       pcr_model = "CONSERVATIVE",
-                       soft_clip = TRUE,
-                       ERC = "NONE",
-                       cores = "MAX",
-                       SE = TRUE,
-                       gatk_path = NULL,
-                       workDir = NULL) {
-  ### Platform check.
-  if (.Platform$OS.type == "windows") {
-    stop(
-      "GATK is not natively supported on Windows. ",
-      "Please use WSL2 or Docker and run GATK manually, ",
-      "then use callSNVs(criteria = 'fisher') or another method. ",
-      "See the INSTALL file for details."
+    bamFile,
+    postfix = NA,
+    fastaDir = NULL,
+    faFile,
+    intervals = NULL,
+    pcr_model = "CONSERVATIVE",
+    soft_clip = TRUE,
+    ERC = "NONE",
+    cores = "MAX",
+    SE = TRUE,
+    gatk_path = NULL,
+    workDir = NULL) {
+    ### Platform check.
+    if (.Platform$OS.type == "windows") {
+        stop(
+            "GATK is not natively supported on Windows. ",
+            "Please use WSL2 or Docker and run GATK manually, ",
+            "then use callSNVs(criteria = 'fisher') or another method. ",
+            "See the INSTALL file for details."
+        )
+    }
+    ### Validation of GATK path.
+    .validateGatkPath(gatk_path)
+    ### Setting the working directory.
+    if (is.null(x = workDir)) {
+        workDir <- getwd()
+    }
+    ### Full paths to input files.
+    path1 <- .resolveBamPath(bamDir, workDir)
+    path2 <- .resolveFastaPath(fastaDir, workDir)
+    ### Building the argument list.
+    args <- .buildHaplotypeCallerArgs(
+        path1, bamFile, path2, faFile, postfix, intervals,
+        pcr_model, soft_clip, ERC, cores, SE, workDir
     )
-  }
-  ### Validation of GATK path.
-  .validateGatkPath(gatk_path)
-  ### Setting the working directory.
-  if (is.null(x = workDir)) {
-    workDir <- getwd()
-  }
-  ### Full paths to input files.
-  path1 <- .resolveBamPath(bamDir, workDir)
-  path2 <- .resolveFastaPath(fastaDir, workDir)
-  ### Building the argument list.
-  args <- .buildHaplotypeCallerArgs(
-    path1, bamFile, path2, faFile, postfix, intervals,
-    pcr_model, soft_clip, ERC, cores, SE, workDir
-  )
-  ### Running the command.
-  .runHaplotypeCaller(gatk_path, args, path1, bamFile, SE)
-  ### Returning nothing.
-  invisible(NULL)
+    ### Running the command.
+    .runHaplotypeCaller(gatk_path, args, path1, bamFile, SE)
+    ### Returning nothing.
+    invisible(NULL)
 }
 
 #' Validate GATK executable path
@@ -102,19 +102,19 @@ gatkCalleR <- function(bamDir = NULL,
 #' @keywords internal
 #' @noRd
 .validateGatkPath <- function(gatk_path) {
-  if (is.null(x = gatk_path)) {
-    stop(
-      "Cannot run GATK without path. Please provide full path to GATK ",
-      "executive script, or 'gatk' if it can be called from $PATH."
-    )
-  }
-  if (!file.exists(gatk_path) && !nzchar(Sys.which(gatk_path))) {
-    stop(
-      "GATK executable not found: ", gatk_path,
-      ". Provide a valid path or ensure 'gatk' is in $PATH."
-    )
-  }
-  invisible(NULL)
+    if (is.null(x = gatk_path)) {
+        stop(
+            "Cannot run GATK without path. Please provide full path to GATK ",
+            "executive script, or 'gatk' if it can be called from $PATH."
+        )
+    }
+    if (!file.exists(gatk_path) && !nzchar(Sys.which(gatk_path))) {
+        stop(
+            "GATK executable not found: ", gatk_path,
+            ". Provide a valid path or ensure 'gatk' is in $PATH."
+        )
+    }
+    invisible(NULL)
 }
 
 #' Resolve BAM directory path
@@ -127,7 +127,7 @@ gatkCalleR <- function(bamDir = NULL,
 #' @keywords internal
 #' @noRd
 .resolveBamPath <- function(bamDir, workDir) {
-  if (is.null(x = bamDir)) workDir else paste(workDir, bamDir, sep = "/")
+    if (is.null(x = bamDir)) workDir else paste(workDir, bamDir, sep = "/")
 }
 
 #' Resolve FASTA directory path
@@ -140,7 +140,7 @@ gatkCalleR <- function(bamDir = NULL,
 #' @keywords internal
 #' @noRd
 .resolveFastaPath <- function(fastaDir, workDir) {
-  if (is.null(x = fastaDir)) workDir else paste(workDir, fastaDir, sep = "/")
+    if (is.null(x = fastaDir)) workDir else paste(workDir, fastaDir, sep = "/")
 }
 
 #' Build HaplotypeCaller argument list
@@ -163,28 +163,28 @@ gatkCalleR <- function(bamDir = NULL,
 #' @keywords internal
 #' @noRd
 .buildHaplotypeCallerArgs <- function(path1, bamFile, path2, faFile,
-                                      postfix, intervals, pcr_model,
-                                      soft_clip, ERC, cores, SE, workDir) {
-  input <- paste("-I", file.path(path1, bamFile), sep = " ")
-  bam_basename <- gsub(pattern = ".bam", replacement = "", x = bamFile)
-  out_name <- if (!is.na(x = postfix)) {
-    paste(bam_basename, postfix, "vcf", sep = ".")
-  } else {
-    paste(bam_basename, "HCaller", "vcf", sep = ".")
-  }
-  output <- paste("-O", file.path(path1, out_name), sep = " ")
-  fa <- paste("-R", file.path(path2, faFile), sep = " ")
-  if (!is.null(x = intervals)) {
-    fa <- paste(fa, .buildIntervalsArgument(intervals, workDir))
-  }
-  pcr <- paste("--pcr-indel-model", pcr_model)
-  softclip <- paste("--dont-use-soft-clipped-bases", soft_clip)
-  erc <- paste("-ERC", ERC)
-  if (cores == "MAX") {
-    cores <- detectCores()
-  }
-  cores <- paste("--native-pair-hmm-threads", cores)
-  c("HaplotypeCaller", input, output, fa, pcr, softclip, erc, cores)
+    postfix, intervals, pcr_model,
+    soft_clip, ERC, cores, SE, workDir) {
+    input <- paste("-I", file.path(path1, bamFile), sep = " ")
+    bam_basename <- gsub(pattern = ".bam", replacement = "", x = bamFile)
+    out_name <- if (!is.na(x = postfix)) {
+        paste(bam_basename, postfix, "vcf", sep = ".")
+    } else {
+        paste(bam_basename, "HCaller", "vcf", sep = ".")
+    }
+    output <- paste("-O", file.path(path1, out_name), sep = " ")
+    fa <- paste("-R", file.path(path2, faFile), sep = " ")
+    if (!is.null(x = intervals)) {
+        fa <- paste(fa, .buildIntervalsArgument(intervals, workDir))
+    }
+    pcr <- paste("--pcr-indel-model", pcr_model)
+    softclip <- paste("--dont-use-soft-clipped-bases", soft_clip)
+    erc <- paste("-ERC", ERC)
+    if (cores == "MAX") {
+        cores <- detectCores()
+    }
+    cores <- paste("--native-pair-hmm-threads", cores)
+    c("HaplotypeCaller", input, output, fa, pcr, softclip, erc, cores)
 }
 
 #' Build intervals argument for GATK
@@ -197,15 +197,15 @@ gatkCalleR <- function(bamDir = NULL,
 #' @keywords internal
 #' @noRd
 .buildIntervalsArgument <- function(intervals, workDir) {
-  GRs <- read.table(
-    file = paste(workDir, intervals, sep = "/"),
-    sep = "\t",
-    header = TRUE,
-    quote = "\"",
-    as.is = TRUE
-  )
-  GRs <- paste(paste(GRs[, 1], GRs[, 2], sep = ":"), GRs[, 3], sep = "-")
-  paste("--intervals", GRs)
+    GRs <- read.table(
+        file = paste(workDir, intervals, sep = "/"),
+        sep = "\t",
+        header = TRUE,
+        quote = "\"",
+        as.is = TRUE
+    )
+    GRs <- paste(paste(GRs[, 1], GRs[, 2], sep = ":"), GRs[, 3], sep = "-")
+    paste("--intervals", GRs)
 }
 
 #' Run GATK HaplotypeCaller
@@ -221,31 +221,31 @@ gatkCalleR <- function(bamDir = NULL,
 #' @keywords internal
 #' @noRd
 .runHaplotypeCaller <- function(gatk_path, args, path1, bamFile, SE) {
-  se <- ""
-  if (SE == TRUE) {
-    se <- paste(
-      gsub(pattern = ".bam", replacement = "", x = bamFile),
-      "STDERR.HC.TXT",
-      sep = "."
-    )
-  }
-  status <- system2(
-    command = gatk_path,
-    args = args,
-    if (se == "") {
-      stderr <- se
-    } else {
-      stderr <- paste(path1, se, sep = "/")
+    se <- ""
+    if (SE == TRUE) {
+        se <- paste(
+            gsub(pattern = ".bam", replacement = "", x = bamFile),
+            "STDERR.HC.TXT",
+            sep = "."
+        )
     }
-  )
-  if (status != 0) {
-    stop(
-      "GATK HaplotypeCaller failed with exit code ", status,
-      ". Check that gatk_path points to a valid GATK executable ",
-      "and that the input files (BAM, FASTA, intervals) are correct."
+    status <- system2(
+        command = gatk_path,
+        args = args,
+        if (se == "") {
+            stderr <- se
+        } else {
+            stderr <- paste(path1, se, sep = "/")
+        }
     )
-  }
-  invisible(NULL)
+    if (status != 0) {
+        stop(
+            "GATK HaplotypeCaller failed with exit code ", status,
+            ". Check that gatk_path points to a valid GATK executable ",
+            "and that the input files (BAM, FASTA, intervals) are correct."
+        )
+    }
+    invisible(NULL)
 }
 
 
@@ -291,49 +291,49 @@ gatkCalleR <- function(bamDir = NULL,
 #' @noRd
 #' @importFrom Rsubread exactSNP
 fisherCalleR <- function(bamDir = NULL,
-                         bamFile,
-                         fastaDir = NULL,
-                         faFile,
-                         baseq = 20,
-                         mindepth = 1, maxdepth = 1e6,
-                         qvalue = 12,
-                         trim = 0,
-                         threads = 1,
-                         outputVCF = NULL,
-                         workDir = NULL) {
-  ### Setting the working directory.
-  if (is.null(x = workDir)) {
-    workDir <- getwd()
-  }
-  ### Full path to the BAM file.
-  path1 <- .resolveBamPath(bamDir, workDir)
-  ### Full path to the reference genome.
-  path2 <- .resolveFastaPath(fastaDir, workDir)
-  ### Setting the BAM file.
-  bam <- paste(path1, bamFile, sep = "/")
-  ### Setting the FASTA file.
-  fa <- paste(path2, faFile, sep = "/")
-  ### Setting the output VCF file.
-  if (is.null(x = outputVCF)) {
-    vcf <- paste0(sub(".bam$", "", bam), ".fisherCalleR.SNVs.vcf")
-  } else {
-    vcf <- paste0(sub(".bam$", "", bam), ".", outputVCF, ".vcf")
-  }
-  ### Detection of SNVs.
-  SNVs <- exactSNP(
-    readFile = bam,
-    isBAM = TRUE,
-    refGenomeFile = fa,
-    minBaseQuality = baseq,
-    minReads = mindepth,
-    maxReads = maxdepth,
-    qvalueCutoff = qvalue,
-    nTrimmedBases = trim,
-    nthreads = threads,
-    outputFile = vcf
-  )
-  ### Returning nothing: the VCF file is the only output.
-  invisible(NULL)
+    bamFile,
+    fastaDir = NULL,
+    faFile,
+    baseq = 20,
+    mindepth = 1, maxdepth = 1e6,
+    qvalue = 12,
+    trim = 0,
+    threads = 1,
+    outputVCF = NULL,
+    workDir = NULL) {
+    ### Setting the working directory.
+    if (is.null(x = workDir)) {
+        workDir <- getwd()
+    }
+    ### Full path to the BAM file.
+    path1 <- .resolveBamPath(bamDir, workDir)
+    ### Full path to the reference genome.
+    path2 <- .resolveFastaPath(fastaDir, workDir)
+    ### Setting the BAM file.
+    bam <- paste(path1, bamFile, sep = "/")
+    ### Setting the FASTA file.
+    fa <- paste(path2, faFile, sep = "/")
+    ### Setting the output VCF file.
+    if (is.null(x = outputVCF)) {
+        vcf <- paste0(sub(".bam$", "", bam), ".fisherCalleR.SNVs.vcf")
+    } else {
+        vcf <- paste0(sub(".bam$", "", bam), ".", outputVCF, ".vcf")
+    }
+    ### Detection of SNVs.
+    SNVs <- exactSNP(
+        readFile = bam,
+        isBAM = TRUE,
+        refGenomeFile = fa,
+        minBaseQuality = baseq,
+        minReads = mindepth,
+        maxReads = maxdepth,
+        qvalueCutoff = qvalue,
+        nTrimmedBases = trim,
+        nthreads = threads,
+        outputFile = vcf
+    )
+    ### Returning nothing: the VCF file is the only output.
+    invisible(NULL)
 }
 
 
@@ -439,51 +439,51 @@ fisherCalleR <- function(bamDir = NULL,
 #' @export
 #' @importFrom data.table data.table
 callSNVs <- function(
-    fr_data,
-    criteria = "entropy",
-    vcfDir = NULL,
-    outputVCF,
-    bamDir = NULL,
-    bamFile = NA,
-    fastaDir = NULL,
-    faFile = NA,
-    baseq = 20,
-    mindepth = 1,
-    maxdepth = 1e6,
-    qvalue = 12,
-    trim = 0,
-    threads = 1,
-    postfix = NA,
-    intervals = NULL,
-    pcr_model = NA,
-    soft_clip = TRUE,
-    ERC = "NONE",
-    cores = "MAX",
-    SE = TRUE,
-    gatk_path = NULL,
-    workDir = NULL,
-    model = "rpart",
-    pvalue = FALSE) {
-  ### Validation of the input criteria and arguments.
-  criteria <- .validateCallerInputs(
-    criteria, fr_data, missing(fr_data), bamFile
-  )
-  ### Setting the working directory.
-  if (is.null(x = workDir)) {
-    workDir <- getwd()
-  }
-  ### Reading the frequency table if needed.
-  fr_table <- .readCallerFrequencyTable(criteria, fr_data, workDir)
-  ### Dispatch to the low-level function.
-  invisible(.dispatchCaller(
-    criteria, fr_data, fr_table, vcfDir, outputVCF,
-    bamDir, bamFile, fastaDir, faFile,
-    baseq, mindepth, maxdepth, qvalue, trim, threads,
-    postfix, intervals, pcr_model, soft_clip, ERC, cores, SE,
-    gatk_path, workDir, model, pvalue
-  ))
-  ### Returning nothing.
-  invisible(NULL)
+        fr_data,
+        criteria = "entropy",
+        vcfDir = NULL,
+        outputVCF,
+        bamDir = NULL,
+        bamFile = NA,
+        fastaDir = NULL,
+        faFile = NA,
+        baseq = 20,
+        mindepth = 1,
+        maxdepth = 1e6,
+        qvalue = 12,
+        trim = 0,
+        threads = 1,
+        postfix = NA,
+        intervals = NULL,
+        pcr_model = NA,
+        soft_clip = TRUE,
+        ERC = "NONE",
+        cores = "MAX",
+        SE = TRUE,
+        gatk_path = NULL,
+        workDir = NULL,
+        model = "rpart",
+        pvalue = FALSE) {
+    ### Validation of the input criteria and arguments.
+    criteria <- .validateCallerInputs(
+        criteria, fr_data, missing(fr_data), bamFile
+    )
+    ### Setting the working directory.
+    if (is.null(x = workDir)) {
+        workDir <- getwd()
+    }
+    ### Reading the frequency table if needed.
+    fr_table <- .readCallerFrequencyTable(criteria, fr_data, workDir)
+    ### Dispatch to the low-level function.
+    invisible(.dispatchCaller(
+        criteria, fr_data, fr_table, vcfDir, outputVCF,
+        bamDir, bamFile, fastaDir, faFile,
+        baseq, mindepth, maxdepth, qvalue, trim, threads,
+        postfix, intervals, pcr_model, soft_clip, ERC, cores, SE,
+        gatk_path, workDir, model, pvalue
+    ))
+    ### Returning nothing.
+    invisible(NULL)
 }
 
 #' Validate caller criteria and required arguments
@@ -499,18 +499,18 @@ callSNVs <- function(
 #' @keywords internal
 #' @noRd
 .validateCallerInputs <- function(criteria, fr_data, fr_data_missing,
-                                  bamFile) {
-  criteria <- match.arg(arg = criteria, choices = SUPPORTED_CALLERS)
-  if (criteria %in% SUPPORTED_TABLE_CALLERS && fr_data_missing) {
-    stop(
-      "fr_data is required for criteria = '", criteria, "'. ",
-      "Use collectBasesPileup() to generate it from a BAM file."
-    )
-  }
-  if (criteria %in% SUPPORTED_BAM_CALLERS && is.na(bamFile)) {
-    stop("bamFile is required for criteria = '", criteria, "'.")
-  }
-  criteria
+    bamFile) {
+    criteria <- match.arg(arg = criteria, choices = SUPPORTED_CALLERS)
+    if (criteria %in% SUPPORTED_TABLE_CALLERS && fr_data_missing) {
+        stop(
+            "fr_data is required for criteria = '", criteria, "'. ",
+            "Use collectBasesPileup() to generate it from a BAM file."
+        )
+    }
+    if (criteria %in% SUPPORTED_BAM_CALLERS && is.na(bamFile)) {
+        stop("bamFile is required for criteria = '", criteria, "'.")
+    }
+    criteria
 }
 
 #' Read the frequency table for table-based callers
@@ -524,10 +524,10 @@ callSNVs <- function(
 #' @keywords internal
 #' @noRd
 .readCallerFrequencyTable <- function(criteria, fr_data, workDir) {
-  if (criteria %in% SUPPORTED_TABLE_CALLERS) {
-    return(.readFrequencyTable(fr_data, workDir))
-  }
-  NULL
+    if (criteria %in% SUPPORTED_TABLE_CALLERS) {
+        return(.readFrequencyTable(fr_data, workDir))
+    }
+    NULL
 }
 
 #' Read frequency table from CSV or return data.frame
@@ -540,18 +540,18 @@ callSNVs <- function(
 #' @keywords internal
 #' @noRd
 .readFrequencyTable <- function(fr_data, workDir) {
-  if (is.object(x = fr_data)) {
-    return(fr_data)
-  }
-  path <- paste(workDir, fr_data, sep = "/")
-  frt <- tools::file_ext(x = path)
-  if (!frt %in% "csv") {
-    stop("Invalid format of CSV file")
-  }
-  if (!file.exists(path)) {
-    stop("File not found:", path)
-  }
-  read.csv(file = path, header = TRUE)
+    if (is.object(x = fr_data)) {
+        return(fr_data)
+    }
+    path <- paste(workDir, fr_data, sep = "/")
+    frt <- tools::file_ext(x = path)
+    if (!frt %in% "csv") {
+        stop("Invalid format of CSV file")
+    }
+    if (!file.exists(path)) {
+        stop("File not found:", path)
+    }
+    read.csv(file = path, header = TRUE)
 }
 
 #' Dispatch SNV calling to the appropriate low-level function
@@ -588,32 +588,31 @@ callSNVs <- function(
 #' @keywords internal
 #' @noRd
 .dispatchCaller <- function(criteria, fr_data, fr_table, vcfDir, outputVCF,
-                            bamDir, bamFile, fastaDir, faFile,
-                            baseq, mindepth, maxdepth, qvalue, trim, threads,
-                            postfix, intervals, pcr_model, soft_clip, ERC,
-                            cores, SE, gatk_path, workDir, model, pvalue) {
-  switch(
-    criteria,
-    binomial = ,
-    counting = ,
-    entropy = ,
-    fisher = ,
-    poisson = .dispatchTableCaller(
-      criteria, fr_table, vcfDir, outputVCF, workDir
-    ),
-    fisherRSubread = .dispatchFisherRSubread(
-      bamDir, bamFile, fastaDir, faFile,
-      baseq, mindepth, maxdepth, qvalue, trim, threads,
-      outputVCF, workDir
-    ),
-    gatk = .dispatchGatk(
-      bamDir, bamFile, postfix, fastaDir, faFile, intervals,
-      pcr_model, soft_clip, ERC, cores, SE, gatk_path, workDir
-    ),
-    ml = .dispatchMl(
-      fr_table, model, pvalue, vcfDir, outputVCF, workDir
+    bamDir, bamFile, fastaDir, faFile,
+    baseq, mindepth, maxdepth, qvalue, trim, threads,
+    postfix, intervals, pcr_model, soft_clip, ERC,
+    cores, SE, gatk_path, workDir, model, pvalue) {
+    switch(criteria,
+        binomial = ,
+        counting = ,
+        entropy = ,
+        fisher = ,
+        poisson = .dispatchTableCaller(
+            criteria, fr_table, vcfDir, outputVCF, workDir
+        ),
+        fisherRSubread = .dispatchFisherRSubread(
+            bamDir, bamFile, fastaDir, faFile,
+            baseq, mindepth, maxdepth, qvalue, trim, threads,
+            outputVCF, workDir
+        ),
+        gatk = .dispatchGatk(
+            bamDir, bamFile, postfix, fastaDir, faFile, intervals,
+            pcr_model, soft_clip, ERC, cores, SE, gatk_path, workDir
+        ),
+        ml = .dispatchMl(
+            fr_table, model, pvalue, vcfDir, outputVCF, workDir
+        )
     )
-  )
 }
 
 #' Dispatch table-based callers
@@ -630,18 +629,18 @@ callSNVs <- function(
 #' @keywords internal
 #' @noRd
 .dispatchTableCaller <- function(criteria, fr_table, vcfDir, outputVCF,
-                                 workDir) {
-  result <- .runStatisticalTest(criteria, fr_table)
-  input <- data.table(cbind(fr_table, result))
-  colnames(input)[ncol(input)] <- criteria
-  generateVCF(
-    input = input,
-    version = "4.0",
-    vcfDir = vcfDir,
-    outputVCF = outputVCF,
-    workDir = workDir
-  )
-  invisible(NULL)
+    workDir) {
+    result <- .runStatisticalTest(criteria, fr_table)
+    input <- data.table(cbind(fr_table, result))
+    colnames(input)[ncol(input)] <- criteria
+    generateVCF(
+        input = input,
+        version = "4.0",
+        vcfDir = vcfDir,
+        outputVCF = outputVCF,
+        workDir = workDir
+    )
+    invisible(NULL)
 }
 
 #' Dispatch fisherRSubread caller
@@ -664,23 +663,23 @@ callSNVs <- function(
 #' @keywords internal
 #' @noRd
 .dispatchFisherRSubread <- function(bamDir, bamFile, fastaDir, faFile,
-                                    baseq, mindepth, maxdepth, qvalue,
-                                    trim, threads, outputVCF, workDir) {
-  fisherCalleR(
-    bamDir = bamDir,
-    bamFile = bamFile,
-    fastaDir = fastaDir,
-    faFile = faFile,
-    baseq = baseq,
-    mindepth = mindepth,
-    maxdepth = maxdepth,
-    qvalue = qvalue,
-    trim = trim,
-    threads = threads,
-    outputVCF = outputVCF,
-    workDir = workDir
-  )
-  invisible(NULL)
+    baseq, mindepth, maxdepth, qvalue,
+    trim, threads, outputVCF, workDir) {
+    fisherCalleR(
+        bamDir = bamDir,
+        bamFile = bamFile,
+        fastaDir = fastaDir,
+        faFile = faFile,
+        baseq = baseq,
+        mindepth = mindepth,
+        maxdepth = maxdepth,
+        qvalue = qvalue,
+        trim = trim,
+        threads = threads,
+        outputVCF = outputVCF,
+        workDir = workDir
+    )
+    invisible(NULL)
 }
 
 #' Dispatch GATK caller
@@ -704,24 +703,24 @@ callSNVs <- function(
 #' @keywords internal
 #' @noRd
 .dispatchGatk <- function(bamDir, bamFile, postfix, fastaDir, faFile,
-                          intervals, pcr_model, soft_clip, ERC, cores, SE,
-                          gatk_path, workDir) {
-  gatkCalleR(
-    bamDir = bamDir,
-    bamFile = bamFile,
-    postfix = postfix,
-    fastaDir = fastaDir,
-    faFile = faFile,
-    intervals = intervals,
-    pcr_model = pcr_model,
-    soft_clip = soft_clip,
-    ERC = ERC,
-    cores = cores,
-    SE = SE,
-    gatk_path = gatk_path,
-    workDir = workDir
-  )
-  invisible(NULL)
+    intervals, pcr_model, soft_clip, ERC, cores, SE,
+    gatk_path, workDir) {
+    gatkCalleR(
+        bamDir = bamDir,
+        bamFile = bamFile,
+        postfix = postfix,
+        fastaDir = fastaDir,
+        faFile = faFile,
+        intervals = intervals,
+        pcr_model = pcr_model,
+        soft_clip = soft_clip,
+        ERC = ERC,
+        cores = cores,
+        SE = SE,
+        gatk_path = gatk_path,
+        workDir = workDir
+    )
+    invisible(NULL)
 }
 
 #' Dispatch ML caller
@@ -738,16 +737,16 @@ callSNVs <- function(
 #' @keywords internal
 #' @noRd
 .dispatchMl <- function(fr_table, model, pvalue, vcfDir, outputVCF,
-                        workDir) {
-  mlCalleR(
-    fr_table = fr_table,
-    model = model,
-    pvalue = pvalue,
-    vcfDir = vcfDir,
-    outputVCF = outputVCF,
-    workDir = workDir
-  )
-  invisible(NULL)
+    workDir) {
+    mlCalleR(
+        fr_table = fr_table,
+        model = model,
+        pvalue = pvalue,
+        vcfDir = vcfDir,
+        outputVCF = outputVCF,
+        workDir = workDir
+    )
+    invisible(NULL)
 }
 
 #' Run a statistical test on the frequency table
@@ -760,16 +759,16 @@ callSNVs <- function(
 #' @keywords internal
 #' @noRd
 .runStatisticalTest <- function(criteria, fr_table) {
-  if (criteria == "entropy") {
-    return(snp_entropy_cpp_parallel(fr_table, p_value = TRUE))
-  }
-  tests <- list(
-    counting = snp_counting_cpp_parallel,
-    binomial = snp_binomial_cpp_parallel,
-    fisher = snp_fisher_cpp_parallel,
-    poisson = snp_poisson_cpp_parallel
-  )
-  tests[[criteria]](fr_table)
+    if (criteria == "entropy") {
+        return(snp_entropy_cpp_parallel(fr_table, p_value = TRUE))
+    }
+    tests <- list(
+        counting = snp_counting_cpp_parallel,
+        binomial = snp_binomial_cpp_parallel,
+        fisher = snp_fisher_cpp_parallel,
+        poisson = snp_poisson_cpp_parallel
+    )
+    tests[[criteria]](fr_table)
 }
 
 
@@ -797,52 +796,52 @@ callSNVs <- function(
 #' @import randomForest
 #' @import LiblineaR
 mlCalleR <- function(fr_table,
-                     model = "rpart",
-                     pvalue = FALSE,
-                     vcfDir = NULL,
-                     outputVCF,
-                     workDir = NULL) {
-  ### Validation of the input model.
-  if (!model %in% SUPPORTED_ML_MODELS) {
-    stop(paste(
-      "Invalid model specified:", model,
-      ". Available options:",
-      paste(SUPPORTED_ML_MODELS, collapse = ", ")
+    model = "rpart",
+    pvalue = FALSE,
+    vcfDir = NULL,
+    outputVCF,
+    workDir = NULL) {
+    ### Validation of the input model.
+    if (!model %in% SUPPORTED_ML_MODELS) {
+        stop(paste(
+            "Invalid model specified:", model,
+            ". Available options:",
+            paste(SUPPORTED_ML_MODELS, collapse = ", ")
+        ))
+    }
+    ### Setting the working directory.
+    if (is.null(x = workDir)) {
+        workDir <- getwd()
+    }
+    ### Validate input data structure.
+    required_cols <- c("position", "reference", "A", "C", "G", "T")
+    if (!all(required_cols %in% colnames(fr_table))) {
+        stop(paste(
+            "Input data must contain columns:",
+            paste(required_cols, collapse = ", ")
+        ))
+    }
+    ### Prepare features.
+    prepared <- .prepareMLFeatures(fr_table)
+    ### Load model.
+    model.obj <- .loadMLModel(model)
+    ### Make predictions.
+    prediction <- .predictML(model.obj, model, prepared$data.features, pvalue)
+    ### Add predictions to the original data.
+    results <- data.table(cbind(
+        prepared$fr_table_filt,
+        ML_Prediction = prediction
     ))
-  }
-  ### Setting the working directory.
-  if (is.null(x = workDir)) {
-    workDir <- getwd()
-  }
-  ### Validate input data structure.
-  required_cols <- c("position", "reference", "A", "C", "G", "T")
-  if (!all(required_cols %in% colnames(fr_table))) {
-    stop(paste(
-      "Input data must contain columns:",
-      paste(required_cols, collapse = ", ")
-    ))
-  }
-  ### Prepare features.
-  prepared <- .prepareMLFeatures(fr_table)
-  ### Load model.
-  model.obj <- .loadMLModel(model)
-  ### Make predictions.
-  prediction <- .predictML(model.obj, model, prepared$data.features, pvalue)
-  ### Add predictions to the original data.
-  results <- data.table(cbind(
-    prepared$fr_table_filt,
-    ML_Prediction = prediction
-  ))
-  ### Generate VCF file.
-  generateVCF(
-    input = results,
-    version = "4.0",
-    vcfDir = vcfDir,
-    outputVCF = outputVCF,
-    workDir = workDir
-  )
-  ### Returning nothing.
-  invisible(NULL)
+    ### Generate VCF file.
+    generateVCF(
+        input = results,
+        version = "4.0",
+        vcfDir = vcfDir,
+        outputVCF = outputVCF,
+        workDir = workDir
+    )
+    ### Returning nothing.
+    invisible(NULL)
 }
 
 #' Prepare features for ML prediction
@@ -854,29 +853,29 @@ mlCalleR <- function(fr_table,
 #' @keywords internal
 #' @noRd
 .prepareMLFeatures <- function(fr_table) {
-  features <- c("x1", "x2", "x3", "x4")
-  data.features <- vectorise_data_cpp_parallel(fr_table, features = features)
-  total <- rowSums(data.features)
-  target_cols <- c("x2", "x3", "x4")
-  existing_cols <- target_cols[target_cols %in% names(data.features)]
-  if (length(existing_cols) > 0) {
-    x_sum <- rowSums(
-      data.features[, existing_cols, drop = FALSE],
-      na.rm = TRUE
+    features <- c("x1", "x2", "x3", "x4")
+    data.features <- vectorise_data_cpp_parallel(fr_table, features = features)
+    total <- rowSums(data.features)
+    target_cols <- c("x2", "x3", "x4")
+    existing_cols <- target_cols[target_cols %in% names(data.features)]
+    if (length(existing_cols) > 0) {
+        x_sum <- rowSums(
+            data.features[, existing_cols, drop = FALSE],
+            na.rm = TRUE
+        )
+    } else {
+        stop("Non-reference columns (x2, x3, x4) are missing in data.features.")
+    }
+    data.features <- data.frame(
+        x_sum_norm = x_sum / total,
+        total = total
     )
-  } else {
-    stop("Non-reference columns (x2, x3, x4) are missing in data.features.")
-  }
-  data.features <- data.frame(
-    x_sum_norm = x_sum / total,
-    total = total
-  )
-  finite_rows <- is.finite(data.features$x_sum_norm) &
-    is.finite(data.features$total)
-  list(
-    data.features = data.features[finite_rows, , drop = FALSE],
-    fr_table_filt = fr_table[finite_rows, , drop = FALSE]
-  )
+    finite_rows <- is.finite(data.features$x_sum_norm) &
+        is.finite(data.features$total)
+    list(
+        data.features = data.features[finite_rows, , drop = FALSE],
+        fr_table_filt = fr_table[finite_rows, , drop = FALSE]
+    )
 }
 
 #' Load pre-trained ML model
@@ -888,29 +887,29 @@ mlCalleR <- function(fr_table,
 #' @keywords internal
 #' @noRd
 .loadMLModel <- function(model) {
-  if (model == "xgboost") {
-    model.path <- system.file("extdata", paste0(model, ".json"),
-                              package = "huGSVcalleR"
-    )
-    if (!nzchar(model.path) || !file.exists(model.path)) {
-      stop(
-        "Model file not found: ", model.path,
-        ". Expected a .json file in inst/extdata/."
-      )
+    if (model == "xgboost") {
+        model.path <- system.file("extdata", paste0(model, ".json"),
+            package = "huGSVcalleR"
+        )
+        if (!nzchar(model.path) || !file.exists(model.path)) {
+            stop(
+                "Model file not found: ", model.path,
+                ". Expected a .json file in inst/extdata/."
+            )
+        }
+        xgboost::xgb.load(model.path)
+    } else {
+        model.path <- system.file("extdata", paste0(model, ".rds"),
+            package = "huGSVcalleR"
+        )
+        if (!nzchar(model.path) || !file.exists(model.path)) {
+            stop(
+                "Model file not found: ", model.path,
+                ". Expected a .rds file in inst/extdata/."
+            )
+        }
+        readRDS(model.path)
     }
-    xgboost::xgb.load(model.path)
-  } else {
-    model.path <- system.file("extdata", paste0(model, ".rds"),
-                              package = "huGSVcalleR"
-    )
-    if (!nzchar(model.path) || !file.exists(model.path)) {
-      stop(
-        "Model file not found: ", model.path,
-        ". Expected a .rds file in inst/extdata/."
-      )
-    }
-    readRDS(model.path)
-  }
 }
 
 #' Make ML predictions
@@ -925,17 +924,17 @@ mlCalleR <- function(fr_table,
 #' @keywords internal
 #' @noRd
 .predictML <- function(model.obj, model, data.features, pvalue) {
-  if (model == "xgboost") {
-    .predictXgboost(model.obj, data.features, pvalue)
-  } else if (model == "rpart") {
-    .predictRpart(model.obj, data.features, pvalue)
-  } else if (model == "log_reg") {
-    .predictLogReg(model.obj, data.features, pvalue)
-  } else if (model == "rand_forest") {
-    .predictRandForest(model.obj, data.features, pvalue)
-  } else if (model == "SVM") {
-    .predictSVM(model.obj, data.features, pvalue)
-  }
+    if (model == "xgboost") {
+        .predictXgboost(model.obj, data.features, pvalue)
+    } else if (model == "rpart") {
+        .predictRpart(model.obj, data.features, pvalue)
+    } else if (model == "log_reg") {
+        .predictLogReg(model.obj, data.features, pvalue)
+    } else if (model == "rand_forest") {
+        .predictRandForest(model.obj, data.features, pvalue)
+    } else if (model == "SVM") {
+        .predictSVM(model.obj, data.features, pvalue)
+    }
 }
 
 #' Predict with xgboost
@@ -949,15 +948,17 @@ mlCalleR <- function(fr_table,
 #' @keywords internal
 #' @noRd
 .predictXgboost <- function(model.obj, data.features, pvalue) {
-  pred <- predict(
-    model.obj,
-    xgboost::xgb.DMatrix(data = as.matrix(data.features))
-  )
-  if (pvalue) {
-    pred
-  } else {
-    pred |> round() |> as.factor()
-  }
+    pred <- predict(
+        model.obj,
+        xgboost::xgb.DMatrix(data = as.matrix(data.features))
+    )
+    if (pvalue) {
+        pred
+    } else {
+        pred |>
+            round() |>
+            as.factor()
+    }
 }
 
 #' Predict with rpart
@@ -971,18 +972,18 @@ mlCalleR <- function(fr_table,
 #' @keywords internal
 #' @noRd
 .predictRpart <- function(model.obj, data.features, pvalue) {
-  if (pvalue) {
-    pred <- predict(model.obj, newdata = data.features, type = "prob")
-    if (is.list(pred)) {
-      vapply(pred, function(x) x[2], numeric(1))
-    } else if (is.matrix(pred)) {
-      pred[, 2]
+    if (pvalue) {
+        pred <- predict(model.obj, newdata = data.features, type = "prob")
+        if (is.list(pred)) {
+            vapply(pred, function(x) x[2], numeric(1))
+        } else if (is.matrix(pred)) {
+            pred[, 2]
+        } else {
+            pred
+        }
     } else {
-      pred
+        predict(model.obj, newdata = data.features, type = "class")
     }
-  } else {
-    predict(model.obj, newdata = data.features, type = "class")
-  }
 }
 
 #' Predict with logistic regression
@@ -996,16 +997,16 @@ mlCalleR <- function(fr_table,
 #' @keywords internal
 #' @noRd
 .predictLogReg <- function(model.obj, data.features, pvalue) {
-  pred <- predict(
-    model.obj,
-    newdata = data.features,
-    type = "response"
-  ) |> as.vector()
-  if (pvalue) {
-    pred
-  } else {
-    ifelse(pred > 0.5, 1, 0) |> as.factor()
-  }
+    pred <- predict(
+        model.obj,
+        newdata = data.features,
+        type = "response"
+    ) |> as.vector()
+    if (pvalue) {
+        pred
+    } else {
+        ifelse(pred > 0.5, 1, 0) |> as.factor()
+    }
 }
 
 #' Predict with random forest
@@ -1019,18 +1020,18 @@ mlCalleR <- function(fr_table,
 #' @keywords internal
 #' @noRd
 .predictRandForest <- function(model.obj, data.features, pvalue) {
-  if (pvalue) {
-    pred <- predict(model.obj, newdata = data.features, type = "prob")
-    if (is.list(pred)) {
-      vapply(pred, function(x) x[2], numeric(1))
-    } else if (is.matrix(pred)) {
-      pred[, 2]
+    if (pvalue) {
+        pred <- predict(model.obj, newdata = data.features, type = "prob")
+        if (is.list(pred)) {
+            vapply(pred, function(x) x[2], numeric(1))
+        } else if (is.matrix(pred)) {
+            pred[, 2]
+        } else {
+            as.vector(pred)
+        }
     } else {
-      as.vector(pred)
+        predict(model.obj, newdata = data.features, type = "class")
     }
-  } else {
-    predict(model.obj, newdata = data.features, type = "class")
-  }
 }
 
 #' Predict with SVM
@@ -1044,29 +1045,29 @@ mlCalleR <- function(fr_table,
 #' @keywords internal
 #' @noRd
 .predictSVM <- function(model.obj, data.features, pvalue) {
-  if (pvalue) {
-    pred_obj <- predict(
-      model.obj,
-      newx = as.matrix(data.features),
-      proba = TRUE
-    )
-    if (is.null(pred_obj$probabilities) ||
-        ncol(pred_obj$probabilities) < 2) {
-      stop(
-        "SVM model does not support probability output. ",
-        "It must be trained with LiblineaR type 0, 6 or 7 ",
-        "(logistic regression) to compute probabilities. ",
-        "Use pvalue = FALSE for class labels."
-      )
+    if (pvalue) {
+        pred_obj <- predict(
+            model.obj,
+            newx = as.matrix(data.features),
+            proba = TRUE
+        )
+        if (is.null(pred_obj$probabilities) ||
+            ncol(pred_obj$probabilities) < 2) {
+            stop(
+                "SVM model does not support probability output. ",
+                "It must be trained with LiblineaR type 0, 6 or 7 ",
+                "(logistic regression) to compute probabilities. ",
+                "Use pvalue = FALSE for class labels."
+            )
+        }
+        pred_obj$probabilities[, "1"]
+    } else {
+        predict(
+            model.obj,
+            newx = as.matrix(data.features),
+            proba = FALSE
+        )$predictions
     }
-    pred_obj$probabilities[, "1"]
-  } else {
-    predict(
-      model.obj,
-      newx = as.matrix(data.features),
-      proba = FALSE
-    )$predictions
-  }
 }
 
 
@@ -1111,37 +1112,37 @@ mlCalleR <- function(fr_table,
 #' @noRd
 #' @importFrom data.table fread
 generateVCF <- function(
-    input,
-    version = "4.0",
-    vcfDir = NULL,
-    outputVCF,
-    workDir = NULL) {
-  ### Setting the working directory.
-  if (is.null(x = workDir)) {
-    workDir <- getwd()
-  }
-  ### Setting the VCF directory.
-  if (is.null(x = vcfDir)) {
-    vcfDir <- workDir
-  } else {
-    vcfDir <- paste(workDir, vcfDir, sep = "/")
-  }
-  ### Retrieving of the input data.
-  if (is.object(x = input)) {
-    vcf_pre <- as.data.table(input)
-  } else {
-    vcf_pre <- fread(file = paste(workDir, input, sep = "/"))
-  }
-  ### Test columns (everything after the standard 6 columns).
-  tests <- colnames(x = vcf_pre)[-seq_len(6)]
-  ### Transformation of data into a frame of the appropriate structure.
-  VCF <- .prepareVcfTable(vcf_pre, tests)
-  if (version == "4.0") {
-    ### Writing of VCF file(-s).
-    .writeVcfFiles(VCF, tests, vcfDir, outputVCF)
-  }
-  ### Returning nothing.
-  invisible(NULL)
+        input,
+        version = "4.0",
+        vcfDir = NULL,
+        outputVCF,
+        workDir = NULL) {
+    ### Setting the working directory.
+    if (is.null(x = workDir)) {
+        workDir <- getwd()
+    }
+    ### Setting the VCF directory.
+    if (is.null(x = vcfDir)) {
+        vcfDir <- workDir
+    } else {
+        vcfDir <- paste(workDir, vcfDir, sep = "/")
+    }
+    ### Retrieving of the input data.
+    if (is.object(x = input)) {
+        vcf_pre <- as.data.table(input)
+    } else {
+        vcf_pre <- fread(file = paste(workDir, input, sep = "/"))
+    }
+    ### Test columns (everything after the standard 6 columns).
+    tests <- colnames(x = vcf_pre)[-seq_len(6)]
+    ### Transformation of data into a frame of the appropriate structure.
+    VCF <- .prepareVcfTable(vcf_pre, tests)
+    if (version == "4.0") {
+        ### Writing of VCF file(-s).
+        .writeVcfFiles(VCF, tests, vcfDir, outputVCF)
+    }
+    ### Returning nothing.
+    invisible(NULL)
 }
 
 #' Prepare VCF table from call data
@@ -1154,51 +1155,51 @@ generateVCF <- function(
 #' @keywords internal
 #' @noRd
 .prepareVcfTable <- function(vcf_pre, tests) {
-  vcf_pre$DP <- rowSums(x = vcf_pre[, c(3, 4, 5, 6)])
-  A <- vcf_pre[vcf_pre$A > 0 & vcf_pre$reference != "A", c(-4, -5, -6)]
-  A$ALT <- "A"
-  A$MM <- A$A
-  A <- A[, -3]
-  C <- vcf_pre[vcf_pre$C > 0 & vcf_pre$reference != "C", c(-3, -5, -6)]
-  C$ALT <- "C"
-  C$MM <- C$C
-  C <- C[, -3]
-  G <- vcf_pre[vcf_pre$G > 0 & vcf_pre$reference != "G", c(-3:-4, -6)]
-  G$ALT <- "G"
-  G$MM <- G$G
-  G <- G[, -3]
-  T_sub <- vcf_pre[vcf_pre$T > 0 & vcf_pre$reference != "T", c(-3:-5)]
-  T_sub$ALT <- "T"
-  T_sub$MM <- T_sub$T
-  T_sub <- T_sub[, -3]
-  vcf_pre <- rbind(A, C, G, T_sub)
-  VCF <- .buildPositionSummary(vcf_pre)
-  VCF$CHROM <- gsub(pattern = ":.+", replacement = "", x = VCF$position)
-  VCF$POS <- as.numeric(x = gsub(
-    pattern = ".+:",
-    replacement = "",
-    x = VCF$position
-  ))
-  VCF$ID <- paste(
-    paste(VCF$position, VCF$reference, sep = "_"),
-    VCF$ALT,
-    sep = "/"
-  )
-  VCF$QUAL <- "."
-  VCF$FILTER <- "."
-  VCF$INFO <- paste(
-    paste0("DP=", VCF$DP),
-    paste0("MMsum=", VCF$MMsum),
-    paste0("MM=", VCF$MM),
-    sep = ";"
-  )
-  VCF$REF <- VCF$reference
-  VCF <- data.frame(VCF)
-  ### Keep the test columns along with the standard VCF columns.
-  VCF[, c(
-    "CHROM", "POS", "ID", "REF", "ALT",
-    "QUAL", "FILTER", "INFO", tests
-  )]
+    vcf_pre$DP <- rowSums(x = vcf_pre[, c(3, 4, 5, 6)])
+    A <- vcf_pre[vcf_pre$A > 0 & vcf_pre$reference != "A", c(-4, -5, -6)]
+    A$ALT <- "A"
+    A$MM <- A$A
+    A <- A[, -3]
+    C <- vcf_pre[vcf_pre$C > 0 & vcf_pre$reference != "C", c(-3, -5, -6)]
+    C$ALT <- "C"
+    C$MM <- C$C
+    C <- C[, -3]
+    G <- vcf_pre[vcf_pre$G > 0 & vcf_pre$reference != "G", c(-3:-4, -6)]
+    G$ALT <- "G"
+    G$MM <- G$G
+    G <- G[, -3]
+    T_sub <- vcf_pre[vcf_pre$T > 0 & vcf_pre$reference != "T", c(-3:-5)]
+    T_sub$ALT <- "T"
+    T_sub$MM <- T_sub$T
+    T_sub <- T_sub[, -3]
+    vcf_pre <- rbind(A, C, G, T_sub)
+    VCF <- .buildPositionSummary(vcf_pre)
+    VCF$CHROM <- gsub(pattern = ":.+", replacement = "", x = VCF$position)
+    VCF$POS <- as.numeric(x = gsub(
+        pattern = ".+:",
+        replacement = "",
+        x = VCF$position
+    ))
+    VCF$ID <- paste(
+        paste(VCF$position, VCF$reference, sep = "_"),
+        VCF$ALT,
+        sep = "/"
+    )
+    VCF$QUAL <- "."
+    VCF$FILTER <- "."
+    VCF$INFO <- paste(
+        paste0("DP=", VCF$DP),
+        paste0("MMsum=", VCF$MMsum),
+        paste0("MM=", VCF$MM),
+        sep = ";"
+    )
+    VCF$REF <- VCF$reference
+    VCF <- data.frame(VCF)
+    ### Keep the test columns along with the standard VCF columns.
+    VCF[, c(
+        "CHROM", "POS", "ID", "REF", "ALT",
+        "QUAL", "FILTER", "INFO", tests
+    )]
 }
 
 #' Build per-position ALT/MMsum/MM summary
@@ -1211,18 +1212,18 @@ generateVCF <- function(
 #' @keywords internal
 #' @noRd
 .buildPositionSummary <- function(vcf_pre) {
-  VCF <- unique(as.data.frame(vcf_pre)[, seq_len(ncol(x = vcf_pre) - 2)])
-  VCF <- VCF[order(x = VCF$position), ]
-  ALT <- vcf_pre[, paste(ALT, collapse = ","), by = position]
-  ALT <- ALT[order(x = ALT$position), ]
-  VCF$ALT <- ALT$V1
-  MMsum <- vcf_pre[, sum(MM), by = position]
-  MMsum <- MMsum[order(x = MMsum$position), ]
-  VCF$MMsum <- MMsum$V1
-  MM <- vcf_pre[, paste(MM, collapse = ","), by = position]
-  MM <- MM[order(x = MM$position), ]
-  VCF$MM <- MM$V1
-  VCF
+    VCF <- unique(as.data.frame(vcf_pre)[, seq_len(ncol(x = vcf_pre) - 2)])
+    VCF <- VCF[order(x = VCF$position), ]
+    ALT <- vcf_pre[, paste(ALT, collapse = ","), by = position]
+    ALT <- ALT[order(x = ALT$position), ]
+    VCF$ALT <- ALT$V1
+    MMsum <- vcf_pre[, sum(MM), by = position]
+    MMsum <- MMsum[order(x = MMsum$position), ]
+    VCF$MMsum <- MMsum$V1
+    MM <- vcf_pre[, paste(MM, collapse = ","), by = position]
+    MM <- MM[order(x = MM$position), ]
+    VCF$MM <- MM$V1
+    VCF
 }
 
 #' Write VCF files for each test
@@ -1237,32 +1238,32 @@ generateVCF <- function(
 #' @keywords internal
 #' @noRd
 .writeVcfFiles <- function(VCF, tests, vcfDir, outputVCF) {
-  meta <- .prepareVcfMeta()
-  pvalue_tests <- c("binomial", "poisson", "fisher", "entropy")
-  for (i in seq_along(tests)) {
-    VCF$QUAL <- .computeQualValues(VCF, tests[i], pvalue_tests)
-    vcf_name <- paste(
-      paste(vcfDir,
-            paste(outputVCF, tests[i], sep = "."),
-            sep = "/"
-      ),
-      "vcf",
-      sep = "."
-    )
-    meta_file <- file(description = vcf_name, open = "wt")
-    writeLines(text = meta, con = meta_file)
-    close(con = meta_file)
-    write.table(
-      x = VCF[, seq_len(8)],
-      file = vcf_name,
-      sep = "\t",
-      quote = FALSE,
-      col.names = FALSE,
-      row.names = FALSE,
-      append = TRUE
-    )
-  }
-  invisible(NULL)
+    meta <- .prepareVcfMeta()
+    pvalue_tests <- c("binomial", "poisson", "fisher", "entropy")
+    for (i in seq_along(tests)) {
+        VCF$QUAL <- .computeQualValues(VCF, tests[i], pvalue_tests)
+        vcf_name <- paste(
+            paste(vcfDir,
+                paste(outputVCF, tests[i], sep = "."),
+                sep = "/"
+            ),
+            "vcf",
+            sep = "."
+        )
+        meta_file <- file(description = vcf_name, open = "wt")
+        writeLines(text = meta, con = meta_file)
+        close(con = meta_file)
+        write.table(
+            x = VCF[, seq_len(8)],
+            file = vcf_name,
+            sep = "\t",
+            quote = FALSE,
+            col.names = FALSE,
+            row.names = FALSE,
+            append = TRUE
+        )
+    }
+    invisible(NULL)
 }
 
 #' Compute QUAL values for a given test
@@ -1277,17 +1278,17 @@ generateVCF <- function(
 #' @keywords internal
 #' @noRd
 .computeQualValues <- function(VCF, test, pvalue_tests) {
-  qual_values <- VCF[[test]]
-  if (is.numeric(qual_values) && test %in% pvalue_tests) {
-    qual_values <- pmin(pmax(qual_values, 0), 1)
-    qual_values <- -10 * log10(qual_values)
-    qual_values[is.infinite(qual_values)] <- 1000
-    round(x = qual_values, digits = 4)
-  } else if (is.numeric(qual_values)) {
-    round(x = qual_values, digits = 4)
-  } else {
-    as.character(qual_values)
-  }
+    qual_values <- VCF[[test]]
+    if (is.numeric(qual_values) && test %in% pvalue_tests) {
+        qual_values <- pmin(pmax(qual_values, 0), 1)
+        qual_values <- -10 * log10(qual_values)
+        qual_values[is.infinite(qual_values)] <- 1000
+        round(x = qual_values, digits = 4)
+    } else if (is.numeric(qual_values)) {
+        round(x = qual_values, digits = 4)
+    } else {
+        as.character(qual_values)
+    }
 }
 
 #' Prepare VCF meta-information
@@ -1298,22 +1299,22 @@ generateVCF <- function(
 #' @keywords internal
 #' @noRd
 .prepareVcfMeta <- function() {
-  c(
-    "##fileformat=VCFv4.0",
-    paste0(
-      "##INFO=<ID=DP,Number=1,Type=Integer,",
-      "Description=\"Read Depth\">"
-    ),
-    paste0(
-      "##INFO=<ID=MMsum,Number=1,Type=Integer,",
-      "Description=\"Number of supporting reads",
-      " for alternative allele(-s)\">"
-    ),
-    paste0(
-      "##INFO=<ID=MM,Number=1,Type=String,",
-      "Description=\"Number of supporting reads",
-      " for each alternative allele\">"
-    ),
-    "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO"
-  )
+    c(
+        "##fileformat=VCFv4.0",
+        paste0(
+            "##INFO=<ID=DP,Number=1,Type=Integer,",
+            "Description=\"Read Depth\">"
+        ),
+        paste0(
+            "##INFO=<ID=MMsum,Number=1,Type=Integer,",
+            "Description=\"Number of supporting reads",
+            " for alternative allele(-s)\">"
+        ),
+        paste0(
+            "##INFO=<ID=MM,Number=1,Type=String,",
+            "Description=\"Number of supporting reads",
+            " for each alternative allele\">"
+        ),
+        "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO"
+    )
 }
