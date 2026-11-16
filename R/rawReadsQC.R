@@ -574,12 +574,12 @@ readFASTQ <- function(
 #' @keywords internal
 #' @noRd
 .parseFastqLines <- function(reads, n) {
-  if (is.null(x = n)) {
-    to <- length(x = reads)
-  } else {
-    to <- min(n * 4, length(x = reads))
-  }
-  FQs <- list(
+    if (is.null(x = n)) {
+        to <- length(x = reads)
+    } else {
+        to <- min(n * 4, length(x = reads))
+    }
+    FQs <- list(
         reads = DNAStringSet(x = reads[seq(from = 2, to = to, by = 4)]),
         QScores = PhredQuality(x = reads[seq(from = 4, to = to, by = 4)])
     )
