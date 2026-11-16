@@ -22,7 +22,7 @@ Useful links:
 Authors:
 \itemize{
   \item Vasiliy V. Grinev \email{Grinev_vv@bsu.by} (\href{https://orcid.org/0000-0001-9981-7333}{ORCID})
-  \item Ilia M. Ilyushonak
+  \item Ilia M. Ilyushonak \email{ilyushonakin@bsu.by} (\href{https://orcid.org/0000-0002-5377-366X}{ORCID})
   \item Liudmila S. Varaniuk
   \item Mikalai M. Yatskou \email{Yatskou@bsu.by} (\href{https://orcid.org/0009-0008-9734-2096}{ORCID})
   \item Viktor V. Skakun \email{skakun@bsu.by}
