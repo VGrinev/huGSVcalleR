@@ -45,7 +45,14 @@ CreateSequenceDictionary() from package GATK to built .dict and/or .fai
 indices for reference genome of interest.
 }
 \examples{
-...
+indexGenomeGATK(
+    fastaDir = "Files_FASTA",
+    faFile = "Homo_sapiens.GRCh38.dna.primary_assembly.fa",
+    fai = TRUE,
+    dict = TRUE,
+    gatk_path = "gatk",
+    workDir = "D:/Vasily Grinev"
+)
 }
 \author{
 Ilia M. Ilyushonak, Vasily V. Grinev.

@@ -315,8 +315,9 @@ collectBasesPileup <- function(
     )
     temp_stat <- .summarizePileupCounts(pileup_data)
     if (!is.null(x = coverage)) {
-        temp_stat <- temp_stat %>%
-            filter(rowSums(x = across(c(A, C, G, .data$T))) >= coverage)
+        temp_stat <- temp_stat[
+            rowSums(temp_stat[, c("A", "C", "G", "T")]) >= coverage,
+        ]
     }
     temp_stat <- .assignReferenceNucleotides(temp_stat, genome_obj)
     if (nrow(x = temp_stat) > 0) {
@@ -355,7 +356,16 @@ collectBasesPileup <- function(
         ),
         by = position
     ]
-    temp_stat[, .(position, seqnames, pos, reference, A, C, G, get("T"))]
+    temp_stat[, .(
+        position = position,
+        seqnames = seqnames,
+        pos = pos,
+        reference = reference,
+        A = A,
+        C = C,
+        G = G,
+        T = T
+    )]
 }
 
 #' Assign reference nucleotides to pileup positions

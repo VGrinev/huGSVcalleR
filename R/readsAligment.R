@@ -475,14 +475,6 @@ reportQAlResults <- function(x,
 
 #' Plot mapping quality threshold
 #' @description Internal helper for reportQAlResults(). Draws the threshold
-#'     plot of mapping quality.
-#' @param x list with alignment metrics.
-#' @return invisible(NULL).
-#' @author Vasily V. Grinev.
-#' @keywords internal
-#' @noRd
-#' Plot mapping quality threshold
-#' @description Internal helper for reportQAlResults(). Draws the threshold
 #'     plot of per-read mapping quality.
 #' @param x list with alignment metrics.
 #' @return invisible(NULL).

@@ -78,7 +78,21 @@ BaseRecalibrator() and ApplyBQSR() from package GATK to recalibrate
 sequencing quality scores of bases in BAM file of interest.
 }
 \examples{
-...
+recalibrateBamGATK(
+    bamDir = "Files_BAM",
+    bamFile = "SRR21721515.markedDuplicates.bam",
+    vcfDir = "Files_VCF",
+    vcfFile = "00-All.vcf.gz",
+    fastaDir = "Files_FASTA",
+    faFile = "Homo_sapiens.GRCh38.dna.primary_assembly.fa",
+    createBQSR = TRUE,
+    recalibrate = TRUE,
+    nameBQSR = "SRR21721515.bqsr.table",
+    postfix = "Recalibrated",
+    SE = TRUE,
+    gatk_path = "gatk",
+    workDir = "D:/Vasily Grinev"
+)
 }
 \author{
 Ilia M. Ilyushonak, Vasily V. Grinev.

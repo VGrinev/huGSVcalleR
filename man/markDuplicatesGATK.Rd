@@ -52,7 +52,15 @@ MarkDuplicates() from package GATK to find out and mark duplicated reads
 in BAM file(-s) of interest.
 }
 \examples{
-...
+markDuplicatesGATK(
+    bamDir = "Files_BAM",
+    bamFile = "SRR21721515.RG.bam",
+    postfix = "markedDuplicates",
+    removeDupls = "no",
+    SE = TRUE,
+    gatk_path = "gatk",
+    workDir = "D:/Vasily Grinev"
+)
 }
 \author{
 Ilia M. Ilyushonak, Vasily V. Grinev.

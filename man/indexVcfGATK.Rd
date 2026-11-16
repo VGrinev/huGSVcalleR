@@ -44,7 +44,13 @@ IndexFeatureFile() from package GATK to built a .tbi index for VCF file
 with known variants.
 }
 \examples{
-...
+indexVcfGATK(
+    vcfDir = "Files_VCF",
+    vcfFile = "00-All.vcf.gz",
+    output_name = NULL,
+    gatk_path = "gatk",
+    workDir = "D:/Vasily Grinev"
+)
 }
 \author{
 Ilia M. Ilyushonak, Vasily V. Grinev.
