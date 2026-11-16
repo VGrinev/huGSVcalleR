@@ -49,66 +49,94 @@ assessQRawReads <- function(fastqDir = NULL,
                             adapters = NULL,
                             contaminants = NULL,
                             workDir = NULL) {
-  ### Setting the working directory.
+  ### Setting the working directory and resolving the FASTQ path.
+  path <- .resolveFastqWorkPath(fastqDir, workDir)
   if (is.null(x = workDir)) {
     workDir <- getwd()
   }
-  ### Full path to the FASTQ file(-s).
-  if (is.null(x = fastqDir)) {
-    path <- paste(workDir, fastqDir, sep = "")
-  } else {
-    path <- paste(workDir, fastqDir, sep = "/")
-  }
-  ### Retrieving and validation of the FASTQ file(-s) extension.
+  ### Retrieving and validation of the FASTQ file extension.
   frt <- tools::file_ext(x = fastq)
   if (!frt %in% c("fastq", "gz")) {
     stop("Invalid file format")
   }
-  ### Collection of the quality metrics.
-  ##  Sample name and file name.
-  sample_name <- gsub(pattern = ".fastq.+", replacement = "", x = fastq)
-  file_name <- fastq
-  ##  Total number of reads and bases.
-  TNBs <- countFastq(dirPath = path, pattern = fastq)
-  TNRs <- TNBs[[1]]
-  TNBs <- TNBs[[2]]
-  ##  Distribution the length of reads.
-  reads <- readFASTQ(
+  ### Loading of the FASTQ data and the ShortRead::qa() output.
+  data <- .loadQaInputs(
     fastqDir = fastqDir, fastq = fastq, n = n,
-    workDir = workDir
+    path = path, workDir = workDir
   )
-  ##  Per entire reads quality.
-  RLs <- .computeReadLengths(reads)
-  PERQs <- .computePerReadQuality(reads)
-  ##  Per cycle quality of reads.
-  if (is.null(x = n)) {
-    QA <- qa(dirPath = path, pattern = fastq)
-  } else {
-    QA <- qa(dirPath = path, pattern = fastq, n = n)
-  }
-  PCQRs <- .computePerCycleQuality(QA)
-  ##  Bases composition of the entire set of reads.
-  BCs <- .computeBaseComposition(reads)
-  ##  Per cycle content of bases.
-  PCCBs <- .computePerCycleBases(QA)
-  ##  GC composition of the entire set of reads.
-  GCs <- .computeGcComposition(reads)
-  ##  Summarization the low-complexity of reads.
-  DSs <- .computeLowComplexity(reads)
-  ##  Frequency of reads.
-  FRs <- .computeReadFrequency(QA)
-  ##  Overrepresented reads.
-  ORs <- .computeOverrepresented(QA)
-  ##  Identification of irrelevant sequences.
+  ### Collection of the quality metrics.
+  metrics <- .collectQaMetrics(data, n = n, path = path, fastq = fastq)
+  ### Identification of irrelevant sequences.
   ASs <- .findAdaptersIfRequested(fastqDir, fastq, n, adapters, workDir)
   FSs <- .findForeignSeqsIfRequested(
     fastqDir, fastq, n, contaminants, workDir
   )
   ### Quality metrics.
   .assembleQAObject(
-    sample_name, file_name, TNRs, TNBs,
-    RLs, PERQs, PCQRs, BCs, PCCBs,
-    GCs, DSs, FRs, ORs, ASs, FSs
+    data$sample_name, fastq, data$TNRs, data$TNBs,
+    metrics$RLs, metrics$PERQs, metrics$PCQRs, metrics$BCs,
+    metrics$PCCBs, metrics$GCs, metrics$DSs, metrics$FRs,
+    metrics$ORs, ASs, FSs
+  )
+}
+
+#' Load FASTQ reads and ShortRead::qa() output
+#' @description Internal helper for assessQRawReads(). Reads the FASTQ
+#'     file via readFASTQ() and computes the ShortRead::qa() summary.
+#' @param fastqDir character string or NULL.
+#' @param fastq character string with the FASTQ file name.
+#' @param n integer or NULL.
+#' @param path character string with the resolved FASTQ directory.
+#' @param workDir character string with the working directory.
+#' @return list with reads, QA, sample_name, TNRs and TNBs.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.loadQaInputs <- function(fastqDir, fastq, n, path, workDir) {
+  sample_name <- gsub(pattern = ".fastq.+", replacement = "", x = fastq)
+  TNBs <- countFastq(dirPath = path, pattern = fastq)
+  TNRs <- TNBs[[1]]
+  TNBs <- TNBs[[2]]
+  reads <- readFASTQ(
+    fastqDir = fastqDir, fastq = fastq, n = n,
+    workDir = workDir
+  )
+  if (is.null(x = n)) {
+    QA <- qa(dirPath = path, pattern = fastq)
+  } else {
+    QA <- qa(dirPath = path, pattern = fastq, n = n)
+  }
+  list(
+    reads = reads,
+    QA = QA,
+    sample_name = sample_name,
+    TNRs = TNRs,
+    TNBs = TNBs
+  )
+}
+
+#' Collect the quality metrics
+#' @description Internal helper for assessQRawReads(). Computes all
+#'     per-read and per-cycle quality metrics from the loaded inputs.
+#' @param data list with reads and QA.
+#' @param n integer or NULL.
+#' @param path character string with the resolved FASTQ directory.
+#' @param fastq character string with the FASTQ file name.
+#' @return list with RLs, PERQs, PCQRs, BCs, PCCBs, GCs, DSs, FRs, ORs.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.collectQaMetrics <- function(data, n, path, fastq) {
+  list(
+    RLs = .computeReadLengths(data$reads),
+    PERQs = .computePerReadQuality(data$reads),
+    PCQRs = .computePerCycleQuality(data$QA),
+    BCs = .computeBaseComposition(data$reads),
+    PCCBs = .computePerCycleBases(data$QA),
+    GCs = .computeGcComposition(data$reads),
+    DSs = .computeLowComplexity(data$reads),
+    FRs = .computeReadFrequency(data$QA),
+    ORs = .computeOverrepresented(data$QA)
   )
 }
 
@@ -701,60 +729,173 @@ cleanRawReads <- function(
     overwrite = FALSE,
     workDir = NULL) {
   ### Setting the working directory and resolving the path.
-  if (is.null(x = workDir)) {
-    workDir <- getwd()
-  }
-  if (is.null(x = fastqDir)) {
-    path <- workDir
-  } else {
-    path <- paste(workDir, fastqDir, sep = "/")
-  }
+  path <- .resolveFastqWorkPath(fastqDir, workDir)
   ### Validation of the FASTQ file(-s) extension.
   .validateFastqExtension(fastq1, 1)
   if (!is.null(x = fastq2)) {
     .validateFastqExtension(fastq2, 2)
   }
-  ### Phred scores (loaded once, reused for both files).
-  PhSs <- NULL
-  if (!is.null(x = tr_score)) {
-    PhSs <- .loadPhredScores(workDir, phred)
-  }
-  ### Processing of the first FASTQ file.
-  FQ1 <- .processSingleFastq(
-    path = path, fastq = fastq1,
+  ### Building the processing context (Phred scores loaded once).
+  ctx <- .buildFastqProcessingContext(
+    path = path,
     adapters = adapters, error = error,
     min_match_flank = min_match_flank,
     anchored = anchored, indels = indels,
     tr_score = tr_score, tr_start = tr_start, tr_end = tr_end,
-    PhSs = PhSs, k = k, halfwidth = halfwidth,
+    phred = phred, k = k, halfwidth = halfwidth,
     successive = successive,
     readl = readl, readq = readq, readn = readn,
     dustScore = dustScore, batchSize = batchSize,
     workDir = workDir
   )
-  ### Processing of the second FASTQ file, if paired-end.
-  FQ2 <- NULL
-  if (!is.null(x = fastq2)) {
-    FQ2 <- .processSingleFastq(
-      path = path, fastq = fastq2,
-      adapters = adapters, error = error,
-      min_match_flank = min_match_flank,
-      anchored = anchored, indels = indels,
-      tr_score = tr_score, tr_start = tr_start, tr_end = tr_end,
-      PhSs = PhSs, k = k, halfwidth = halfwidth,
-      successive = successive,
-      readl = readl, readq = readq, readn = readn,
-      dustScore = dustScore, batchSize = batchSize,
-      workDir = workDir
-    )
-    synced <- .synchronizePairedReads(FQ1, FQ2)
-    FQ1 <- synced$FQ1
-    FQ2 <- synced$FQ2
-  }
+  ### Processing of the FASTQ file(-s).
+  FQs <- .processFastqPair(fastq1, fastq2, ctx)
   ### Writing the filtered FASTQ file(-s).
-  .writeFilteredFastq(FQ1, path, fastq1, postfix, overwrite)
+  .writeFilteredFastqPair(FQs, path, fastq1, fastq2, postfix, overwrite)
+  invisible(NULL)
+}
+
+#' Resolve the working directory and FASTQ path
+#' @description Internal helper for cleanRawReads(). Returns the absolute
+#'     path to the directory that contains the FASTQ file(-s).
+#' @param fastqDir character string or NULL.
+#' @param workDir character string or NULL.
+#' @return character string with the resolved path.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.resolveFastqWorkPath <- function(fastqDir, workDir) {
+  if (is.null(x = workDir)) {
+    workDir <- getwd()
+  }
+  if (is.null(x = fastqDir)) {
+    workDir
+  } else {
+    paste(workDir, fastqDir, sep = "/")
+  }
+}
+
+#' Build the FASTQ processing context
+#' @description Internal helper for cleanRawReads(). Packs all processing
+#'     parameters into a single list, loading the Phred score table once
+#'     when dynamic trimming is requested.
+#' @param path character string with the FASTQ directory path.
+#' @param adapters character string or NULL.
+#' @param error numeric error rate.
+#' @param min_match_flank integer minimal match length.
+#' @param anchored logical, anchored search?
+#' @param indels logical, allow indels?
+#' @param tr_score integer or NULL.
+#' @param tr_start integer, left fixed trim.
+#' @param tr_end integer, right fixed trim.
+#' @param phred character string with the Phred table file name.
+#' @param k integer, failing nucleotides.
+#' @param halfwidth integer or NULL.
+#' @param successive logical.
+#' @param readl integer, min read length.
+#' @param readq integer, min read quality.
+#' @param readn integer, max ambiguous nucleotides.
+#' @param dustScore integer or NULL.
+#' @param batchSize integer or NA.
+#' @param workDir character string with the working directory.
+#' @return list with the processing context.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.buildFastqProcessingContext <- function(path, adapters, error,
+                                         min_match_flank, anchored, indels,
+                                         tr_score, tr_start, tr_end, phred,
+                                         k, halfwidth, successive,
+                                         readl, readq, readn,
+                                         dustScore, batchSize, workDir) {
+  PhSs <- NULL
+  if (!is.null(x = tr_score)) {
+    PhSs <- .loadPhredScores(workDir, phred)
+  }
+  list(
+    path = path,
+    adapters = adapters,
+    error = error,
+    min_match_flank = min_match_flank,
+    anchored = anchored,
+    indels = indels,
+    tr_score = tr_score,
+    tr_start = tr_start,
+    tr_end = tr_end,
+    PhSs = PhSs,
+    k = k,
+    halfwidth = halfwidth,
+    successive = successive,
+    readl = readl,
+    readq = readq,
+    readn = readn,
+    dustScore = dustScore,
+    batchSize = batchSize,
+    workDir = workDir
+  )
+}
+
+#' Process one or two FASTQ files
+#' @description Internal helper for cleanRawReads(). Processes the first
+#'     FASTQ file and, when provided, the second one, synchronizing
+#'     paired-end reads afterwards.
+#' @param fastq1 character string with the first FASTQ file name.
+#' @param fastq2 character string with the second FASTQ file name or NULL.
+#' @param ctx list with the processing context.
+#' @return list with FQ1 and (optionally) FQ2.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.processFastqPair <- function(fastq1, fastq2, ctx) {
+  FQ1 <- .processSingleFastq(
+    path = ctx$path, fastq = fastq1,
+    adapters = ctx$adapters, error = ctx$error,
+    min_match_flank = ctx$min_match_flank,
+    anchored = ctx$anchored, indels = ctx$indels,
+    tr_score = ctx$tr_score, tr_start = ctx$tr_start,
+    tr_end = ctx$tr_end, PhSs = ctx$PhSs, k = ctx$k,
+    halfwidth = ctx$halfwidth, successive = ctx$successive,
+    readl = ctx$readl, readq = ctx$readq, readn = ctx$readn,
+    dustScore = ctx$dustScore, batchSize = ctx$batchSize,
+    workDir = ctx$workDir
+  )
+  if (is.null(x = fastq2)) {
+    return(list(FQ1 = FQ1, FQ2 = NULL))
+  }
+  FQ2 <- .processSingleFastq(
+    path = ctx$path, fastq = fastq2,
+    adapters = ctx$adapters, error = ctx$error,
+    min_match_flank = ctx$min_match_flank,
+    anchored = ctx$anchored, indels = ctx$indels,
+    tr_score = ctx$tr_score, tr_start = ctx$tr_start,
+    tr_end = ctx$tr_end, PhSs = ctx$PhSs, k = ctx$k,
+    halfwidth = ctx$halfwidth, successive = ctx$successive,
+    readl = ctx$readl, readq = ctx$readq, readn = ctx$readn,
+    dustScore = ctx$dustScore, batchSize = ctx$batchSize,
+    workDir = ctx$workDir
+  )
+  synced <- .synchronizePairedReads(FQ1, FQ2)
+  list(FQ1 = synced$FQ1, FQ2 = synced$FQ2)
+}
+
+#' Write one or two filtered FASTQ files
+#' @description Internal helper for cleanRawReads(). Writes the first
+#'     filtered FASTQ file and, when present, the second one.
+#' @param FQs list with FQ1 and (optionally) FQ2.
+#' @param path character string with the FASTQ directory path.
+#' @param fastq1 character string with the first FASTQ file name.
+#' @param fastq2 character string with the second FASTQ file name or NULL.
+#' @param postfix character string with the output postfix.
+#' @param overwrite logical.
+#' @return invisible(NULL).
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.writeFilteredFastqPair <- function(FQs, path, fastq1, fastq2,
+                                    postfix, overwrite) {
+  .writeFilteredFastq(FQs$FQ1, path, fastq1, postfix, overwrite)
   if (!is.null(x = fastq2)) {
-    .writeFilteredFastq(FQ2, path, fastq2, postfix, overwrite)
+    .writeFilteredFastq(FQs$FQ2, path, fastq2, postfix, overwrite)
   }
   invisible(NULL)
 }
@@ -1695,41 +1836,7 @@ reportQAResults <- function(x,
 #' @noRd
 .buildQATable <- function(x) {
   tab <- data.frame(
-    Parameter = c(
-      "Sample name", "File name",
-      "Total number of reads", "Total number of bases",
-      "Length of reads, min", "Length of reads, 1st quartile",
-      "Length of reads, median", "Length of reads, 3rd quartile",
-      "Length of reads, max",
-      "Per entire reads quality, min",
-      "Per entire reads quality, 1st quartile",
-      "Per entire reads quality, median",
-      "Per entire reads quality, 3rd quartile",
-      "Per entire reads quality, max",
-      "Frequency of A, min", "Frequency of A, 1st quartile",
-      "Frequency of A, median", "Frequency of A, 3rd quartile",
-      "Frequency of A, max",
-      "Frequency of C, min", "Frequency of C, 1st quartile",
-      "Frequency of C, median", "Frequency of C, 3rd quartile",
-      "Frequency of C, max",
-      "Frequency of G, min", "Frequency of G, 1st quartile",
-      "Frequency of G, median", "Frequency of G, 3rd quartile",
-      "Frequency of G, max",
-      "Frequency of T, min", "Frequency of T, 1st quartile",
-      "Frequency of T, median", "Frequency of T, 3rd quartile",
-      "Frequency of T, max",
-      "Frequency of N, min", "Frequency of N, 1st quartile",
-      "Frequency of N, median", "Frequency of N, 3rd quartile",
-      "Frequency of N, max",
-      "Frequency of GC, min", "Frequency of GC, 1st quartile",
-      "Frequency of GC, median", "Frequency of GC, 3rd quartile",
-      "Frequency of GC, max",
-      "Low-complexity of reads, min",
-      "Low-complexity of reads, 1st quartile",
-      "Low-complexity of reads, median",
-      "Low-complexity of reads, 3rd quartile",
-      "Low-complexity of reads, max"
-    ),
+    Parameter = .qaParameterLabels(),
     Value = 0
   )
   tab[1, 2] <- x$SN
@@ -1744,6 +1851,51 @@ reportQAResults <- function(x,
   tab[40:44, 2] <- formatC(x = x$GCs$metrics, format = "e", digits = 2)
   tab[45:49, 2] <- x$DSs$metrics
   tab
+}
+
+#' Parameter labels for the QA summary table
+#' @description Internal helper for .buildQATable(). Returns the 49
+#'     parameter labels in the order expected by the summary table.
+#' @return character vector with the parameter labels.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.qaParameterLabels <- function() {
+  c(
+    "Sample name", "File name",
+    "Total number of reads", "Total number of bases",
+    "Length of reads, min", "Length of reads, 1st quartile",
+    "Length of reads, median", "Length of reads, 3rd quartile",
+    "Length of reads, max",
+    "Per entire reads quality, min",
+    "Per entire reads quality, 1st quartile",
+    "Per entire reads quality, median",
+    "Per entire reads quality, 3rd quartile",
+    "Per entire reads quality, max",
+    "Frequency of A, min", "Frequency of A, 1st quartile",
+    "Frequency of A, median", "Frequency of A, 3rd quartile",
+    "Frequency of A, max",
+    "Frequency of C, min", "Frequency of C, 1st quartile",
+    "Frequency of C, median", "Frequency of C, 3rd quartile",
+    "Frequency of C, max",
+    "Frequency of G, min", "Frequency of G, 1st quartile",
+    "Frequency of G, median", "Frequency of G, 3rd quartile",
+    "Frequency of G, max",
+    "Frequency of T, min", "Frequency of T, 1st quartile",
+    "Frequency of T, median", "Frequency of T, 3rd quartile",
+    "Frequency of T, max",
+    "Frequency of N, min", "Frequency of N, 1st quartile",
+    "Frequency of N, median", "Frequency of N, 3rd quartile",
+    "Frequency of N, max",
+    "Frequency of GC, min", "Frequency of GC, 1st quartile",
+    "Frequency of GC, median", "Frequency of GC, 3rd quartile",
+    "Frequency of GC, max",
+    "Low-complexity of reads, min",
+    "Low-complexity of reads, 1st quartile",
+    "Low-complexity of reads, median",
+    "Low-complexity of reads, 3rd quartile",
+    "Low-complexity of reads, max"
+  )
 }
 
 #' Save overrepresented reads

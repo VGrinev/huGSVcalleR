@@ -140,16 +140,62 @@ collectBasesPileup <- function(
   ### Setting the genomic location(-s) of interest.
   GRs <- .buildPileupRegions(gr, canChr, bam_link, workDir)
   ### Loading the reference genome object.
+  genome_obj <- .loadReferenceGenome(genome)
+  ### Collection of pileup statistics.
+  .runPileupInParallel(
+    GRs = GRs,
+    bam_link = bam_link,
+    depth = depth,
+    baseq = baseq,
+    mapq = mapq,
+    coverage = coverage,
+    genome_obj = genome_obj,
+    tmpDir = tmpDir,
+    threads = threads
+  )
+  ### Consolidation of pileup statistics.
+  .consolidatePileupResults(tmpDir, bam, postfix)
+}
+
+#' Load a reference genome package
+#' @description Internal helper for collectBasesPileup(). Checks that the
+#'     BSgenome package is installed and returns its namespace object.
+#' @param genome character string with the BSgenome package name.
+#' @return the BSgenome object.
+#' @author Vasily V. Grinev, Dzianis D. Sarnatski, Mikalai M. Yatskou.
+#' @keywords internal
+#' @noRd
+.loadReferenceGenome <- function(genome) {
   if (!requireNamespace(genome, quietly = TRUE)) {
     stop(
       "Package ", genome, " is not installed. ",
       "Install it with BiocManager::install('", genome, "')."
     )
   }
-  genome_obj <- get(x = genome, envir = asNamespace(genome))
-  ### Collection of pileup statistics.
+  get(x = genome, envir = asNamespace(genome))
+}
+
+#' Run the pileup computation in parallel
+#' @description Internal helper for collectBasesPileup(). Builds the
+#'     BiocParallel parameter object and calls .computePileupChunk() for
+#'     each genomic chunk.
+#' @param GRs GRanges object with genomic regions.
+#' @param bam_link BamFile object with the BAM file.
+#' @param depth integer, maximum pileup depth.
+#' @param baseq integer, minimal base quality.
+#' @param mapq integer, minimal mapping quality.
+#' @param coverage integer, minimal coverage, or NULL.
+#' @param genome_obj BSgenome object with the reference genome.
+#' @param tmpDir character string with the temporary directory.
+#' @param threads integer, number of workers.
+#' @return list returned by bplapply().
+#' @author Vasily V. Grinev, Dzianis D. Sarnatski, Mikalai M. Yatskou.
+#' @keywords internal
+#' @noRd
+.runPileupInParallel <- function(GRs, bam_link, depth, baseq, mapq,
+                                 coverage, genome_obj, tmpDir, threads) {
   bpparam <- SnowParam(workers = threads, stop.on.error = TRUE)
-  foreach_result <- bplapply(
+  bplapply(
     X = seq_along(GRs),
     FUN = .computePileupChunk,
     GRs = GRs,
@@ -162,8 +208,6 @@ collectBasesPileup <- function(
     tmpDir = tmpDir,
     BPPARAM = bpparam
   )
-  ### Consolidation of pileup statistics.
-  .consolidatePileupResults(tmpDir, bam, postfix)
 }
 
 #' Build pileup regions
@@ -638,7 +682,19 @@ filterBamFile <- function(bamDir = NULL,
 #'     (optionally) auxillary file with standard error log.
 #' @author Ilia M. Ilyushonak, Vasily V. Grinev.
 #' @examples
-#' ...
+#' groupReadsGATK(
+#'     bamDir = "Files_BAM",
+#'     bamFile = "SRR21721515.filtered.bam",
+#'     postfix = "RG",
+#'     SE = TRUE,
+#'     RGID = "Bam.Recal.RG",
+#'     RGLB = "default.LIBRARY.ID",
+#'     RGPL = "default.ILLUMINA",
+#'     RGPU = "default.PLATFORM",
+#'     RGSM = "default.SAMPLE",
+#'     gatk_path = "gatk",
+#'     workDir = "D:/Vasily Grinev"
+#' )
 #' @export
 groupReadsGATK <- function(bamDir = NULL,
                            bamFile,
@@ -661,21 +717,9 @@ groupReadsGATK <- function(bamDir = NULL,
   } else {
     path <- paste(workDir, bamDir, sep = "/")
   }
-  ### Naming of output file.
-  output <- paste(
-    gsub(pattern = ".bam", replacement = "", x = bamFile),
-    postfix, "bam",
-    sep = "."
-  )
-  ### Settings for saving of standard error.
-  se <- ""
-  if (SE == TRUE) {
-    se <- paste(
-      gsub(pattern = ".bam", replacement = "", x = bamFile),
-      "STDERR.RG.TXT",
-      sep = "."
-    )
-  }
+  ### Naming of output file and settings for saving of standard error.
+  output <- .buildReadGroupsOutputName(bamFile, postfix)
+  se <- .buildReadGroupsErrorName(bamFile, SE)
   ### Running of command.
   system2(
     command = gatk_path,
@@ -694,6 +738,44 @@ groupReadsGATK <- function(bamDir = NULL,
       stderr <- paste(path, se, sep = "/")
     }
   )
+}
+
+#' Build output file name for groupReadsGATK()
+#' @description Internal helper for groupReadsGATK(). Builds the output BAM
+#'     file name from the input BAM file name and postfix.
+#' @param bamFile character string giving the name of input BAM file.
+#' @param postfix character string that will be added as postfix.
+#' @return character string with the output file name.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.buildReadGroupsOutputName <- function(bamFile, postfix) {
+  paste(
+    gsub(pattern = ".bam", replacement = "", x = bamFile),
+    postfix, "bam",
+    sep = "."
+  )
+}
+
+#' Build standard error file name for groupReadsGATK()
+#' @description Internal helper for groupReadsGATK(). Builds the standard
+#'     error log file name, or returns "" when SE = FALSE.
+#' @param bamFile character string giving the name of input BAM file.
+#' @param SE logical, save standard error?
+#' @return character string with the standard error file name, or "".
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.buildReadGroupsErrorName <- function(bamFile, SE) {
+  if (SE == TRUE) {
+    paste(
+      gsub(pattern = ".bam", replacement = "", x = bamFile),
+      "STDERR.RG.TXT",
+      sep = "."
+    )
+  } else {
+    ""
+  }
 }
 
 
@@ -720,7 +802,14 @@ groupReadsGATK <- function(bamDir = NULL,
 #' @return index files in working directory.
 #' @author Ilia M. Ilyushonak, Vasily V. Grinev.
 #' @examples
-#' ...
+#' indexGenomeGATK(
+#'     fastaDir = "Files_FASTA",
+#'     faFile = "Homo_sapiens.GRCh38.dna.primary_assembly.fa",
+#'     fai = TRUE,
+#'     dict = TRUE,
+#'     gatk_path = "gatk",
+#'     workDir = "D:/Vasily Grinev"
+#' )
 #' @export
 #' @importFrom Rsamtools indexFa
 indexGenomeGATK <- function(fastaDir = NULL,
@@ -781,7 +870,13 @@ indexGenomeGATK <- function(fastaDir = NULL,
 #' @return .tbi file in working directory.
 #' @author Ilia M. Ilyushonak, Vasily V. Grinev.
 #' @examples
-#' ...
+#' indexVcfGATK(
+#'     vcfDir = "Files_VCF",
+#'     vcfFile = "00-All.vcf.gz",
+#'     output_name = NULL,
+#'     gatk_path = "gatk",
+#'     workDir = "D:/Vasily Grinev"
+#' )
 #' @export
 indexVcfGATK <- function(vcfDir = NULL,
                          vcfFile = NULL,
@@ -848,7 +943,15 @@ indexVcfGATK <- function(vcfDir = NULL,
 #'     of input BAM file and (optionally) a file with standard error log.
 #' @author Ilia M. Ilyushonak, Vasily V. Grinev.
 #' @examples
-#' ...
+#' markDuplicatesGATK(
+#'     bamDir = "Files_BAM",
+#'     bamFile = "SRR21721515.RG.bam",
+#'     postfix = "markedDuplicates",
+#'     removeDupls = "no",
+#'     SE = TRUE,
+#'     gatk_path = "gatk",
+#'     workDir = "D:/Vasily Grinev"
+#' )
 #' @export
 markDuplicatesGATK <- function(bamDir = NULL,
                                bamFile,
@@ -868,6 +971,41 @@ markDuplicatesGATK <- function(bamDir = NULL,
     path <- paste(workDir, bamDir, sep = "/")
   }
   ### Settings of run.
+  args_run <- .buildMarkDuplicatesArgs(path, bamFile, postfix, removeDupls)
+  ### Settings for saving of standard error.
+  se <- ""
+  if (SE == TRUE) {
+    se <- paste(
+      gsub(pattern = ".bam", replacement = "", x = bamFile),
+      "STDERR.MARKDUP.TXT",
+      sep = "."
+    )
+  }
+  ### Running of command.
+  system2(
+    command = gatk_path,
+    args = c("MarkDuplicates", args_run),
+    if (se == "") {
+      stderr <- se
+    } else {
+      stderr <- paste(path, se, sep = "/")
+    }
+  )
+}
+
+#' Build MarkDuplicates arguments
+#' @description Internal helper for markDuplicatesGATK(). Builds the GATK
+#'     MarkDuplicates arguments: input, output, metrics and the
+#'     duplicate-removal flags.
+#' @param path character string with the BAM directory.
+#' @param bamFile character string with the BAM file name.
+#' @param postfix character string with the output postfix.
+#' @param removeDupls character string ("no", "yes" or "seq").
+#' @return character vector with GATK MarkDuplicates arguments.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.buildMarkDuplicatesArgs <- function(path, bamFile, postfix, removeDupls) {
   input <- paste("-I", paste(path, bamFile, sep = "/"), sep = " ")
   output <- paste("-O",
                   paste(path,
@@ -892,27 +1030,8 @@ markDuplicatesGATK <- function(bamDir = NULL,
                    ),
                    sep = " "
   )
-  ### Settings for removing duplicated reads.
   remove.d <- .resolveRemoveDuplicates(removeDupls)
-  ### Settings for saving of standard error.
-  se <- ""
-  if (SE == TRUE) {
-    se <- paste(
-      gsub(pattern = ".bam", replacement = "", x = bamFile),
-      "STDERR.MARKDUP.TXT",
-      sep = "."
-    )
-  }
-  ### Running of command.
-  system2(
-    command = gatk_path,
-    args = c("MarkDuplicates", input, output, metrics, remove.d),
-    if (se == "") {
-      stderr <- se
-    } else {
-      stderr <- paste(path, se, sep = "/")
-    }
-  )
+  c(input, output, metrics, remove.d)
 }
 
 #' Resolve removeDuplicates flag
@@ -981,7 +1100,21 @@ markDuplicatesGATK <- function(bamDir = NULL,
 #'     error log in working directory.
 #' @author Ilia M. Ilyushonak, Vasily V. Grinev.
 #' @examples
-#' ...
+#' recalibrateBamGATK(
+#'     bamDir = "Files_BAM",
+#'     bamFile = "SRR21721515.markedDuplicates.bam",
+#'     vcfDir = "Files_VCF",
+#'     vcfFile = "00-All.vcf.gz",
+#'     fastaDir = "Files_FASTA",
+#'     faFile = "Homo_sapiens.GRCh38.dna.primary_assembly.fa",
+#'     createBQSR = TRUE,
+#'     recalibrate = TRUE,
+#'     nameBQSR = "SRR21721515.bqsr.table",
+#'     postfix = "Recalibrated",
+#'     SE = TRUE,
+#'     gatk_path = "gatk",
+#'     workDir = "D:/Vasily Grinev"
+#' )
 #' @export
 recalibrateBamGATK <- function(
     bamDir = NULL,

@@ -84,16 +84,9 @@ filterVariants <- function(
     index = FALSE,
     workDir = NULL) {
   ### Setting the working directory and VCF directory.
-  if (is.null(x = workDir)) {
-    workDir <- getwd()
-  }
-  if (is.null(x = vcfDir)) {
-    vcfDir <- workDir
-  } else {
-    vcfDir <- paste(workDir, vcfDir, sep = "/")
-  }
+  paths <- .resolveVariantPaths(vcfDir, workDir)
   ### Loading of the single nucleotide variations.
-  SNVs <- readVcf(file = paste(vcfDir, vcfFile, sep = "/"))
+  SNVs <- readVcf(file = paste(paths$vcfDir, vcfFile, sep = "/"))
   ### Detecting available INFO and GENO fields.
   info_fields <- colnames(info(x = SNVs))
   geno_fields <- rownames(geno(x = SNVs))
@@ -114,13 +107,36 @@ filterVariants <- function(
     heterozyg1 = heterozyg1,
     info_fields = info_fields,
     geno_fields = geno_fields,
-    workDir = workDir
+    workDir = paths$workDir
   )
   ### Replace "." with "PASS" in the FILTER field.
   SNVs <- .replaceFilterPass(SNVs)
   ### Saving and returning of the final object.
-  .writeFilteredVcf(SNVs, vcfDir, vcfFile, index)
+  .writeFilteredVcf(SNVs, paths$vcfDir, vcfFile, index)
   return(SNVs)
+}
+
+#' Resolve working directory and VCF directory
+#' @description Internal helper for filterVariants(). Returns the absolute
+#'     paths to the working directory and the VCF directory.
+#' @param vcfDir character string with the VCF directory, or NULL.
+#' @param workDir character string with the working directory, or NULL.
+#' @return list with workDir and vcfDir.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.resolveVariantPaths <- function(vcfDir, workDir) {
+  if (is.null(x = workDir)) {
+    workDir <- getwd()
+  }
+  list(
+    workDir = workDir,
+    vcfDir = if (is.null(x = vcfDir)) {
+      workDir
+    } else {
+      paste(workDir, vcfDir, sep = "/")
+    }
+  )
 }
 
 #' Apply the requested variant filters

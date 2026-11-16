@@ -1495,41 +1495,20 @@ introduceSNVtoAAs <- function(vcfDir = NULL,
                               workDir = NULL) {
   ### Checking of required packages.
   models <- .loadPreTrainedModels(OrgDb, TxDb, genome)
-  ### Setting the working directory.
+  ### Setting the working directory and VCF directory.
   if (is.null(x = workDir)) {
     workDir <- getwd()
   }
-  ### Setting the VCF directory.
   if (is.null(x = vcfDir)) {
     vcfDir <- workDir
   } else {
     vcfDir <- paste(workDir, vcfDir, sep = "/")
   }
-  ### Loading of the single nucleotide variations as an object of class
-  #   GRanges.
-  vcf <- readVcf(file = paste(vcfDir, vcfFile, sep = "/"))
-  ### Filter to canonical chromosomes to avoid out-of-bound ranges
-  #   warnings from predictCoding().
-  canonical <- paste0("chr", c(seq_len(22), "X", "Y", "M"))
-  vcf <- vcf[seqnames(rowRanges(vcf)) %in% canonical]
-  ### Handle multi-allelic ALT.
-  ALT <- as.character(x = unlist(x = rowRanges(x = vcf)$ALT))
-  vcf <- vcf[
-    rep(
-      x = seq_along(x = vcf),
-      times = lengths(x = rowRanges(x = vcf)$ALT)
-    ),
-  ]
-  alt(x = vcf) <- DNAStringSetList(strsplit(x = ALT, split = ""))
+  ### Loading of the single nucleotide variations, filtered to canonical
+  #   chromosomes and with multi-allelic ALT expanded.
+  vcf <- .loadCodingVcf(vcfDir, vcfFile)
   ### Loading of the protein annotations as an object of class data frame.
-  pr <- read.table(
-    file = paste(workDir, proteins, sep = "/"),
-    sep = "\t",
-    header = TRUE,
-    quote = "\"",
-    as.is = TRUE
-  )
-  rownames(x = pr) <- pr[, 1]
+  pr <- .loadProteinAnnotations(workDir, proteins)
   ### Prediction of amino acid coding changes.
   AAs <- predictCoding(
     query = vcf,
@@ -1539,6 +1518,53 @@ introduceSNVtoAAs <- function(vcfDir = NULL,
   AAs <- AAs[AAs$CONSEQUENCE == "nonsynonymous", ]
   ### Annotation.
   .buildAaAnnotationFrame(AAs, models$txDb, models$orgDb, pr)
+}
+
+#' Load VCF for coding annotation
+#' @description Internal helper for introduceSNVtoAAs(). Reads the VCF,
+#'     restricts it to canonical chromosomes, and expands multi-allelic
+#'     ALT alleles into one record per allele.
+#' @param vcfDir character string with the VCF directory.
+#' @param vcfFile character string with the VCF file name.
+#' @return CollapsedVCF object.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.loadCodingVcf <- function(vcfDir, vcfFile) {
+  vcf <- readVcf(file = paste(vcfDir, vcfFile, sep = "/"))
+  canonical <- paste0("chr", c(seq_len(22), "X", "Y", "M"))
+  vcf <- vcf[seqnames(rowRanges(vcf)) %in% canonical]
+  ALT <- as.character(x = unlist(x = rowRanges(x = vcf)$ALT))
+  vcf <- vcf[
+    rep(
+      x = seq_along(x = vcf),
+      times = lengths(x = rowRanges(x = vcf)$ALT)
+    ),
+  ]
+  alt(x = vcf) <- DNAStringSetList(strsplit(x = ALT, split = ""))
+  vcf
+}
+
+#' Load protein annotations
+#' @description Internal helper for introduceSNVtoAAs(). Reads the
+#'     tab-delimited protein annotation table and uses its first column
+#'     as row names.
+#' @param workDir character string with the working directory.
+#' @param proteins character string with the protein table file name.
+#' @return data.frame with protein annotations.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.loadProteinAnnotations <- function(workDir, proteins) {
+  pr <- read.table(
+    file = paste(workDir, proteins, sep = "/"),
+    sep = "\t",
+    header = TRUE,
+    quote = "\"",
+    as.is = TRUE
+  )
+  rownames(x = pr) <- pr[, 1]
+  pr
 }
 
 #' Load pre-trained annotation models
@@ -1581,6 +1607,28 @@ introduceSNVtoAAs <- function(vcfDir = NULL,
 #' @keywords internal
 #' @noRd
 .buildAaAnnotationFrame <- function(AAs, txDb, orgDb, pr) {
+  AAs <- .addAaIdentifierColumns(AAs, txDb, orgDb)
+  AAs <- .addAaCodonColumns(AAs)
+  AAs <- .reorderAaColumns(AAs)
+  AAs$seqnames <- as.character(x = AAs$seqnames)
+  AAs$strand <- as.character(x = AAs$strand)
+  idx <- AAs[, 13] %in% pr[, 1]
+  AAs[idx, 17:20] <- pr[AAs[idx, 13], 3:6]
+  AAs
+}
+
+#' Add identifier columns to the amino acid annotation
+#' @description Internal helper for .buildAaAnnotationFrame(). Adds the
+#'     SNV identifiers and the Ensembl/Entrez/HUGO gene and transcript
+#'     identifiers via mapIds().
+#' @param AAs data.frame from predictCoding().
+#' @param txDb TxDb object with transcriptome annotations.
+#' @param orgDb OrgDb object with genome-wide annotations.
+#' @return data.frame with the added identifier columns.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.addAaIdentifierColumns <- function(AAs, txDb, orgDb) {
   AAs$snv_id <- names(x = AAs)
   AAs$snv_ref <- as.character(x = AAs$REF)
   AAs$snv_alt <- as.character(x = unlist(x = AAs$ALT))
@@ -1612,6 +1660,19 @@ introduceSNVtoAAs <- function(vcfDir = NULL,
     start = 1,
     stop = 15
   )
+  AAs
+}
+
+#' Add codon and amino acid columns
+#' @description Internal helper for .buildAaAnnotationFrame(). Adds the
+#'     SNV CDS location, reference and alternative codons, the empty
+#'     protein/PDB/UniProt placeholders, and the amino acid substitutions.
+#' @param AAs data.frame with the identifier columns already added.
+#' @return data.frame with the added codon and amino acid columns.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.addAaCodonColumns <- function(AAs) {
   AAs$SNV_CDS_loc <- start(x = AAs$CDSLOC)
   AAs$ref_codon <- as.vector(x = as.character(x = AAs$REFCODON))
   AAs$alt_codon <- as.vector(x = as.character(x = AAs$VARCODON))
@@ -1622,16 +1683,23 @@ introduceSNVtoAAs <- function(vcfDir = NULL,
   AAs$SNV_prot_loc <- as.vector(x = unlist(x = AAs$PROTEINLOC))
   AAs$ref_aa <- as.vector(x = as.character(x = AAs$REFAA))
   AAs$alt_aa <- as.vector(x = as.character(x = AAs$VARAA))
-  AAs <- data.frame(AAs)[, c(
+  AAs
+}
+
+#' Reorder columns in the amino acid annotation
+#' @description Internal helper for .buildAaAnnotationFrame(). Reorders the
+#'     columns into the final layout expected by the downstream code.
+#' @param AAs data.frame with all annotation columns.
+#' @return data.frame with the reordered columns.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.reorderAaColumns <- function(AAs) {
+  data.frame(AAs)[, c(
     seq(from = 25, to = 28),
     seq_len(5),
     seq(from = 29, to = 42)
   )]
-  AAs$seqnames <- as.character(x = AAs$seqnames)
-  AAs$strand <- as.character(x = AAs$strand)
-  idx <- AAs[, 13] %in% pr[, 1]
-  AAs[idx, 17:20] <- pr[AAs[idx, 13], 3:6]
-  AAs
 }
 
 
@@ -1684,11 +1752,10 @@ introduceSNVtoSSs <- function(
     vcfFile,
     genome = "BSgenome.Hsapiens.UCSC.hg38",
     workDir = NULL) {
-  ### Setting the working directory.
+  ### Setting the working directory and VCF directory.
   if (is.null(x = workDir)) {
     workDir <- getwd()
   }
-  ### Setting the VCF directory.
   if (is.null(x = vcfDir)) {
     vcfDir <- workDir
   } else {
@@ -1705,63 +1772,49 @@ introduceSNVtoSSs <- function(
     type = "any",
     ignore.strand = TRUE
   )
-  if (length(x = hits) > 0) {
-    spl.sites <- spl.sites[queryHits(x = hits)]
-    vcf <- vcf[subjectHits(x = hits)]
-    ### Correction of the splice site sequences.
-    spl.sites <- .correctSpliceSiteSequences(
-      spl.sites, vcf, genome, workDir
-    )
-    ### Returning the final object.
-    anno <- data.frame(spl.sites)
-    anno <- anno[, c(
-      seq_len(7),
-      (ncol(x = anno) - 1):ncol(x = anno),
-      seq(from = 8, to = ncol(x = anno) - 2)
-    )]
-    seqSSs <- DNAStringSet(x = anno$seq_corrected)
-    names(x = seqSSs) <- paste(
-      paste(seqnames(x = spl.sites),
-            paste(start(x = spl.sites),
-                  end(x = spl.sites),
-                  sep = "-"
-            ),
-            sep = ":"
-      ),
-      strand(x = spl.sites),
-      sep = "_str"
-    )
-    return(list(annotation = anno, sequences = seqSSs))
-  } else {
+  if (length(x = hits) == 0) {
     warning("No matches were found between splice sites and SNVs.")
+    return(invisible(NULL))
   }
+  spl.sites <- spl.sites[queryHits(x = hits)]
+  vcf <- vcf[subjectHits(x = hits)]
+  ### Correction of the splice site sequences.
+  spl.sites <- .correctSpliceSiteSequences(
+    spl.sites, vcf, genome, workDir
+  )
+  ### Returning the final object.
+  .buildIntroducedSpliceSiteResult(spl.sites)
 }
 
-#' Load splice site coordinates
-#' @description Internal helper for introduceSNVtoSSs(). Loads splice
-#'     site coordinates from a GRanges object or a tab-delimited TXT file.
-#' @param x GRanges object or character string with the file name.
-#' @param workDir character string giving the path to working directory.
-#' @return GRanges object with splice site coordinates.
+#' Build the result object for introduceSNVtoSSs()
+#' @description Internal helper for introduceSNVtoSSs(). Reorders the
+#'     corrected splice site annotation columns and builds the named
+#'     DNAStringSet with corrected sequences.
+#' @param spl.sites GRanges object with corrected splice site sequences.
+#' @return list with annotation and sequences.
 #' @author Vasily V. Grinev, Nadzeya A. Boyeva.
 #' @keywords internal
 #' @noRd
-.loadSpliceSites <- function(x, workDir) {
-  if (is.object(x = x)) {
-    return(x)
-  }
-  frt <- tools::file_ext(x = x)
-  if (!frt %in% "txt") {
-    stop("Invalid file format")
-  }
-  spl.sites <- read.table(
-    file = paste(workDir, x, sep = "/"),
-    sep = "\t",
-    header = TRUE,
-    quote = "\"",
-    as.is = TRUE
+.buildIntroducedSpliceSiteResult <- function(spl.sites) {
+  anno <- data.frame(spl.sites)
+  anno <- anno[, c(
+    seq_len(7),
+    (ncol(x = anno) - 1):ncol(x = anno),
+    seq(from = 8, to = ncol(x = anno) - 2)
+  )]
+  seqSSs <- DNAStringSet(x = anno$seq_corrected)
+  names(x = seqSSs) <- paste(
+    paste(seqnames(x = spl.sites),
+          paste(start(x = spl.sites),
+                end(x = spl.sites),
+                sep = "-"
+          ),
+          sep = ":"
+    ),
+    strand(x = spl.sites),
+    sep = "_str"
   )
-  makeGRangesFromDataFrame(df = spl.sites, keep.extra.columns = TRUE)
+  list(annotation = anno, sequences = seqSSs)
 }
 
 #' Load SNV ALT alleles from VCF

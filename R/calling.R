@@ -464,27 +464,16 @@ callSNVs <- function(
     workDir = NULL,
     model = "rpart",
     pvalue = FALSE) {
-  ### Validation of the input criteria.
-  criteria <- match.arg(arg = criteria, choices = SUPPORTED_CALLERS)
-  ### Validation of input arguments.
-  if (criteria %in% SUPPORTED_TABLE_CALLERS && missing(fr_data)) {
-    stop(
-      "fr_data is required for criteria = '", criteria, "'. ",
-      "Use collectBasesPileup() to generate it from a BAM file."
-    )
-  }
-  if (criteria %in% SUPPORTED_BAM_CALLERS && is.na(bamFile)) {
-    stop("bamFile is required for criteria = '", criteria, "'.")
-  }
+  ### Validation of the input criteria and arguments.
+  criteria <- .validateCallerInputs(
+    criteria, fr_data, missing(fr_data), bamFile
+  )
   ### Setting the working directory.
   if (is.null(x = workDir)) {
     workDir <- getwd()
   }
   ### Reading the frequency table if needed.
-  fr_table <- NULL
-  if (criteria %in% SUPPORTED_TABLE_CALLERS) {
-    fr_table <- .readFrequencyTable(fr_data, workDir)
-  }
+  fr_table <- .readCallerFrequencyTable(criteria, fr_data, workDir)
   ### Dispatch to the low-level function.
   invisible(.dispatchCaller(
     criteria, fr_data, fr_table, vcfDir, outputVCF,
@@ -495,6 +484,50 @@ callSNVs <- function(
   ))
   ### Returning nothing.
   invisible(NULL)
+}
+
+#' Validate caller criteria and required arguments
+#' @description Internal helper for callSNVs(). Validates the criteria
+#'     against SUPPORTED_CALLERS and checks that the required arguments
+#'     are supplied for the chosen caller group.
+#' @param criteria character string with the chosen criterion.
+#' @param fr_data original fr_data argument.
+#' @param fr_data_missing logical, whether fr_data is missing.
+#' @param bamFile character string with the BAM file name, or NA.
+#' @return character string with the validated criterion.
+#' @author Dzianis D. Sarnatski, Mikalai M. Yatskou, Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.validateCallerInputs <- function(criteria, fr_data, fr_data_missing,
+                                  bamFile) {
+  criteria <- match.arg(arg = criteria, choices = SUPPORTED_CALLERS)
+  if (criteria %in% SUPPORTED_TABLE_CALLERS && fr_data_missing) {
+    stop(
+      "fr_data is required for criteria = '", criteria, "'. ",
+      "Use collectBasesPileup() to generate it from a BAM file."
+    )
+  }
+  if (criteria %in% SUPPORTED_BAM_CALLERS && is.na(bamFile)) {
+    stop("bamFile is required for criteria = '", criteria, "'.")
+  }
+  criteria
+}
+
+#' Read the frequency table for table-based callers
+#' @description Internal helper for callSNVs(). Reads the frequency table
+#'     when a table-based criterion is chosen; otherwise returns NULL.
+#' @param criteria character string with the chosen criterion.
+#' @param fr_data original fr_data argument.
+#' @param workDir character string with the working directory.
+#' @return data.frame with the frequency table, or NULL.
+#' @author Dzianis D. Sarnatski, Mikalai M. Yatskou, Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.readCallerFrequencyTable <- function(criteria, fr_data, workDir) {
+  if (criteria %in% SUPPORTED_TABLE_CALLERS) {
+    return(.readFrequencyTable(fr_data, workDir))
+  }
+  NULL
 }
 
 #' Read frequency table from CSV or return data.frame
@@ -559,67 +592,162 @@ callSNVs <- function(
                             baseq, mindepth, maxdepth, qvalue, trim, threads,
                             postfix, intervals, pcr_model, soft_clip, ERC,
                             cores, SE, gatk_path, workDir, model, pvalue) {
-  switch(criteria,
-         binomial = ,
-         counting = ,
-         entropy = ,
-         fisher = ,
-         poisson = {
-           result <- .runStatisticalTest(criteria, fr_table)
-           input <- data.table(cbind(fr_table, result))
-           colnames(input)[ncol(input)] <- criteria
-           generateVCF(
-             input = input,
-             version = "4.0",
-             vcfDir = vcfDir,
-             outputVCF = outputVCF,
-             workDir = workDir
-           )
-         },
-         fisherRSubread = {
-           fisherCalleR(
-             bamDir = bamDir,
-             bamFile = bamFile,
-             fastaDir = fastaDir,
-             faFile = faFile,
-             baseq = baseq,
-             mindepth = mindepth,
-             maxdepth = maxdepth,
-             qvalue = qvalue,
-             trim = trim,
-             threads = threads,
-             outputVCF = outputVCF,
-             workDir = workDir
-           )
-         },
-         gatk = {
-           gatkCalleR(
-             bamDir = bamDir,
-             bamFile = bamFile,
-             postfix = postfix,
-             fastaDir = fastaDir,
-             faFile = faFile,
-             intervals = intervals,
-             pcr_model = pcr_model,
-             soft_clip = soft_clip,
-             ERC = ERC,
-             cores = cores,
-             SE = SE,
-             gatk_path = gatk_path,
-             workDir = workDir
-           )
-         },
-         ml = {
-           mlCalleR(
-             fr_table = fr_table,
-             model = model,
-             pvalue = pvalue,
-             vcfDir = vcfDir,
-             outputVCF = outputVCF,
-             workDir = workDir
-           )
-         }
+  switch(
+    criteria,
+    binomial = ,
+    counting = ,
+    entropy = ,
+    fisher = ,
+    poisson = .dispatchTableCaller(
+      criteria, fr_table, vcfDir, outputVCF, workDir
+    ),
+    fisherRSubread = .dispatchFisherRSubread(
+      bamDir, bamFile, fastaDir, faFile,
+      baseq, mindepth, maxdepth, qvalue, trim, threads,
+      outputVCF, workDir
+    ),
+    gatk = .dispatchGatk(
+      bamDir, bamFile, postfix, fastaDir, faFile, intervals,
+      pcr_model, soft_clip, ERC, cores, SE, gatk_path, workDir
+    ),
+    ml = .dispatchMl(
+      fr_table, model, pvalue, vcfDir, outputVCF, workDir
+    )
   )
+}
+
+#' Dispatch table-based callers
+#' @description Internal helper for .dispatchCaller(). Runs the chosen
+#'     statistical test, appends its result to the frequency table and
+#'     generates the VCF file.
+#' @param criteria character string with the test name.
+#' @param fr_table data.frame with the frequency table.
+#' @param vcfDir character string with the VCF directory.
+#' @param outputVCF character string with the output VCF name.
+#' @param workDir character string with the working directory.
+#' @return invisible(NULL).
+#' @author Dzianis D. Sarnatski, Mikalai M. Yatskou, Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.dispatchTableCaller <- function(criteria, fr_table, vcfDir, outputVCF,
+                                 workDir) {
+  result <- .runStatisticalTest(criteria, fr_table)
+  input <- data.table(cbind(fr_table, result))
+  colnames(input)[ncol(input)] <- criteria
+  generateVCF(
+    input = input,
+    version = "4.0",
+    vcfDir = vcfDir,
+    outputVCF = outputVCF,
+    workDir = workDir
+  )
+  invisible(NULL)
+}
+
+#' Dispatch fisherRSubread caller
+#' @description Internal helper for .dispatchCaller(). Wraps the
+#'     fisherCalleR() call with its parameters.
+#' @param bamDir character string with the BAM directory.
+#' @param bamFile character string with the BAM file name.
+#' @param fastaDir character string with the FASTA directory.
+#' @param faFile character string with the FASTA file name.
+#' @param baseq integer, minimal base quality.
+#' @param mindepth integer, minimal coverage.
+#' @param maxdepth integer, maximal coverage.
+#' @param qvalue numeric, q-value cutoff.
+#' @param trim integer, number of trimmed bases.
+#' @param threads integer, number of threads.
+#' @param outputVCF character string with the output VCF name.
+#' @param workDir character string with the working directory.
+#' @return invisible(NULL).
+#' @author Dzianis D. Sarnatski, Mikalai M. Yatskou, Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.dispatchFisherRSubread <- function(bamDir, bamFile, fastaDir, faFile,
+                                    baseq, mindepth, maxdepth, qvalue,
+                                    trim, threads, outputVCF, workDir) {
+  fisherCalleR(
+    bamDir = bamDir,
+    bamFile = bamFile,
+    fastaDir = fastaDir,
+    faFile = faFile,
+    baseq = baseq,
+    mindepth = mindepth,
+    maxdepth = maxdepth,
+    qvalue = qvalue,
+    trim = trim,
+    threads = threads,
+    outputVCF = outputVCF,
+    workDir = workDir
+  )
+  invisible(NULL)
+}
+
+#' Dispatch GATK caller
+#' @description Internal helper for .dispatchCaller(). Wraps the
+#'     gatkCalleR() call with its parameters.
+#' @param bamDir character string with the BAM directory.
+#' @param bamFile character string with the BAM file name.
+#' @param postfix character string with the output postfix.
+#' @param fastaDir character string with the FASTA directory.
+#' @param faFile character string with the FASTA file name.
+#' @param intervals character string with the intervals file, or NULL.
+#' @param pcr_model character string with the PCR indel model.
+#' @param soft_clip logical, use soft-clipped bases?
+#' @param ERC character string with the ERC mode.
+#' @param cores number or "MAX".
+#' @param SE logical, save standard error?
+#' @param gatk_path character string with the GATK executable.
+#' @param workDir character string with the working directory.
+#' @return invisible(NULL).
+#' @author Dzianis D. Sarnatski, Mikalai M. Yatskou, Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.dispatchGatk <- function(bamDir, bamFile, postfix, fastaDir, faFile,
+                          intervals, pcr_model, soft_clip, ERC, cores, SE,
+                          gatk_path, workDir) {
+  gatkCalleR(
+    bamDir = bamDir,
+    bamFile = bamFile,
+    postfix = postfix,
+    fastaDir = fastaDir,
+    faFile = faFile,
+    intervals = intervals,
+    pcr_model = pcr_model,
+    soft_clip = soft_clip,
+    ERC = ERC,
+    cores = cores,
+    SE = SE,
+    gatk_path = gatk_path,
+    workDir = workDir
+  )
+  invisible(NULL)
+}
+
+#' Dispatch ML caller
+#' @description Internal helper for .dispatchCaller(). Wraps the
+#'     mlCalleR() call with its parameters.
+#' @param fr_table data.frame with the frequency table.
+#' @param model character string with the ML model name.
+#' @param pvalue logical, return probabilities?
+#' @param vcfDir character string with the VCF directory.
+#' @param outputVCF character string with the output VCF name.
+#' @param workDir character string with the working directory.
+#' @return invisible(NULL).
+#' @author Dzianis D. Sarnatski, Mikalai M. Yatskou, Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.dispatchMl <- function(fr_table, model, pvalue, vcfDir, outputVCF,
+                        workDir) {
+  mlCalleR(
+    fr_table = fr_table,
+    model = model,
+    pvalue = pvalue,
+    vcfDir = vcfDir,
+    outputVCF = outputVCF,
+    workDir = workDir
+  )
+  invisible(NULL)
 }
 
 #' Run a statistical test on the frequency table
@@ -1044,17 +1172,7 @@ generateVCF <- function(
   T_sub$MM <- T_sub$T
   T_sub <- T_sub[, -3]
   vcf_pre <- rbind(A, C, G, T_sub)
-  VCF <- unique(as.data.frame(vcf_pre)[, seq_len(ncol(x = vcf_pre) - 2)])
-  VCF <- VCF[order(x = VCF$position), ]
-  ALT <- vcf_pre[, paste(ALT, collapse = ","), by = position]
-  ALT <- ALT[order(x = ALT$position), ]
-  VCF$ALT <- ALT$V1
-  MMsum <- vcf_pre[, sum(MM), by = position]
-  MMsum <- MMsum[order(x = MMsum$position), ]
-  VCF$MMsum <- MMsum$V1
-  MM <- vcf_pre[, paste(MM, collapse = ","), by = position]
-  MM <- MM[order(x = MM$position), ]
-  VCF$MM <- MM$V1
+  VCF <- .buildPositionSummary(vcf_pre)
   VCF$CHROM <- gsub(pattern = ":.+", replacement = "", x = VCF$position)
   VCF$POS <- as.numeric(x = gsub(
     pattern = ".+:",
@@ -1081,6 +1199,30 @@ generateVCF <- function(
     "CHROM", "POS", "ID", "REF", "ALT",
     "QUAL", "FILTER", "INFO", tests
   )]
+}
+
+#' Build per-position ALT/MMsum/MM summary
+#' @description Internal helper for .prepareVcfTable(). Collapses the long
+#'     format table into one row per position, aggregating ALT alleles,
+#'     total supporting reads (MMsum) and per-allele supporting reads (MM).
+#' @param vcf_pre data.table in long format (one row per ALT allele).
+#' @return data.frame with position, reference, DP, ALT, MMsum and MM.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.buildPositionSummary <- function(vcf_pre) {
+  VCF <- unique(as.data.frame(vcf_pre)[, seq_len(ncol(x = vcf_pre) - 2)])
+  VCF <- VCF[order(x = VCF$position), ]
+  ALT <- vcf_pre[, paste(ALT, collapse = ","), by = position]
+  ALT <- ALT[order(x = ALT$position), ]
+  VCF$ALT <- ALT$V1
+  MMsum <- vcf_pre[, sum(MM), by = position]
+  MMsum <- MMsum[order(x = MMsum$position), ]
+  VCF$MMsum <- MMsum$V1
+  MM <- vcf_pre[, paste(MM, collapse = ","), by = position]
+  MM <- MM[order(x = MM$position), ]
+  VCF$MM <- MM$V1
+  VCF
 }
 
 #' Write VCF files for each test
