@@ -83,11 +83,10 @@ filterVariants <- function(
     heterozyg1 = 0,
     index = FALSE,
     workDir = NULL) {
-  ### Setting the working directory.
+  ### Setting the working directory and VCF directory.
   if (is.null(x = workDir)) {
     workDir <- getwd()
   }
-  ### Setting the VCF directory.
   if (is.null(x = vcfDir)) {
     vcfDir <- workDir
   } else {
@@ -95,11 +94,62 @@ filterVariants <- function(
   }
   ### Loading of the single nucleotide variations.
   SNVs <- readVcf(file = paste(vcfDir, vcfFile, sep = "/"))
-  ### Detecting available INFO fields.
+  ### Detecting available INFO and GENO fields.
   info_fields <- colnames(info(x = SNVs))
-  ### Detecting available GENO fields.
   geno_fields <- rownames(geno(x = SNVs))
   ### Multi-stage filtering.
+  SNVs <- .applyVariantFilters(
+    SNVs = SNVs,
+    gr = gr,
+    depth = depth,
+    vaf = vaf,
+    qd = qd,
+    mq = mq,
+    sor = sor,
+    fs = fs,
+    mqrs = mqrs,
+    rpps = rpps,
+    score = score,
+    heterozyg = heterozyg,
+    heterozyg1 = heterozyg1,
+    info_fields = info_fields,
+    geno_fields = geno_fields,
+    workDir = workDir
+  )
+  ### Replace "." with "PASS" in the FILTER field.
+  SNVs <- .replaceFilterPass(SNVs)
+  ### Saving and returning of the final object.
+  .writeFilteredVcf(SNVs, vcfDir, vcfFile, index)
+  return(SNVs)
+}
+
+#' Apply the requested variant filters
+#' @description Internal helper for filterVariants(). Applies each requested
+#'     filter in order, provided the required INFO or GENO field is present
+#'     in the VCF.
+#' @param SNVs CollapsedVCF object.
+#' @param gr character string or NULL.
+#' @param depth integer threshold.
+#' @param vaf numeric threshold or NULL.
+#' @param qd numeric threshold or NULL.
+#' @param mq numeric threshold or NULL.
+#' @param sor numeric threshold or NULL.
+#' @param fs numeric threshold or NULL.
+#' @param mqrs numeric threshold or NULL.
+#' @param rpps numeric threshold or NULL.
+#' @param score numeric threshold or NULL.
+#' @param heterozyg numeric threshold.
+#' @param heterozyg1 numeric threshold.
+#' @param info_fields character vector with available INFO fields.
+#' @param geno_fields character vector with available GENO fields.
+#' @param workDir character string with the working directory.
+#' @return filtered CollapsedVCF object.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.applyVariantFilters <- function(SNVs, gr, depth, vaf, qd, mq, sor, fs,
+                                 mqrs, rpps, score, heterozyg, heterozyg1,
+                                 info_fields, geno_fields, workDir) {
   if (!is.null(x = gr)) {
     SNVs <- .filterByGenomicLocation(SNVs, gr, workDir)
   }
@@ -118,6 +168,32 @@ filterVariants <- function(
   if (!is.null(x = vaf) && "AD" %in% geno_fields) {
     SNVs <- .filterByVaf(SNVs, vaf)
   }
+  SNVs <- .applyGatkInfoFilters(
+    SNVs = SNVs,
+    qd = qd, mq = mq, sor = sor, fs = fs, mqrs = mqrs, rpps = rpps,
+    info_fields = info_fields
+  )
+  SNVs
+}
+
+#' Apply GATK-specific INFO filters
+#' @description Internal helper for filterVariants(). Applies the
+#'     greater-than and less-than INFO filters that are specific to GATK
+#'     output, each only when the corresponding field is present.
+#' @param SNVs CollapsedVCF object.
+#' @param qd numeric threshold or NULL.
+#' @param mq numeric threshold or NULL.
+#' @param sor numeric threshold or NULL.
+#' @param fs numeric threshold or NULL.
+#' @param mqrs numeric threshold or NULL.
+#' @param rpps numeric threshold or NULL.
+#' @param info_fields character vector with available INFO fields.
+#' @return filtered CollapsedVCF object.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.applyGatkInfoFilters <- function(SNVs, qd, mq, sor, fs, mqrs, rpps,
+                                  info_fields) {
   if (!is.null(x = qd) && "QD" %in% info_fields) {
     SNVs <- .filterByInfoGreater(SNVs, "QD", qd)
   }
@@ -136,9 +212,21 @@ filterVariants <- function(
   if (!is.null(x = rpps) && "ReadPosRankSum" %in% info_fields) {
     SNVs <- .filterByInfoGreater(SNVs, "ReadPosRankSum", rpps)
   }
-  ### Replace "." with "PASS" in the FILTER field.
-  SNVs <- .replaceFilterPass(SNVs)
-  ### Saving and returning of the final object.
+  SNVs
+}
+
+#' Write the filtered VCF
+#' @description Internal helper for filterVariants(). Resolves the output
+#'     file name and writes the filtered VCF.
+#' @param SNVs CollapsedVCF object.
+#' @param vcfDir character string with the VCF directory.
+#' @param vcfFile character string with the input VCF file name.
+#' @param index logical, whether to bgzip and index the output.
+#' @return invisible(NULL).
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.writeFilteredVcf <- function(SNVs, vcfDir, vcfFile, index) {
   writeVcf(
     obj = SNVs,
     filename = paste(
@@ -152,7 +240,7 @@ filterVariants <- function(
     ),
     index = index
   )
-  return(SNVs)
+  invisible(NULL)
 }
 
 #' Filter by genomic location
