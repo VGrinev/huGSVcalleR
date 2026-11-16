@@ -8,16 +8,16 @@
 #' @keywords internal
 #' @noRd
 .extractChrPos <- function(filename) {
-    matches <- str_match(
-        string = filename,
-        pattern = "temp_stat_chr(\\d+|[XY])_(\\d+)\\.csv"
-    )
-    chr <- matches[, 2]
-    pos <- as.numeric(matches[, 3])
-    chr <- ifelse(chr == "X", 23,
-        ifelse(chr == "Y", 24, as.numeric(x = chr))
-    )
-    list(chr = chr, pos = pos)
+  matches <- str_match(
+    string = filename,
+    pattern = "temp_stat_chr(\\d+|[XY])_(\\d+)\\.csv"
+  )
+  chr <- matches[, 2]
+  pos <- as.numeric(matches[, 3])
+  chr <- ifelse(chr == "X", 23,
+                ifelse(chr == "Y", 24, as.numeric(x = chr))
+  )
+  list(chr = chr, pos = pos)
 }
 
 
@@ -113,253 +113,307 @@
 #' @importFrom methods is
 #' @importFrom tibble tibble
 collectBasesPileup <- function(
-        bamDir = NULL,
-        bamFile,
-        gr = "SeqInfo",
-        canChr = TRUE,
-        depth = 1e6, baseq = 20, mapq = 20,
-        coverage = NULL,
-        genome = "BSgenome.Hsapiens.UCSC.hg38",
-        tmpDir = tempdir(),
-        postfix = NULL,
-        threads = 1,
-        workDir = NULL) {
-    ### Setting the working directory.
-    if (is.null(x = workDir)) {
-        workDir <- getwd()
-    }
-    ### Full path to the BAM file.
-    if (is.null(x = bamDir)) {
-        path <- workDir
-    } else {
-        path <- paste(workDir, bamDir, sep = "/")
-    }
-    ### Setting the full path to the BAM file and reference to this file.
-    bam <- paste(path, bamFile, sep = "/")
-    bam_link <- BamFile(file = bam)
-    ### Setting the genomic location(-s) of interest.
-    if (gr == "SeqInfo") {
-        GRs <- as.data.frame(cbind(
-            seqnames(seqinfo(x = bam_link)), 1,
-            seqlengths(seqinfo(x = bam_link))
-        ))
-        colnames(x = GRs) <- c("seqnames", "start", "end")
-        GRs$start <- as.numeric(x = GRs$start)
-        GRs$end <- as.numeric(x = GRs$end)
-        if (isTRUE(x = canChr)) {
-            if (grepl(
-                pattern = "chr",
-                x = seqnames(seqinfo(x = bam_link))[1]
-            ) == "TRUE") {
-                GRs <- GRs[nchar(x = GRs$seqnames) <= 5, ]
-            } else {
-                GRs <- GRs[nchar(x = GRs$seqnames) == 1, ]
-            }
-        }
-        rownames(x = GRs) <- NULL
-        GRs <- makeGRangesFromDataFrame(df = GRs)
-    } else {
-        GRs <- read.table(
-            file = paste(workDir, gr, sep = "/"),
-            sep = "\t",
-            header = TRUE,
-            quote = "\"",
-            as.is = TRUE
-        )
-        if (isTRUE(x = canChr)) {
-            if (grepl(
-                pattern = "chr",
-                x = seqnames(seqinfo(x = bam_link))[1]
-            ) == "TRUE") {
-                GRs <- GRs[nchar(x = GRs$seqnames) <= 5, ]
-            } else {
-                GRs <- GRs[nchar(x = GRs$seqnames) == 1, ]
-            }
-        }
-        if (grepl(
-            pattern = "chr",
-            x = seqnames(seqinfo(x = bam_link))[1]
-        ) == "TRUE") {
-            GRs <- makeGRangesFromDataFrame(df = GRs)
-        } else {
-            GRs$seqnames <- gsub(
-                pattern = "chr",
-                replacement = "",
-                x = GRs$seqnames
-            )
-            GRs <- makeGRangesFromDataFrame(df = GRs)
-        }
-    }
-    ### Loading the reference genome object.
-    if (!requireNamespace(genome, quietly = TRUE)) {
-        stop(
-            "Package ", genome, " is not installed. ",
-            "Install it with BiocManager::install('", genome, "')."
-        )
-    }
-    genome_obj <- get(x = genome, envir = asNamespace(genome))
-    ### Collection of pileup statistics.
-    ##  Processing of genomic location(-s) as chunk(-s) based on memory limits.
-    bpparam <- SnowParam(workers = threads, stop.on.error = TRUE)
-    foreach_result <- bplapply(
-        X = seq_along(GRs),
-        FUN = function(
-        i,
-        GRs,
-        bam_link,
-        depth,
-        baseq,
-        mapq,
-        coverage,
-        genome_obj,
-        tmpDir) {
-            #   Get pileup statistics for the current chunk.
-            chunk <- GRs[i]
-            pileup_data <- pileup(
-                file = bam_link,
-                scanBamParam = ScanBamParam(which = chunk),
-                pileupParam = PileupParam(
-                    max_depth = depth,
-                    min_base_quality = baseq,
-                    min_mapq = mapq,
-                    distinguish_strands = FALSE,
-                    include_deletions = FALSE,
-                    include_insertions = FALSE
-                )
-            )
-            #   Transformation of the primary pileup object to a six-fields
-            #   table object of class data.frame.
-            pileup_data$position <- paste(pileup_data$seqnames,
-                pileup_data$pos,
-                sep = ":"
-            )
-            #   Cumulative statistics.
-            temp_stat <- pileup_data %>%
-                mutate(reference = 0, A = 0, C = 0, G = 0, T = 0) %>%
-                mutate(
-                    A = case_when(nucleotide == "A" ~ count, TRUE ~ .data$A),
-                    C = case_when(nucleotide == "C" ~ count, TRUE ~ .data$C),
-                    G = case_when(nucleotide == "G" ~ count, TRUE ~ .data$G),
-                    T = case_when(nucleotide == "T" ~ count, TRUE ~ .data$T)
-                )
-            temp_stat <- as.data.table(temp_stat)
-            temp_stat <- temp_stat[,
-                .(
-                    seqnames = seqnames,
-                    pos = pos,
-                    reference = sum(x = reference),
-                    A = sum(x = A),
-                    C = sum(x = C),
-                    G = sum(x = G),
-                    T = sum(x = get("T"))
-                ),
-                by = position
-            ]
-            temp_stat <- temp_stat[
-                ,
-                .(
-                    position, seqnames, pos, reference,
-                    A, C, G, get("T")
-                )
-            ]
-            #   Filtration against too low coverage.
-            if (!is.null(x = coverage)) {
-                temp_stat <- temp_stat %>%
-                    filter(rowSums(x = across(c(A, C, G, .data$T))) >= coverage)
-            }
-            #   Reference nucleotides.
-            ref <- temp_stat %>%
-                select(seqnames, pos) %>%
-                mutate(start = pos) %>%
-                mutate(end = pos) %>%
-                select(-pos)
-            ref <- makeGRangesFromDataFrame(df = ref)
-            temp_stat <- temp_stat %>%
-                mutate(
-                    reference = getSeq(
-                        x = genome_obj,
-                        names = ref,
-                        as.character = TRUE
-                    )
-                ) %>%
-                select(-pos, -seqnames)
-            #   Writing temporary file with pileup statistics.
-            if (nrow(x = temp_stat) > 0) {
-                position_label <- temp_stat[1, "position"]
-                position_label <- gsub(
-                    pattern = ":",
-                    replacement = "_",
-                    x = position_label
-                )
-                tmp_file <- file.path(
-                    tmpDir,
-                    paste0(
-                        "temp_stat_",
-                        position_label,
-                        ".csv"
-                    )
-                )
-                fwrite(x = temp_stat, file = tmp_file)
-            }
-            NULL
-        },
-        GRs = GRs,
-        bam_link = bam_link,
-        depth = depth,
-        baseq = baseq,
-        mapq = mapq,
-        coverage = coverage,
-        genome_obj = genome_obj,
-        tmpDir = tmpDir,
-        BPPARAM = bpparam
+    bamDir = NULL,
+    bamFile,
+    gr = "SeqInfo",
+    canChr = TRUE,
+    depth = 1e6, baseq = 20, mapq = 20,
+    coverage = NULL,
+    genome = "BSgenome.Hsapiens.UCSC.hg38",
+    tmpDir = tempdir(),
+    postfix = NULL,
+    threads = 1,
+    workDir = NULL) {
+  ### Setting the working directory.
+  if (is.null(x = workDir)) {
+    workDir <- getwd()
+  }
+  ### Full path to the BAM file.
+  if (is.null(x = bamDir)) {
+    path <- workDir
+  } else {
+    path <- paste(workDir, bamDir, sep = "/")
+  }
+  ### Setting the full path to the BAM file and reference to this file.
+  bam <- paste(path, bamFile, sep = "/")
+  bam_link <- BamFile(file = bam)
+  ### Setting the genomic location(-s) of interest.
+  GRs <- .buildPileupRegions(gr, canChr, bam_link, workDir)
+  ### Loading the reference genome object.
+  if (!requireNamespace(genome, quietly = TRUE)) {
+    stop(
+      "Package ", genome, " is not installed. ",
+      "Install it with BiocManager::install('", genome, "')."
     )
-    ##  Consolidation of pileup statistics.
-    #   Listing of temporary file(-s).
-    files <- list.files(path = tmpDir, pattern = "^temp_stat.*\\.csv$")
-    if (length(x = files) == 0) {
-        stop("No temporary pileup files found in: ", tmpDir)
+  }
+  genome_obj <- get(x = genome, envir = asNamespace(genome))
+  ### Collection of pileup statistics.
+  bpparam <- SnowParam(workers = threads, stop.on.error = TRUE)
+  foreach_result <- bplapply(
+    X = seq_along(GRs),
+    FUN = .computePileupChunk,
+    GRs = GRs,
+    bam_link = bam_link,
+    depth = depth,
+    baseq = baseq,
+    mapq = mapq,
+    coverage = coverage,
+    genome_obj = genome_obj,
+    tmpDir = tmpDir,
+    BPPARAM = bpparam
+  )
+  ### Consolidation of pileup statistics.
+  .consolidatePileupResults(tmpDir, bam, postfix)
+}
+
+#' Build pileup regions
+#' @description Internal helper for collectBasesPileup(). Builds the GRanges
+#'     object with genomic regions for pileup calculation, either from the
+#'     BAM file header (gr = "SeqInfo") or from a user-provided TXT file.
+#' @param gr character string with the method or file name.
+#' @param canChr logical, remove non-canonical chromosomes?
+#' @param bam_link BamFile object with the BAM file.
+#' @param workDir character string giving the path to working directory.
+#' @return GRanges object with genomic regions.
+#' @author Vasily V. Grinev, Dzianis D. Sarnatski, Mikalai M. Yatskou.
+#' @keywords internal
+#' @noRd
+.buildPileupRegions <- function(gr, canChr, bam_link, workDir) {
+  if (gr == "SeqInfo") {
+    GRs <- as.data.frame(cbind(
+      seqnames(seqinfo(x = bam_link)), 1,
+      seqlengths(seqinfo(x = bam_link))
+    ))
+    colnames(x = GRs) <- c("seqnames", "start", "end")
+    GRs$start <- as.numeric(x = GRs$start)
+    GRs$end <- as.numeric(x = GRs$end)
+    if (isTRUE(x = canChr)) {
+      GRs <- .filterCanonicalChromosomes(GRs, bam_link)
     }
-    #   Extracting of chromosome and position data.
-    file_info <- map_dfr(files, function(file) {
-        info <- .extractChrPos(file)
-        tibble(file = file, chr = info$chr, pos = info$pos)
-    })
-    #   Sorting files by chromosomes and positions.
-    files <- file_info %>%
-        arrange(chr, pos) %>%
-        pull(file)
-    #   Name of the final output file.
-    if (!is.null(x = postfix)) {
-        csv_file <- paste(gsub(pattern = ".bam", replacement = "", x = bam),
-            postfix,
-            "csv",
-            sep = "."
-        )
+    rownames(x = GRs) <- NULL
+    makeGRangesFromDataFrame(df = GRs)
+  } else {
+    GRs <- read.table(
+      file = paste(workDir, gr, sep = "/"),
+      sep = "\t",
+      header = TRUE,
+      quote = "\"",
+      as.is = TRUE
+    )
+    if (isTRUE(x = canChr)) {
+      GRs <- .filterCanonicalChromosomes(GRs, bam_link)
+    }
+    if (grepl(pattern = "chr", x = seqnames(seqinfo(x = bam_link))[1])) {
+      makeGRangesFromDataFrame(df = GRs)
     } else {
-        csv_file <- paste(gsub(pattern = ".bam", replacement = "", x = bam),
-            "PileupResults",
-            "csv",
-            sep = "."
-        )
+      GRs$seqnames <- gsub(
+        pattern = "chr",
+        replacement = "",
+        x = GRs$seqnames
+      )
+      makeGRangesFromDataFrame(df = GRs)
     }
-    #   Removing of old output file (if so).
-    invisible(if (file.exists(csv_file)) {
-        file.remove(csv_file)
-    })
-    #   Collecting data into a single file.
-    for (file in files) {
-        full_path <- file.path(tmpDir, file)
-        temp_df <- fread(file = full_path)
-        if (!file.exists(csv_file)) {
-            fwrite(x = temp_df, file = csv_file)
-        } else {
-            fwrite(x = temp_df, file = csv_file, append = TRUE)
-        }
-        file.remove(full_path)
+  }
+}
+
+#' Filter canonical chromosomes
+#' @description Internal helper for collectBasesPileup(). Keeps only the
+#'     records from canonical chromosomes (chr1-chr22, chrX, chrY, chrM).
+#' @param GRs data.frame with genomic regions.
+#' @param bam_link BamFile object with the BAM file.
+#' @return data.frame with canonical chromosomes only.
+#' @author Vasily V. Grinev, Dzianis D. Sarnatski, Mikalai M. Yatskou.
+#' @keywords internal
+#' @noRd
+.filterCanonicalChromosomes <- function(GRs, bam_link) {
+  if (grepl(pattern = "chr", x = seqnames(seqinfo(x = bam_link))[1])) {
+    GRs[nchar(x = GRs$seqnames) <= 5, ]
+  } else {
+    GRs[nchar(x = GRs$seqnames) == 1, ]
+  }
+}
+
+#' Compute pileup for a single genomic chunk
+#' @description Internal helper for collectBasesPileup(). Computes the
+#'     nucleotide-wise coverage for a single genomic chunk and writes the
+#'     result to a temporary CSV file.
+#' @param i integer index of the genomic chunk.
+#' @param GRs GRanges object with genomic regions.
+#' @param bam_link BamFile object with the BAM file.
+#' @param depth integer, maximum pileup depth.
+#' @param baseq integer, minimal base quality.
+#' @param mapq integer, minimal mapping quality.
+#' @param coverage integer, minimal coverage, or NULL.
+#' @param genome_obj BSgenome object with the reference genome.
+#' @param tmpDir character string with the temporary directory.
+#' @return NULL.
+#' @author Vasily V. Grinev, Dzianis D. Sarnatski, Mikalai M. Yatskou.
+#' @keywords internal
+#' @noRd
+.computePileupChunk <- function(i, GRs, bam_link, depth, baseq, mapq,
+                                coverage, genome_obj, tmpDir) {
+  chunk <- GRs[i]
+  pileup_data <- pileup(
+    file = bam_link,
+    scanBamParam = ScanBamParam(which = chunk),
+    pileupParam = PileupParam(
+      max_depth = depth,
+      min_base_quality = baseq,
+      min_mapq = mapq,
+      distinguish_strands = FALSE,
+      include_deletions = FALSE,
+      include_insertions = FALSE
+    )
+  )
+  pileup_data$position <- paste(
+    pileup_data$seqnames, pileup_data$pos,
+    sep = ":"
+  )
+  temp_stat <- .summarizePileupCounts(pileup_data)
+  if (!is.null(x = coverage)) {
+    temp_stat <- temp_stat %>%
+      filter(rowSums(x = across(c(A, C, G, .data$T))) >= coverage)
+  }
+  temp_stat <- .assignReferenceNucleotides(temp_stat, genome_obj)
+  if (nrow(x = temp_stat) > 0) {
+    .writePileupChunk(temp_stat, tmpDir)
+  }
+  NULL
+}
+
+#' Summarize pileup counts by position
+#' @description Internal helper for collectBasesPileup(). Aggregates the raw
+#'     pileup records into a six-column table per position.
+#' @param pileup_data data.frame from pileup().
+#' @return data.table with summarized counts.
+#' @author Vasily V. Grinev, Dzianis D. Sarnatski, Mikalai M. Yatskou.
+#' @keywords internal
+#' @noRd
+.summarizePileupCounts <- function(pileup_data) {
+  temp_stat <- pileup_data %>%
+    mutate(reference = 0, A = 0, C = 0, G = 0, T = 0) %>%
+    mutate(
+      A = case_when(nucleotide == "A" ~ count, TRUE ~ .data$A),
+      C = case_when(nucleotide == "C" ~ count, TRUE ~ .data$C),
+      G = case_when(nucleotide == "G" ~ count, TRUE ~ .data$G),
+      T = case_when(nucleotide == "T" ~ count, TRUE ~ .data$T)
+    )
+  temp_stat <- as.data.table(temp_stat)
+  temp_stat <- temp_stat[,
+                         .(
+                           seqnames = seqnames,
+                           pos = pos,
+                           reference = sum(x = reference),
+                           A = sum(x = A),
+                           C = sum(x = C),
+                           G = sum(x = G),
+                           T = sum(x = get("T"))
+                         ),
+                         by = position
+  ]
+  temp_stat[, .(position, seqnames, pos, reference, A, C, G, get("T"))]
+}
+
+#' Assign reference nucleotides to pileup positions
+#' @description Internal helper for collectBasesPileup(). Retrieves the
+#'     reference nucleotide for each position from the BSgenome object.
+#' @param temp_stat data.table with pileup statistics.
+#' @param genome_obj BSgenome object with the reference genome.
+#' @return data.table with reference nucleotides.
+#' @author Vasily V. Grinev, Dzianis D. Sarnatski, Mikalai M. Yatskou.
+#' @keywords internal
+#' @noRd
+.assignReferenceNucleotides <- function(temp_stat, genome_obj) {
+  ref <- temp_stat %>%
+    select(seqnames, pos) %>%
+    mutate(start = pos) %>%
+    mutate(end = pos) %>%
+    select(-pos)
+  ref <- makeGRangesFromDataFrame(df = ref)
+  temp_stat %>%
+    mutate(
+      reference = getSeq(
+        x = genome_obj,
+        names = ref,
+        as.character = TRUE
+      )
+    ) %>%
+    select(-pos, -seqnames)
+}
+
+#' Write pileup chunk to a temporary file
+#' @description Internal helper for collectBasesPileup(). Writes the pileup
+#'     statistics for a single chunk to a temporary CSV file.
+#' @param temp_stat data.table with pileup statistics.
+#' @param tmpDir character string with the temporary directory.
+#' @return invisible(NULL).
+#' @author Vasily V. Grinev, Dzianis D. Sarnatski, Mikalai M. Yatskou.
+#' @keywords internal
+#' @noRd
+.writePileupChunk <- function(temp_stat, tmpDir) {
+  position_label <- temp_stat[1, "position"]
+  position_label <- gsub(pattern = ":", replacement = "_", x = position_label)
+  tmp_file <- file.path(
+    tmpDir,
+    paste0("temp_stat_", position_label, ".csv")
+  )
+  fwrite(x = temp_stat, file = tmp_file)
+  invisible(NULL)
+}
+
+#' Consolidate pileup results into a single CSV file
+#' @description Internal helper for collectBasesPileup(). Merges all
+#'     temporary pileup files into a single sorted CSV, removes duplicates,
+#'     and cleans up the temporary files.
+#' @param tmpDir character string with the temporary directory.
+#' @param bam character string with the full path to the BAM file.
+#' @param postfix character string with the output postfix, or NULL.
+#' @return invisible(NULL).
+#' @author Vasily V. Grinev, Dzianis D. Sarnatski, Mikalai M. Yatskou.
+#' @keywords internal
+#' @noRd
+.consolidatePileupResults <- function(tmpDir, bam, postfix) {
+  files <- list.files(path = tmpDir, pattern = "^temp_stat.*\\.csv$")
+  if (length(x = files) == 0) {
+    stop("No temporary pileup files found in: ", tmpDir)
+  }
+  file_info <- map_dfr(files, function(file) {
+    info <- .extractChrPos(file)
+    tibble(file = file, chr = info$chr, pos = info$pos)
+  })
+  files <- file_info %>%
+    arrange(chr, pos) %>%
+    pull(file)
+  if (!is.null(x = postfix)) {
+    csv_file <- paste(
+      gsub(pattern = ".bam", replacement = "", x = bam),
+      postfix, "csv",
+      sep = "."
+    )
+  } else {
+    csv_file <- paste(
+      gsub(pattern = ".bam", replacement = "", x = bam),
+      "PileupResults", "csv",
+      sep = "."
+    )
+  }
+  invisible(if (file.exists(csv_file)) {
+    file.remove(csv_file)
+  })
+  for (file in files) {
+    full_path <- file.path(tmpDir, file)
+    temp_df <- fread(file = full_path)
+    if (!file.exists(csv_file)) {
+      fwrite(x = temp_df, file = csv_file)
+    } else {
+      fwrite(x = temp_df, file = csv_file, append = TRUE)
     }
-    temp_df <- fread(file = csv_file)
-    temp_df <- temp_df[!duplicated(x = temp_df), ]
-    fwrite(x = temp_df, file = csv_file)
+    file.remove(full_path)
+  }
+  temp_df <- fread(file = csv_file)
+  temp_df <- temp_df[!duplicated(x = temp_df), ]
+  fwrite(x = temp_df, file = csv_file)
+  invisible(NULL)
 }
 
 
@@ -426,92 +480,131 @@ collectBasesPileup <- function(
 #' @importFrom utils read.table
 #' @importFrom S4Vectors FilterRules
 filterBamFile <- function(bamDir = NULL,
-    bamFile,
-    gr = NULL,
-    flag = scanBamFlag(),
-    tlen = NULL,
-    mapq = NULL,
-    index = FALSE,
-    threads = detectCores(logical = TRUE) - 1,
-    overwrite = FALSE,
-    workDir = NULL) {
-    ### Setting the working directory.
-    if (is.null(x = workDir)) {
-        workDir <- getwd()
-    }
-    ### Full path to the BAM file.
-    if (is.null(x = bamDir)) {
-        path <- workDir
-    } else {
-        path <- paste(workDir, bamDir, sep = "/")
-    }
-    ### Development an object of class IRangesList to filter the BAM file of
-    #   interest in given genomic interval(-s) (if so).
-    if (!is.null(x = gr)) {
-        GRs <- read.table(
-            file = paste(workDir, gr, sep = "/"),
-            sep = "\t",
-            header = TRUE,
-            quote = "\"",
-            as.is = TRUE
-        )
-        GRs$split <- GRs$seqnames
-        GRs <- makeGRangesListFromDataFrame(df = GRs, split.field = "split")
-        GRs <- IRangesList(GRs)
-    }
-    ### Filtering the BAM file of interest.
-    param <- ScanBamParam(flag = flag)
-    if (!is.null(x = gr)) {
-        param@which <- GRs
-    }
-    if (!is.null(x = tlen)) {
-        param@what <- "isize"
-    }
-    if (!is.null(x = mapq)) {
-        param@mapqFilter <- as.integer(x = mapq)
-    }
-    if (!is.null(x = tlen)) {
-        filter <- FilterRules(list(function(x) {
-            x$isize <= tlen
-        }))
-    } else {
-        filter <- FilterRules()
-    }
-    ### Output file and overwrite check.
-    dest <- gsub(
-        pattern = "bam",
-        replacement = "filtered.bam",
-        x = paste(path, bamFile, sep = "/")
+                          bamFile,
+                          gr = NULL,
+                          flag = scanBamFlag(),
+                          tlen = NULL,
+                          mapq = NULL,
+                          index = FALSE,
+                          threads = detectCores(logical = TRUE) - 1,
+                          overwrite = FALSE,
+                          workDir = NULL) {
+  ### Setting the working directory.
+  if (is.null(x = workDir)) {
+    workDir <- getwd()
+  }
+  ### Full path to the BAM file.
+  if (is.null(x = bamDir)) {
+    path <- workDir
+  } else {
+    path <- paste(workDir, bamDir, sep = "/")
+  }
+  ### Building the filter parameters.
+  param <- .buildFilterParam(gr, flag, tlen, mapq, workDir)
+  filter <- .buildFilterRules(tlen)
+  ### Output file and overwrite check.
+  dest <- gsub(
+    pattern = "bam",
+    replacement = "filtered.bam",
+    x = paste(path, bamFile, sep = "/")
+  )
+  .checkFilteredBamOverwrite(dest, overwrite)
+  ### Filtering.
+  f <- filterBam(
+    file = paste(path, bamFile, sep = "/"),
+    index = paste(path, bamFile, sep = "/"),
+    filter = filter,
+    param = param,
+    destination = dest,
+    indexDestination = FALSE
+  )
+  ### Optional sorting and indexing.
+  if (isTRUE(x = index)) {
+    s <- sortBam(
+      file = f,
+      destination = gsub(pattern = ".bam", replacement = "", x = f),
+      nThreads = threads
     )
-    if (file.exists(dest)) {
-        if (isTRUE(overwrite)) {
-            file.remove(dest)
-        } else {
-            stop(
-                "Output file already exists: ",
-                dest,
-                ". Set overwrite = TRUE to replace it."
-            )
-        }
-    }
-    ### Filtering.
-    f <- filterBam(
-        file = paste(path, bamFile, sep = "/"),
-        index = paste(path, bamFile, sep = "/"),
-        filter = filter,
-        param = param,
-        destination = dest,
-        indexDestination = FALSE
+    indexBam(files = s)
+  }
+}
+
+#' Build ScanBamParam for BAM filtering
+#' @description Internal helper for filterBamFile(). Builds the ScanBamParam
+#'     object with the specified flags, genomic regions, template length and
+#'     mapping quality.
+#' @param gr character string with the genomic regions file, or NULL.
+#' @param flag logical vector with BAM flags.
+#' @param tlen integer, maximum template length, or NULL.
+#' @param mapq integer, minimum mapping quality, or NULL.
+#' @param workDir character string giving the path to working directory.
+#' @return ScanBamParam object.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.buildFilterParam <- function(gr, flag, tlen, mapq, workDir) {
+  param <- ScanBamParam(flag = flag)
+  if (!is.null(x = gr)) {
+    GRs <- read.table(
+      file = paste(workDir, gr, sep = "/"),
+      sep = "\t",
+      header = TRUE,
+      quote = "\"",
+      as.is = TRUE
     )
-    ### Optional sorting and indexing.
-    if (isTRUE(x = index)) {
-        s <- sortBam(
-            file = f,
-            destination = gsub(pattern = ".bam", replacement = "", x = f),
-            nThreads = threads
-        )
-        indexBam(files = s)
+    GRs$split <- GRs$seqnames
+    GRs <- makeGRangesListFromDataFrame(df = GRs, split.field = "split")
+    param@which <- IRangesList(GRs)
+  }
+  if (!is.null(x = tlen)) {
+    param@what <- "isize"
+  }
+  if (!is.null(x = mapq)) {
+    param@mapqFilter <- as.integer(x = mapq)
+  }
+  param
+}
+
+#' Build FilterRules for BAM filtering
+#' @description Internal helper for filterBamFile(). Builds the FilterRules
+#'     object with the template length filter (if requested).
+#' @param tlen integer, maximum template length, or NULL.
+#' @return FilterRules object.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.buildFilterRules <- function(tlen) {
+  if (!is.null(x = tlen)) {
+    FilterRules(list(function(x) {
+      x$isize <= tlen
+    }))
+  } else {
+    FilterRules()
+  }
+}
+
+#' Check overwrite flag for filtered BAM file
+#' @description Internal helper for filterBamFile(). Removes the output file
+#'     if overwrite = TRUE, otherwise stops with an error if the file exists.
+#' @param dest character string with the output file name.
+#' @param overwrite logical, whether to overwrite.
+#' @return invisible(NULL).
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.checkFilteredBamOverwrite <- function(dest, overwrite) {
+  if (file.exists(dest)) {
+    if (isTRUE(overwrite)) {
+      file.remove(dest)
+    } else {
+      stop(
+        "Output file already exists: ",
+        dest,
+        ". Set overwrite = TRUE to replace it."
+      )
     }
+  }
+  invisible(NULL)
 }
 
 
@@ -548,63 +641,59 @@ filterBamFile <- function(bamDir = NULL,
 #' ...
 #' @export
 groupReadsGATK <- function(bamDir = NULL,
-    bamFile,
-    postfix = "RG",
-    SE = TRUE,
-    RGID = "Bam.Recal.RG",
-    RGLB = "default.LIBRARY.ID",
-    RGPL = "default.ILLUMINA",
-    RGPU = "default.PLATFORM",
-    RGSM = "default.SAMPLE",
-    gatk_path = "gatk",
-    workDir = NULL) {
-    ### Setting the working directory.
-    if (is.null(x = workDir)) {
-        workDir <- getwd()
-    }
-    ### Full path to the BAM file.
-    if (is.null(x = bamDir)) {
-        path <- workDir
+                           bamFile,
+                           postfix = "RG",
+                           SE = TRUE,
+                           RGID = "Bam.Recal.RG",
+                           RGLB = "default.LIBRARY.ID",
+                           RGPL = "default.ILLUMINA",
+                           RGPU = "default.PLATFORM",
+                           RGSM = "default.SAMPLE",
+                           gatk_path = "gatk",
+                           workDir = NULL) {
+  ### Setting the working directory.
+  if (is.null(x = workDir)) {
+    workDir <- getwd()
+  }
+  ### Full path to the BAM file.
+  if (is.null(x = bamDir)) {
+    path <- workDir
+  } else {
+    path <- paste(workDir, bamDir, sep = "/")
+  }
+  ### Naming of output file.
+  output <- paste(
+    gsub(pattern = ".bam", replacement = "", x = bamFile),
+    postfix, "bam",
+    sep = "."
+  )
+  ### Settings for saving of standard error.
+  se <- ""
+  if (SE == TRUE) {
+    se <- paste(
+      gsub(pattern = ".bam", replacement = "", x = bamFile),
+      "STDERR.RG.TXT",
+      sep = "."
+    )
+  }
+  ### Running of command.
+  system2(
+    command = gatk_path,
+    args = c(
+      "AddOrReplaceReadGroups",
+      paste("-I", paste(path, bamFile, sep = "/"), sep = " "),
+      paste("-O", paste(path, output, sep = "/"), sep = " "),
+      paste("--RGID", RGID, "--RGLB", RGLB, "--RGPL", RGPL,
+            "--RGPU", RGPU, "--RGSM", RGSM,
+            sep = " "
+      )
+    ),
+    if (se == "") {
+      stderr <- se
     } else {
-        path <- paste(workDir, bamDir, sep = "/")
+      stderr <- paste(path, se, sep = "/")
     }
-    ### Naming of output file.
-    output <- paste(
-        gsub(
-            pattern = ".bam",
-            replacement = "",
-            x = bamFile
-        ),
-        postfix,
-        "bam",
-        sep = "."
-    )
-    ### Settings for saving of standard error.
-    se <- ""
-    if (SE == TRUE) {
-        se <- paste(gsub(pattern = ".bam", replacement = "", x = bamFile),
-            "STDERR.RG.TXT",
-            sep = "."
-        )
-    }
-    ### Running of command.
-    system2(
-        command = gatk_path,
-        args = c(
-            "AddOrReplaceReadGroups",
-            paste("-I", paste(path, bamFile, sep = "/"), sep = " "),
-            paste("-O", paste(path, output, sep = "/"), sep = " "),
-            paste("--RGID", RGID, "--RGLB", RGLB, "--RGPL", RGPL,
-                "--RGPU", RGPU, "--RGSM", RGSM,
-                sep = " "
-            )
-        ),
-        if (se == "") {
-            stderr <- se
-        } else {
-            stderr <- paste(path, se, sep = "/")
-        }
-    )
+  )
 }
 
 
@@ -635,36 +724,36 @@ groupReadsGATK <- function(bamDir = NULL,
 #' @export
 #' @importFrom Rsamtools indexFa
 indexGenomeGATK <- function(fastaDir = NULL,
-    faFile,
-    fai = TRUE,
-    dict = TRUE,
-    gatk_path = "gatk",
-    workDir = NULL) {
-    ### Setting the working directory.
-    if (is.null(x = workDir)) {
-        workDir <- getwd()
-    }
-    ### Full path to the FASTA/FA file.
-    if (is.null(x = fastaDir)) {
-        path <- workDir
-    } else {
-        path <- paste(workDir, fastaDir, sep = "/")
-    }
-    ### Building the .fai index.
-    if (fai == TRUE) {
-        indexFa(file = paste(path, faFile, sep = "/"))
-    }
-    ### Building the .dict index.
-    if (dict == TRUE) {
-        system2(
-            command = gatk_path,
-            args = c(
-                "CreateSequenceDictionary",
-                "-R",
-                paste(path, faFile, sep = "/")
-            )
-        )
-    }
+                            faFile,
+                            fai = TRUE,
+                            dict = TRUE,
+                            gatk_path = "gatk",
+                            workDir = NULL) {
+  ### Setting the working directory.
+  if (is.null(x = workDir)) {
+    workDir <- getwd()
+  }
+  ### Full path to the FASTA/FA file.
+  if (is.null(x = fastaDir)) {
+    path <- workDir
+  } else {
+    path <- paste(workDir, fastaDir, sep = "/")
+  }
+  ### Building the .fai index.
+  if (fai == TRUE) {
+    indexFa(file = paste(path, faFile, sep = "/"))
+  }
+  ### Building the .dict index.
+  if (dict == TRUE) {
+    system2(
+      command = gatk_path,
+      args = c(
+        "CreateSequenceDictionary",
+        "-R",
+        paste(path, faFile, sep = "/")
+      )
+    )
+  }
 }
 
 
@@ -695,39 +784,39 @@ indexGenomeGATK <- function(fastaDir = NULL,
 #' ...
 #' @export
 indexVcfGATK <- function(vcfDir = NULL,
-    vcfFile = NULL,
-    output_name = NULL,
-    gatk_path = "gatk",
-    workDir = NULL) {
-    ### Setting the working directory.
-    if (is.null(x = workDir)) {
-        workDir <- getwd()
-    }
-    ### Full path to the VCF file.
-    if (is.null(x = vcfDir)) {
-        path <- workDir
-    } else {
-        path <- paste(workDir, vcfDir, sep = "/")
-    }
-    ### Running of command.
-    if (is.null(x = output_name)) {
-        system2(
-            command = gatk_path,
-            args = c(
-                "IndexFeatureFile -I",
-                paste(path, vcfFile, sep = "/")
-            )
-        )
-    } else {
-        system2(
-            command = gatk_path,
-            args = c(
-                "IndexFeatureFile -I",
-                paste(path, vcfFile, sep = "/"),
-                "-O", paste(path, output_name, sep = "/")
-            )
-        )
-    }
+                         vcfFile = NULL,
+                         output_name = NULL,
+                         gatk_path = "gatk",
+                         workDir = NULL) {
+  ### Setting the working directory.
+  if (is.null(x = workDir)) {
+    workDir <- getwd()
+  }
+  ### Full path to the VCF file.
+  if (is.null(x = vcfDir)) {
+    path <- workDir
+  } else {
+    path <- paste(workDir, vcfDir, sep = "/")
+  }
+  ### Running of command.
+  if (is.null(x = output_name)) {
+    system2(
+      command = gatk_path,
+      args = c(
+        "IndexFeatureFile -I",
+        paste(path, vcfFile, sep = "/")
+      )
+    )
+  } else {
+    system2(
+      command = gatk_path,
+      args = c(
+        "IndexFeatureFile -I",
+        paste(path, vcfFile, sep = "/"),
+        "-O", paste(path, output_name, sep = "/")
+      )
+    )
+  }
 }
 
 
@@ -762,92 +851,90 @@ indexVcfGATK <- function(vcfDir = NULL,
 #' ...
 #' @export
 markDuplicatesGATK <- function(bamDir = NULL,
-    bamFile,
-    postfix = "markedDuplicates",
-    removeDupls = "no",
-    SE = TRUE,
-    gatk_path = "gatk",
-    workDir = NULL) {
-    ### Setting the working directory.
-    if (is.null(x = workDir)) {
-        workDir <- getwd()
-    }
-    ### Full path to the BAM file.
-    if (is.null(x = bamDir)) {
-        path <- workDir
+                               bamFile,
+                               postfix = "markedDuplicates",
+                               removeDupls = "no",
+                               SE = TRUE,
+                               gatk_path = "gatk",
+                               workDir = NULL) {
+  ### Setting the working directory.
+  if (is.null(x = workDir)) {
+    workDir <- getwd()
+  }
+  ### Full path to the BAM file.
+  if (is.null(x = bamDir)) {
+    path <- workDir
+  } else {
+    path <- paste(workDir, bamDir, sep = "/")
+  }
+  ### Settings of run.
+  input <- paste("-I", paste(path, bamFile, sep = "/"), sep = " ")
+  output <- paste("-O",
+                  paste(path,
+                        paste(
+                          gsub(pattern = ".bam", replacement = "", x = bamFile),
+                          postfix, "bam",
+                          sep = "."
+                        ),
+                        sep = "/"
+                  ),
+                  sep = " "
+  )
+  metrics <- paste("-M",
+                   paste(path,
+                         paste(
+                           gsub(pattern = ".bam", replacement = "", x = bamFile),
+                           postfix, "metrics.txt",
+                           sep = "."
+                         ),
+                         sep = "/"
+                   ),
+                   sep = " "
+  )
+  ### Settings for removing duplicated reads.
+  remove.d <- .resolveRemoveDuplicates(removeDupls)
+  ### Settings for saving of standard error.
+  se <- ""
+  if (SE == TRUE) {
+    se <- paste(
+      gsub(pattern = ".bam", replacement = "", x = bamFile),
+      "STDERR.MARKDUP.TXT",
+      sep = "."
+    )
+  }
+  ### Running of command.
+  system2(
+    command = gatk_path,
+    args = c("MarkDuplicates", input, output, metrics, remove.d),
+    if (se == "") {
+      stderr <- se
     } else {
-        path <- paste(workDir, bamDir, sep = "/")
+      stderr <- paste(path, se, sep = "/")
     }
-    ### Settings of run.
-    input <- paste("-I",
-        paste(path, bamFile, sep = "/"),
-        sep = " "
+  )
+}
+
+#' Resolve removeDuplicates flag
+#' @description Internal helper for markDuplicatesGATK(). Converts the
+#'     user-provided removeDupls value to the corresponding GATK arguments.
+#' @param removeDupls character string ("no", "yes" or "seq").
+#' @return character string with GATK arguments.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.resolveRemoveDuplicates <- function(removeDupls) {
+  if (removeDupls == "no") {
+    paste("--REMOVE_DUPLICATES", "FALSE")
+  } else if (removeDupls == "yes") {
+    paste("--REMOVE_DUPLICATES", "TRUE")
+  } else if (removeDupls == "seq") {
+    paste(
+      "--REMOVE_DUPLICATES", "FALSE",
+      "--REMOVE_SEQUENCING_DUPLICATES", "TRUE"
     )
-    output <- paste("-O",
-        paste(path,
-            paste(
-                gsub(
-                    pattern = ".bam",
-                    replacement = "",
-                    x = bamFile
-                ),
-                postfix,
-                "bam",
-                sep = "."
-            ),
-            sep = "/"
-        ),
-        sep = " "
-    )
-    metrics <- paste("-M",
-        paste(path,
-            paste(
-                gsub(
-                    pattern = ".bam",
-                    replacement = "",
-                    x = bamFile
-                ),
-                postfix,
-                "metrics.txt",
-                sep = "."
-            ),
-            sep = "/"
-        ),
-        sep = " "
-    )
-    ### Settings for removing duplicated reads.
-    if (removeDupls == "no") {
-        remove.d <- paste("--REMOVE_DUPLICATES", "FALSE")
-    } else {
-        if (removeDupls == "yes") {
-            remove.d <- paste("--REMOVE_DUPLICATES", "TRUE")
-        } else {
-            if (removeDupls == "seq") {
-                remove.d <- paste(
-                    "--REMOVE_DUPLICATES", "FALSE",
-                    "--REMOVE_SEQUENCING_DUPLICATES", "TRUE"
-                )
-            }
-        }
-    }
-    ### Settings for saving of standard error.
-    se <- ""
-    if (SE == TRUE) {
-        se <- paste(gsub(pattern = ".bam", replacement = "", x = bamFile),
-            "STDERR.MARKDUP.TXT",
-            sep = "."
-        )
-    }
-    ### Running of command.
-    system2(
-        command = gatk_path,
-        args = c("MarkDuplicates", input, output, metrics, remove.d),
-        if (se == "") {
-            stderr <- se
-        } else {
-            stderr <- paste(path, se, sep = "/")
-        }
-    )
+  } else {
+    paste("--REMOVE_DUPLICATES", "FALSE")
+  }
 }
 
 
@@ -896,123 +983,138 @@ markDuplicatesGATK <- function(bamDir = NULL,
 #' ...
 #' @export
 recalibrateBamGATK <- function(
-        bamDir = NULL,
-        bamFile,
-        vcfDir = NULL,
-        vcfFile,
-        fastaDir = NULL,
-        faFile,
-        createBQSR = TRUE,
-        recalibrate = TRUE,
-        nameBQSR,
-        postfix = "Recalibrated",
-        SE = TRUE,
-        gatk_path = "gatk",
-        workDir = NULL) {
-    ### Setting the working directory.
-    if (is.null(x = workDir)) {
-        workDir <- getwd()
-    }
-    ### Full path to the BAM file.
-    if (is.null(x = bamDir)) {
-        path <- workDir
+    bamDir = NULL,
+    bamFile,
+    vcfDir = NULL,
+    vcfFile,
+    fastaDir = NULL,
+    faFile,
+    createBQSR = TRUE,
+    recalibrate = TRUE,
+    nameBQSR,
+    postfix = "Recalibrated",
+    SE = TRUE,
+    gatk_path = "gatk",
+    workDir = NULL) {
+  ### Setting the working directory.
+  if (is.null(x = workDir)) {
+    workDir <- getwd()
+  }
+  ### Full paths to the input files.
+  path <- if (is.null(x = bamDir)) workDir else paste(workDir, bamDir, sep = "/")
+  path2 <- if (is.null(x = vcfDir)) workDir else paste(workDir, vcfDir, sep = "/")
+  path3 <- if (is.null(x = fastaDir)) workDir else paste(workDir, fastaDir, sep = "/")
+  ### Generation of BQSR table.
+  if (isTRUE(x = createBQSR)) {
+    .runBaseRecalibrator(path, bamFile, path2, vcfFile, path3, faFile,
+                         gatk_path)
+  }
+  ### Recalibration process.
+  if (isTRUE(x = recalibrate)) {
+    bqsr_name <- .resolveBqsrName(bamFile, createBQSR, nameBQSR)
+    se <- if (SE) paste(
+      gsub(pattern = ".bam", replacement = "", x = bamFile),
+      "STDERR.RECALIBRATION.TXT",
+      sep = "."
+    ) else ""
+    .runApplyBQSR(path, bamFile, bqsr_name, postfix, se, gatk_path)
+  }
+}
+
+#' Run BaseRecalibrator
+#' @description Internal helper for recalibrateBamGATK(). Runs the GATK
+#'     BaseRecalibrator tool to generate the BQSR table.
+#' @param path character string with the BAM directory.
+#' @param bamFile character string with the BAM file name.
+#' @param path2 character string with the VCF directory.
+#' @param vcfFile character string with the VCF file name.
+#' @param path3 character string with the FASTA directory.
+#' @param faFile character string with the FASTA file name.
+#' @param gatk_path character string with the GATK executable.
+#' @return invisible(NULL).
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.runBaseRecalibrator <- function(path, bamFile, path2, vcfFile, path3,
+                                 faFile, gatk_path) {
+  bqsr_name <- paste(
+    gsub(pattern = ".bam", replacement = "", x = bamFile),
+    "bqsr.table",
+    sep = "."
+  )
+  system2(
+    command = gatk_path,
+    args = c(
+      "BaseRecalibrator",
+      paste("-I", paste(path, bamFile, sep = "/"), sep = " "),
+      paste("-O", paste(path, bqsr_name, sep = "/"), sep = " "),
+      paste("--known-sites", paste(path2, vcfFile, sep = "/"),
+            sep = " "),
+      paste("-R", paste(path3, faFile, sep = "/"), sep = " ")
+    )
+  )
+  invisible(NULL)
+}
+
+#' Resolve BQSR table name
+#' @description Internal helper for recalibrateBamGATK(). Returns the name of
+#'     the BQSR table to use for recalibration.
+#' @param bamFile character string with the BAM file name.
+#' @param createBQSR logical, whether the BQSR table was created by the
+#'     function itself.
+#' @param nameBQSR character string with the name of a pre-computed BQSR
+#'     table, or NULL.
+#' @return character string with the BQSR table name.
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.resolveBqsrName <- function(bamFile, createBQSR, nameBQSR) {
+  if (isTRUE(x = createBQSR)) {
+    paste(
+      gsub(pattern = ".bam", replacement = "", x = bamFile),
+      "bqsr.table",
+      sep = "."
+    )
+  } else {
+    nameBQSR
+  }
+}
+
+#' Run ApplyBQSR
+#' @description Internal helper for recalibrateBamGATK(). Runs the GATK
+#'     ApplyBQSR tool to produce the recalibrated BAM file.
+#' @param path character string with the BAM directory.
+#' @param bamFile character string with the BAM file name.
+#' @param bqsr_name character string with the BQSR table name.
+#' @param postfix character string with the output postfix.
+#' @param se character string with the standard error file, or "".
+#' @param gatk_path character string with the GATK executable.
+#' @return invisible(NULL).
+#' @author Vasily V. Grinev.
+#' @keywords internal
+#' @noRd
+.runApplyBQSR <- function(path, bamFile, bqsr_name, postfix, se, gatk_path) {
+  output <- paste(path,
+                  paste(
+                    gsub(pattern = ".bam", replacement = "", x = bamFile),
+                    postfix, "bam",
+                    sep = "."
+                  ),
+                  sep = "/"
+  )
+  system2(
+    command = gatk_path,
+    args = c(
+      "ApplyBQSR",
+      paste("-bqsr", paste(path, bqsr_name, sep = "/"), sep = " "),
+      paste("-I", paste(path, bamFile, sep = "/"), sep = " "),
+      paste("-O", output, sep = " ")
+    ),
+    if (se == "") {
+      stderr <- se
     } else {
-        path <- paste(workDir, bamDir, sep = "/")
+      stderr <- paste(path, se, sep = "/")
     }
-    ### Full path to the VCF file.
-    if (is.null(x = vcfDir)) {
-        path2 <- workDir
-    } else {
-        path2 <- paste(workDir, vcfDir, sep = "/")
-    }
-    ### Full path to the FASTA/FA file.
-    if (is.null(x = fastaDir)) {
-        path3 <- workDir
-    } else {
-        path3 <- paste(workDir, fastaDir, sep = "/")
-    }
-    ### Generation of BQSR table.
-    if (isTRUE(x = createBQSR)) {
-        bqsr_name <- paste(
-            gsub(
-                pattern = ".bam",
-                replacement = "", x = bamFile
-            ),
-            "bqsr.table",
-            sep = "."
-        )
-        system2(
-            command = gatk_path,
-            args = c(
-                "BaseRecalibrator",
-                paste("-I",
-                    paste(path, bamFile, sep = "/"),
-                    sep = " "
-                ),
-                paste("-O",
-                    paste(path, bqsr_name, sep = "/"),
-                    sep = " "
-                ),
-                paste("--known-sites",
-                    paste(path2, vcfFile, sep = "/"),
-                    sep = " "
-                ),
-                paste("-R",
-                    paste(path3, faFile, sep = "/"),
-                    sep = " "
-                )
-            )
-        )
-    }
-    ### Recalibration process.
-    if (isTRUE(x = recalibrate)) {
-        if (isTRUE(x = createBQSR)) {
-            bqsr_name <- paste(
-                gsub(
-                    pattern = ".bam",
-                    replacement = "",
-                    x = bamFile
-                ),
-                "bqsr.table",
-                sep = "."
-            )
-        } else {
-            bqsr_name <- nameBQSR
-        }
-        ### Settings for saving of standard error.
-        se <- ""
-        if (SE == TRUE) {
-            se <- paste(gsub(pattern = ".bam", replacement = "", x = bamFile),
-                "STDERR.RECALIBRATION.TXT",
-                sep = "."
-            )
-        }
-        ### Running of command.
-        system2(
-            command = gatk_path,
-            args = c(
-                "ApplyBQSR",
-                paste("-bqsr", paste(path, bqsr_name, sep = "/"), sep = " "),
-                paste("-I", paste(path, bamFile, sep = "/"), sep = " "),
-                paste("-O", paste(path,
-                    paste(
-                        gsub(
-                            pattern = ".bam",
-                            replacement = "",
-                            x = bamFile
-                        ),
-                        postfix,
-                        "bam",
-                        sep = "."
-                    ),
-                    sep = "/"
-                ), sep = " ")
-            ),
-            if (se == "") {
-                stderr <- se
-            } else {
-                stderr <- paste(path, se, sep = "/")
-            }
-        )
-    }
+  )
+  invisible(NULL)
 }
