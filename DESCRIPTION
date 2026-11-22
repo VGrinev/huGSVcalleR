@@ -4,7 +4,7 @@ biocViews: Technology, Software, SNP, Sequencing,
         GeneticVariability, Annotation, WholeGenome, 
         Alignment, QualityControl
 Title: huGSVcalleR Toolkit
-Version: 0.1.0
+Version: 0.99.0
 Authors@R:
     c(
         person("Vasiliy V.", "Grinev", role = c("aut"),
