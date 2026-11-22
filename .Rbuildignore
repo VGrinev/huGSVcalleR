@@ -3,3 +3,4 @@
 ^src/.*\.dll$
 ^src/.*\.o$
 ^src/.*\.so$
+^LICENSE\.md$
