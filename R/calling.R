@@ -795,6 +795,7 @@ callSNVs <- function(
 #' @importFrom data.table data.table
 #' @import randomForest
 #' @import LiblineaR
+#' @import rpart
 mlCalleR <- function(fr_table,
     model = "rpart",
     pvalue = FALSE,

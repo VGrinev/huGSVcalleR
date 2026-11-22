@@ -61,7 +61,7 @@
 #' @export
 #' @importFrom data.table data.table
 #' @importFrom VariantAnnotation readVcf info ScanVcfParam fixed
-#' @importFrom SparseArray rowRanges
+#' @importFrom SummarizedExperiment rowRanges
 #' @importFrom GenomicRanges makeGRangesFromDataFrame findOverlaps
 #'     GRanges
 #' @importFrom IRanges IRanges
@@ -446,7 +446,7 @@ annotateDbSNP <- function(
 #' @export
 #' @importFrom data.table data.table
 #' @importFrom VariantAnnotation readVcf info
-#' @importFrom SparseArray rowRanges
+#' @importFrom SummarizedExperiment rowRanges
 #' @importFrom SummarizedExperiment "rowRanges<-"
 #' @importFrom GenomicRanges makeGRangesFromDataFrame findOverlaps
 annotateBasic <- function(
@@ -1563,7 +1563,7 @@ extractSSsCoordsGTF <- function(x, gtfDir = NULL, workDir = NULL) {
 #' )
 #' @export
 #' @importFrom VariantAnnotation readVcf alt alt<- predictCoding
-#' @importFrom SparseArray rowRanges
+#' @importFrom SummarizedExperiment rowRanges
 #' @importFrom Biostrings DNAStringSetList
 #' @importFrom GenomicRanges start seqnames
 #' @importFrom BiocGenerics "%in%" match
@@ -1823,7 +1823,7 @@ introduceSNVtoAAs <- function(vcfDir = NULL,
 #' )
 #' @export
 #' @importFrom VariantAnnotation readVcf
-#' @importFrom SparseArray rowRanges
+#' @importFrom SummarizedExperiment rowRanges
 #' @importFrom GenomicRanges makeGRangesFromDataFrame findOverlaps
 #' @importFrom S4Vectors queryHits subjectHits
 #' @importFrom GenomicRanges start end strand seqnames

@@ -112,6 +112,7 @@
 #' @importFrom utils read.table
 #' @importFrom methods is
 #' @importFrom tibble tibble
+#' @importFrom rlang .data
 collectBasesPileup <- function(
         bamDir = NULL,
         bamFile,
@@ -222,6 +223,7 @@ collectBasesPileup <- function(
 #' @author Vasily V. Grinev, Dzianis D. Sarnatski, Mikalai M. Yatskou.
 #' @keywords internal
 #' @noRd
+#' @importFrom Seqinfo seqlengths
 .buildPileupRegions <- function(gr, canChr, bam_link, workDir) {
     if (gr == "SeqInfo") {
         GRs <- as.data.frame(cbind(
