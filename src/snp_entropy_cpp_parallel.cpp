@@ -140,22 +140,8 @@ struct SNPEntropyWorker : public Worker
 //' 8. Executes the calculations in parallel across multiple cores for
 //'    faster processing of large datasets.
 //'
-//' @examples
-//' # Example input data
-//' df <- data.frame(reference = c("A", "C", "G", "T"),
-//'                  A = c(10, 0, 5, 0),
-//'                  C = c(2, 10, 0, 0),
-//'                  G = c(0, 0, 10, 5),
-//'                  T = c(0, 0, 0, 10))
-//'
-//' # Run SNP entropy and p-value calculation
-//' result <- snp_entropy_cpp_parallel(df, p_value = TRUE)
-//' print(result)
-//'
-//' # Run SNP entropy calculation only
-//' entropy <- snp_entropy_cpp_parallel(df, p_value = FALSE)
-//' print(entropy)
-//'
+//' @keywords internal
+//' @noRd
 // [[Rcpp::export]]
 NumericVector snp_entropy_cpp_parallel(DataFrame& df_d, bool p_value = false)
 {

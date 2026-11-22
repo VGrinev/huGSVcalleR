@@ -37,15 +37,8 @@
 #' probability mass function for the binomial distribution.
 #'
 #' @author Dzianis D. Sarnatski, Mikalai M. Yatskou
-#' @examples
-#' df <- data.frame(reference = c("A", "C", "G", "T"),
-#'                  A = c(10, 0, 5, 0),
-#'                  C = c(2, 10, 0, 0),
-#'                  G = c(0, 0, 10, 5),
-#'                  T = c(0, 0, 0, 10))
-#'
-#' result <- snp_binomial_cpp_parallel(df)
-#' print(result)
+#' @keywords internal
+#' @noRd
 snp_binomial_cpp_parallel <- function(df_d) {
     .Call(`_huGSVcalleR_snp_binomial_cpp_parallel`, df_d)
 }
@@ -83,16 +76,8 @@ snp_binomial_cpp_parallel <- function(df_d) {
 #'    speed up the process for large datasets.
 #'
 #' @author Dzianis D. Sarnatski, Mikalai M. Yatskou
-#' @examples
-#' df <- data.frame(reference = c("A", "C", "G", "T"),
-#'                  A = c(10, 0, 5, 0),
-#'                  C = c(2, 10, 0, 0),
-#'                  G = c(0, 0, 10, 5),
-#'                  T = c(0, 0, 0, 10))
-#'
-#' result <- snp_counting_cpp_parallel(df)
-#' print(result)
-#'
+#' @keywords internal
+#' @noRd
 snp_counting_cpp_parallel <- function(df_d) {
     .Call(`_huGSVcalleR_snp_counting_cpp_parallel`, df_d)
 }
@@ -147,22 +132,8 @@ snp_counting_cpp_parallel <- function(df_d) {
 #' 8. Executes the calculations in parallel across multiple cores for
 #'    faster processing of large datasets.
 #'
-#' @examples
-#' # Example input data
-#' df <- data.frame(reference = c("A", "C", "G", "T"),
-#'                  A = c(10, 0, 5, 0),
-#'                  C = c(2, 10, 0, 0),
-#'                  G = c(0, 0, 10, 5),
-#'                  T = c(0, 0, 0, 10))
-#'
-#' # Run SNP entropy and p-value calculation
-#' result <- snp_entropy_cpp_parallel(df, p_value = TRUE)
-#' print(result)
-#'
-#' # Run SNP entropy calculation only
-#' entropy <- snp_entropy_cpp_parallel(df, p_value = FALSE)
-#' print(entropy)
-#'
+#' @keywords internal
+#' @noRd
 snp_entropy_cpp_parallel <- function(df_d, p_value = FALSE) {
     .Call(`_huGSVcalleR_snp_entropy_cpp_parallel`, df_d, p_value)
 }
@@ -201,16 +172,8 @@ snp_entropy_cpp_parallel <- function(df_d, p_value = FALSE) {
 #'    workload across multiple cores.
 #'
 #' @author Dzianis D. Sarnatski, Mikalai M. Yatskou
-#' @examples
-#' df <- data.frame(reference = c("A", "C", "G", "T"),
-#'                  A = c(10, 0, 5, 0),
-#'                  C = c(2, 10, 0, 0),
-#'                  G = c(0, 0, 10, 5),
-#'                  T = c(0, 0, 0, 10))
-#'
-#' result <- snp_fisher_cpp_parallel(df)
-#' print(result)
-#'
+#' @keywords internal
+#' @noRd
 snp_fisher_cpp_parallel <- function(df_d) {
     .Call(`_huGSVcalleR_snp_fisher_cpp_parallel`, df_d)
 }
@@ -250,17 +213,8 @@ snp_fisher_cpp_parallel <- function(df_d) {
 #'
 #' @note The mutation rate used in the Poisson model is fixed at 9/20000
 #' by default.
-#'
-#' @examples
-#' df <- data.frame(reference = c("A", "C", "G", "T"),
-#'                  A = c(10, 0, 5, 0),
-#'                  C = c(2, 10, 0, 0),
-#'                  G = c(0, 0, 10, 5),
-#'                  T = c(0, 0, 0, 10))
-#'
-#' result <- snp_poisson_cpp_parallel(df)
-#' print(result)
-#'
+#' @keywords internal
+#' @noRd
 snp_poisson_cpp_parallel <- function(df_d) {
     .Call(`_huGSVcalleR_snp_poisson_cpp_parallel`, df_d)
 }
@@ -292,17 +246,8 @@ snp_poisson_cpp_parallel <- function(df_d) {
 #' (entropy, binomial, Fisher, Poisson).
 #'
 #' @author Dzianis D. Sarnatski, Mikalai M. Yatskou
-#' @examples
-#' df <- data.frame(reference = c("A", "C", "G", "T"),
-#'                  A = c(10, 0, 5, 0),
-#'                  C = c(2, 10, 0, 0),
-#'                  G = c(0, 0, 10, 5),
-#'                  T = c(0, 0, 0, 10))
-#'
-#' result <- vectorise_data_cpp_parallel(df,
-#'                                       c("x1", "x2", "x10"))
-#' print(result)
-#'
+#' @keywords internal
+#' @noRd
 vectorise_data_cpp_parallel <- function(df_d, features) {
     .Call(`_huGSVcalleR_vectorise_data_cpp_parallel`, df_d, features)
 }

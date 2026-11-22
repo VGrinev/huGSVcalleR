@@ -213,17 +213,8 @@ struct VectoriseWorker : public Worker {
 //' (entropy, binomial, Fisher, Poisson).
 //'
 //' @author Dzianis D. Sarnatski, Mikalai M. Yatskou
-//' @examples
-//' df <- data.frame(reference = c("A", "C", "G", "T"),
-//'                  A = c(10, 0, 5, 0),
-//'                  C = c(2, 10, 0, 0),
-//'                  G = c(0, 0, 10, 5),
-//'                  T = c(0, 0, 0, 10))
-//'
-//' result <- vectorise_data_cpp_parallel(df,
-//'                                       c("x1", "x2", "x10"))
-//' print(result)
-//'
+//' @keywords internal
+//' @noRd
 // [[Rcpp::export]]
 DataFrame vectorise_data_cpp_parallel(DataFrame& df_d,
                                        CharacterVector features) {

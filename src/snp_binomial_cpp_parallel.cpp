@@ -80,15 +80,8 @@ struct SNPBinomialWorker : public Worker
 //' probability mass function for the binomial distribution.
 //'
 //' @author Dzianis D. Sarnatski, Mikalai M. Yatskou
-//' @examples
-//' df <- data.frame(reference = c("A", "C", "G", "T"),
-//'                  A = c(10, 0, 5, 0),
-//'                  C = c(2, 10, 0, 0),
-//'                  G = c(0, 0, 10, 5),
-//'                  T = c(0, 0, 0, 10))
-//'
-//' result <- snp_binomial_cpp_parallel(df)
-//' print(result)
+//' @keywords internal
+//' @noRd
 // [[Rcpp::export]]
 NumericVector snp_binomial_cpp_parallel(DataFrame& df_d)
 {
