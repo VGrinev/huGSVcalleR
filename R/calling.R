@@ -181,7 +181,7 @@ gatkCalleR <- function(bamDir = NULL,
     softclip <- paste("--dont-use-soft-clipped-bases", soft_clip)
     erc <- paste("-ERC", ERC)
     if (cores == "MAX") {
-        cores <- detectCores()
+        cores <- max(1L, detectCores(logical = TRUE), na.rm = TRUE)
     }
     cores <- paste("--native-pair-hmm-threads", cores)
     c("HaplotypeCaller", input, output, fa, pcr, softclip, erc, cores)

@@ -8,7 +8,7 @@ sortBamFile(
   bamDir,
   bamFile,
   byQname,
-  threads = detectCores(logical = TRUE) - 1,
+  threads = max(1L, detectCores(logical = TRUE) - 1L, na.rm = TRUE),
   workDir = NULL
 )
 }
@@ -23,7 +23,8 @@ sorted and indexed.}
 should be sorted by query-name (TRUE) or by mapping position (FALSE).}
 
 \item{threads}{numeric value giving the number of threads used for sorting.
-Default value is detectCores(logical = TRUE) - 1.}
+Default is one less than the number of logical cores, but at least 1.
+If the core count cannot be detected, one thread is used.}
 
 \item{workDir}{character string giving the path to and name of working
 directory. NULL by default that means the current working directory.}

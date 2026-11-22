@@ -12,7 +12,7 @@ filterBamFile(
   tlen = NULL,
   mapq = NULL,
   index = FALSE,
-  threads = detectCores(logical = TRUE) - 1,
+  threads = max(1L, detectCores(logical = TRUE) - 1L, na.rm = TRUE),
   overwrite = FALSE,
   workDir = NULL
 )
@@ -55,7 +55,8 @@ default that mean no any limitations.}
 a new filtered BAM file.}
 
 \item{threads}{numeric value giving the number of threads used for sorting.
-Default value is detectCores(logical = TRUE) - 1.}
+Default is one less than the number of logical cores, but at least 1.
+If the core count cannot be detected, one thread is used.}
 
 \item{overwrite}{logical value indicating whether an existing output file
 with the same name should be overwritten. FALSE by default, in which

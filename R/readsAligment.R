@@ -783,7 +783,8 @@ reportQAlResults <- function(x,
 #' @param byQname logical. It indicats whether the sorted destination file
 #'     should be sorted by query-name (TRUE) or by mapping position (FALSE).
 #' @param threads numeric value giving the number of threads used for sorting.
-#'     Default value is detectCores(logical = TRUE) - 1.
+#'     Default is one less than the number of logical cores, but at least 1.
+#'     If the core count cannot be detected, one thread is used.
 #' @param workDir character string giving the path to and name of working
 #'     directory. NULL by default that means the current working directory.
 #' @return sorted and indexed BAM file(-s).
@@ -802,7 +803,7 @@ reportQAlResults <- function(x,
 sortBamFile <- function(bamDir,
     bamFile,
     byQname,
-    threads = detectCores(logical = TRUE) - 1,
+    threads = max(1L, detectCores(logical = TRUE) - 1L, na.rm = TRUE),
     workDir = NULL) {
     ### Setting the working directory.
     if (is.null(x = workDir)) {
