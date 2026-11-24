@@ -29,17 +29,20 @@ struct SNPBinomialWorker : public Worker
         T[j] * (reference[j] == "T");
 
       int cm = total - ref_count;
-      binom[j] = 0;
+      double log_p = std::log(p);
+      double log_q = std::log(1.0 - p);
+      double log_sum = R_NegInf;
 
       for (int k = 0; k <= total; ++k)
       {
-        if (total >= k && cm <= k)
+        if (cm <= k)
         {
-          double temp = cpp_choose(total, k) * pow(p, k) *
-            pow(1 - p, total - k);
-          binom[j] += temp;
+          double log_temp = cpp_lchoose(total, k) + k * log_p +
+            (total - k) * log_q;
+          log_sum = log_sum_exp(log_sum, log_temp);
         }
       }
+      binom[j] = std::exp(log_sum);
     }
   }
 };

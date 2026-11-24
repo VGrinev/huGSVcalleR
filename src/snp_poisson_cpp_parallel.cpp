@@ -30,12 +30,16 @@
 
       int K = N - ref_count;
 
-      double Pr = 0.0;
+      double log_p = std::log(p);
+      double log_q = std::log(1.0 - p);
+      double log_sum = R_NegInf;
       for (int k = K; k <= N; ++k) {
-        Pr += cpp_choose(N, k) * pow(p, k) * pow(1 - p, N - k);
+        double log_temp = cpp_lchoose(N, k) + k * log_p +
+          (N - k) * log_q;
+        log_sum = log_sum_exp(log_sum, log_temp);
       }
 
-      results[j] = Pr;  // Saving the result for the current SNP
+      results[j] = std::exp(log_sum);
     }
   }
 };

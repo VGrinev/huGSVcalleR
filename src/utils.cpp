@@ -1,4 +1,5 @@
 #include <Rcpp.h>
+#include <cmath>
 using namespace Rcpp;
 
 // Logarithm of the binomial coefficient C(n, k) via lgamma.
@@ -27,4 +28,11 @@ double cpp_choose(int n, int k) {
     result *= (n - i + 1) / static_cast<double>(i);
   }
   return result;
+}
+
+double log_sum_exp(double a, double b) {
+  if (a == R_NegInf) return b;
+  if (b == R_NegInf) return a;
+  double m = std::max(a, b);
+  return m + std::log1p(std::exp(-std::abs(a - b)));
 }
