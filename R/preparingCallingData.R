@@ -343,7 +343,7 @@ collectBasesPileup <- function(
     temp_stat <- .summarizePileupCounts(pileup_data)
     if (!is.null(x = coverage)) {
         temp_stat <- temp_stat[
-            rowSums(temp_stat[, c("A", "C", "G", "T_count")]) >= coverage,
+            rowSums(temp_stat[, c("A", "C", "G", "T")]) >= coverage,
         ]
     }
     temp_stat <- .assignReferenceNucleotides(temp_stat, genome_obj)
@@ -363,13 +363,13 @@ collectBasesPileup <- function(
 #' @noRd
 .summarizePileupCounts <- function(pileup_data) {
     temp_stat <- pileup_data %>%
-        mutate(reference = 0, A = 0, C = 0, G = 0, T_count = 0) %>%
+        mutate(reference = 0, A = 0, C = 0, G = 0, thymine = 0) %>%
         mutate(
             A = case_when(nucleotide == "A" ~ count, TRUE ~ .data$A),
             C = case_when(nucleotide == "C" ~ count, TRUE ~ .data$C),
             G = case_when(nucleotide == "G" ~ count, TRUE ~ .data$G),
-            T_count = case_when(
-                nucleotide == "T" ~ count, TRUE ~ .data$T_count
+            thymine = case_when(
+                nucleotide == "T" ~ count, TRUE ~ .data$thymine
             )
         )
     temp_stat <- as.data.table(temp_stat)
@@ -381,11 +381,11 @@ collectBasesPileup <- function(
             A = sum(x = A),
             C = sum(x = C),
             G = sum(x = G),
-            T_count = sum(x = T_count)
+            thymine = sum(x = thymine)
         ),
         by = position
     ]
-    temp_stat[, .(
+    temp_stat <- temp_stat[, .(
         position = position,
         seqnames = seqnames,
         pos = pos,
@@ -393,8 +393,11 @@ collectBasesPileup <- function(
         A = A,
         C = C,
         G = G,
-        T_count = T_count
+        thymine = thymine
     )]
+    # The CSV header is T, assigned as a string so it is not a bare symbol
+    colnames(temp_stat)[colnames(temp_stat) == "thymine"] <- "T"
+    temp_stat
 }
 
 #' Assign reference nucleotides to pileup positions

@@ -30,7 +30,8 @@ If the core count cannot be detected, one thread is used.}
 directory. NULL by default that means the current working directory.}
 }
 \value{
-sorted and indexed BAM file(-s).
+sorted BAM file(-s). Position-sorted files are also indexed.
+Name-sorted files are not indexed, because indexBam() rejects them
 }
 \description{
 This is a wrapper function that uses the low-level function

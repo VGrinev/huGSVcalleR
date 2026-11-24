@@ -541,7 +541,7 @@ callSNVs <- function(
 #' @noRd
 .readFrequencyTable <- function(fr_data, workDir) {
     if (is.object(x = fr_data)) {
-        return(.useThymineCountColumn(fr_data))
+        return(fr_data)
     }
     path <- paste(workDir, fr_data, sep = "/")
     frt <- tools::file_ext(x = path)
@@ -551,24 +551,7 @@ callSNVs <- function(
     if (!file.exists(path)) {
         stop("File not found:", path)
     }
-    .useThymineCountColumn(read.csv(file = path, header = TRUE))
-}
-
-#' Accept the pileup thymine column
-#' @description Internal helper for .readFrequencyTable. collectBasesPileup
-#'     writes thymine counts as T_count. The callers still read a column
-#'     named T
-#' @param fr_table data.frame with the frequency table
-#' @return data.frame with a T column when the input used T_count
-#' @author Dzianis D. Sarnatski
-#' @keywords internal
-#' @noRd
-.useThymineCountColumn <- function(fr_table) {
-    names <- colnames(fr_table)
-    if ("T_count" %in% names && !"T" %in% names) {
-        colnames(fr_table)[names == "T_count"] <- "T"
-    }
-    fr_table
+    read.csv(file = path, header = TRUE)
 }
 
 #' Dispatch SNV calling to the appropriate low-level function
