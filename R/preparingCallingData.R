@@ -142,6 +142,10 @@ collectBasesPileup <- function(
     GRs <- .buildPileupRegions(gr, canChr, bam_link, workDir)
     ### Loading the reference genome object.
     genome_obj <- .loadReferenceGenome(genome)
+    ### One directory per run, so a shared tempdir cannot mix leftovers
+    run_tmp <- tempfile(pattern = "huGSVcalleR_pileup_", tmpdir = tmpDir)
+    dir.create(run_tmp, recursive = TRUE, showWarnings = FALSE)
+    on.exit(unlink(run_tmp, recursive = TRUE), add = TRUE)
     ### Collection of pileup statistics.
     .runPileupInParallel(
         GRs = GRs,
@@ -151,11 +155,11 @@ collectBasesPileup <- function(
         mapq = mapq,
         coverage = coverage,
         genome_obj = genome_obj,
-        tmpDir = tmpDir,
+        tmpDir = run_tmp,
         threads = threads
     )
     ### Consolidation of pileup statistics.
-    .consolidatePileupResults(tmpDir, bam, postfix)
+    .consolidatePileupResults(run_tmp, bam, postfix)
 }
 
 #' Load a reference genome package
