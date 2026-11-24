@@ -608,7 +608,7 @@ readFASTQ <- function(
 #'     i) adapter_id         - adapter ID;
 #'     ii) adapter_name      - adapter name;
 #'     iii) adapter_sequence - adapter sequence.
-#' @param error (when argument adapters is not NULL) numeric value in [0, 1]
+#' @param error (when argument adapters is not NULL) numeric value in \[0, 1\]
 #'     specifying error rate. The error rate is the proportion of mismatches
 #'     allowed between the adapter and the aligned portion of the read. For a
 #'     given adapter A, the number of allowed mismatches between each
@@ -698,7 +698,7 @@ readFASTQ <- function(
 #'     workDir = "D:/Vasily Grinev"
 #' )
 #' @export
-#' @importFrom ShortRead readFastq writeFastq trimEnds trimTailw trimTails id
+#' @importFrom ShortRead readFastq writeFastq trimTailw trimTails id
 #' @importFrom ShortRead polynFilter occurrenceFilter dustyFilter
 #' @importFrom Biostrings width quality
 #' @importFrom methods as
@@ -1071,6 +1071,31 @@ cleanRawReads <- function(
     narrow(x = FQ, start = start_pos, end = end_pos)
 }
 
+#' Trim low-quality bases from the left of each read
+#' @description Internal helper for .trimDynamicLowQuality(). Drops a leading
+#'     run of bases whose Phred score is at or below \code{tr_score}.
+#'     ShortRead::trimEnds() calls seqtype(), which that package does not
+#'     import, so the same left-end trim is done here
+#' @param FQ ShortReadQ object with reads
+#' @param tr_score integer, quality threshold
+#' @return ShortReadQ object with leading low-quality bases removed
+#' @author Dzianis D. Sarnatski
+#' @keywords internal
+#' @noRd
+.trimLeadingLowQuality <- function(FQ, tr_score) {
+    if (length(x = FQ) == 0L) {
+        return(FQ)
+    }
+    qmat <- as(quality(x = FQ), "matrix")
+    above <- qmat > tr_score
+    above[is.na(above)] <- FALSE
+    has_base <- rowSums(above) > 0
+    starts <- max.col(above, ties.method = "first")
+    w <- width(x = FQ)
+    starts[!has_base] <- w[!has_base] + 1L
+    narrow(x = FQ, start = starts, end = w)
+}
+
 #' Trim low-quality ends with dynamic trimming
 #' @description Internal helper for cleanRawReads(). Trims the reads based
 #'     on a quality threshold using either the sliding-window or the
@@ -1087,12 +1112,7 @@ cleanRawReads <- function(
 #' @noRd
 .trimDynamicLowQuality <- function(FQ, PhSs, tr_score, k, halfwidth,
     successive) {
-    FQ <- trimEnds(
-        object = FQ,
-        a = PhSs[PhSs$score == tr_score, ]$ASCII,
-        left = TRUE, right = FALSE,
-        relation = "<="
-    )
+    FQ <- .trimLeadingLowQuality(FQ = FQ, tr_score = tr_score)
     if (!is.null(x = halfwidth)) {
         FQ <- trimTailw(
             object = FQ, k = k,
@@ -1206,7 +1226,7 @@ cleanRawReads <- function(
 #'     i) adapter_id         - adapter ID;
 #'     ii) adapter_name      - adapter name;
 #'     iii) adapter_sequence - adapter sequence.
-#' @param error numeric value in [0, 1] specifying error rate. The error rate
+#' @param error numeric value in \[0, 1\] specifying error rate. The error rate
 #'     is the proportion of mismatches allowed between the adapter and the
 #'     aligned portion of the read. For a given adapter A, the number of
 #'     allowed mismatches between each subsequence s of A and the read is
@@ -1283,7 +1303,7 @@ cutLeftAdapter <- function(
 #'     i) adapter_id         - adapter ID;
 #'     ii) adapter_name      - adapter name;
 #'     iii) adapter_sequence - adapter sequence.
-#' @param error numeric value in [0, 1] specifying error rate. The error rate
+#' @param error numeric value in \[0, 1\] specifying error rate. The error rate
 #'     is the proportion of mismatches allowed between the adapter and the
 #'     aligned portion of the read. For a given adapter A, the number of
 #'     allowed mismatches between each subsequence s of A and the read is

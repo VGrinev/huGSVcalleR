@@ -51,7 +51,7 @@ i) adapter_id         - adapter ID;
 ii) adapter_name      - adapter name;
 iii) adapter_sequence - adapter sequence.}
 
-\item{error}{(when argument adapters is not NULL) numeric value in \link{0, 1}
+\item{error}{(when argument adapters is not NULL) numeric value in [0, 1]
 specifying error rate. The error rate is the proportion of mismatches
 allowed between the adapter and the aligned portion of the read. For a
 given adapter A, the number of allowed mismatches between each
