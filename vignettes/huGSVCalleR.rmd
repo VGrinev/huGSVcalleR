@@ -323,7 +323,7 @@ callSNVs(
 list.files(workDir, pattern = "^test_fisher")
 ```
 
-For machine learning models (`"log_reg"`, `"rand_forest"`, `"rpart"`, `"SVM"`, `"xgboost"`), `pvalue = TRUE` returns class probabilities instead of hard labels:
+For machine learning models (`"log_reg"`, `"rand_forest"`, `"rpart"`, `"SVM"`, `"xgboost"`), `pvalue = TRUE` returns class probabilities instead of hard labels. The five models are described below.
 
 ```{r module4-ml}
 callSNVs(
@@ -350,6 +350,24 @@ head(data.frame(
     QUAL  = rep(r$QUAL, n_alt)
 ))
 ```
+
+## Pre-trained machine learning models
+
+`callSNVs(criteria = "ml")` uses five models shipped in `inst/extdata`. They were trained with the [SNPSimulatoR](https://github.com/TalvinStrannik/SNPSimulatoR) package. That package is the simulator to use when a different count table or a newly trained model is needed. The same steps are kept in `inst/scripts/train-ml-models.R`.
+
+The simulator `GenerateSNPSeqGamma()` draws per-position read counts from gamma distributions. The distribution parameters were fitted to pile-up counts of sample NA12878 and to HG001 variant calls on human chromosome 22 (GRCh37). The table used for the shipped models has 20000 positions, and half of those positions are variant sites. After `set.seed(144)`, 80% of the rows are used for training and the remaining 20% are held out. Accuracy on the hold-out was scored with the Matthews correlation coefficient. The files in `inst/extdata` are the fitted training objects.
+
+Each position is reduced to four counts. `x1` is the count of the reference base. `x2`, `x3` and `x4` are the three non-reference base counts, sorted from largest to smallest. Before fitting, the three non-reference counts are added together. The model then sees two columns: `x_sum_norm`, that sum divided by the total count, and `total`, the total count.
+
+| `model` | File | Fitted object |
+| --- | --- | --- |
+| `rpart` | `rpart.rds` | `rpart(Labels ~ .)`, package defaults |
+| `log_reg` | `log_reg.rds` | binomial `glm(Labels ~ .)`. The object keeps the training frame, so the file is larger than the two predictors |
+| `rand_forest` | `rand_forest.rds` | `randomForest(Labels ~ .)`, package defaults |
+| `SVM` | `SVM.rds` | `LiblineaR`, type 0 (L2-regularized logistic regression), cost 10 |
+| `xgboost` | `xgboost.json` | 250 rounds, objective `binary:logistic`, loaded with `xgb.load` |
+
+Hyperparameters were not searched. The names above are the values of the `model` argument.
 
 For BAM-based criteria:
 
@@ -780,7 +798,10 @@ include `test_R1.fastq`, `test_R2.fastq`, `test.bam`, `test.bam.bai`,
 `test_pileup.csv`, `test_truth.vcf`, `test_query.vcf`,
 `test_annotation.vcf`, `test_annotation.gtf`, `test_eejs.txt`,
 `ref_genes.txt`, `adapters.txt`, `contaminants.txt`, and
-`phred_scores.txt`.
+`phred_scores.txt`. The pre-trained callers `rpart.rds`,
+`log_reg.rds`, `rand_forest.rds`, `SVM.rds` and `xgboost.json` are
+described under "Pre-trained machine learning models". The training
+recipe is `inst/scripts/train-ml-models.R`.
 
 # Citation
 

@@ -418,15 +418,35 @@ fisherCalleR <- function(bamDir = NULL,
 #'     written to \code{vcfDir}. The function is called for its side effect
 #'     and returns \code{NULL} invisibly.
 #' @details
-#'     The function supports two groups of criteria:
-#'     \itemize{
-#'       \item Table-based criteria (\code{"binomial"}, \code{"counting"},
-#'             \code{"entropy"}, \code{"fisher"}, \code{"poisson"},
-#'             \code{"ml"}) require \code{fr_data} --- a frequency table
-#'             produced by \code{collectBasesPileup()}.
-#'       \item BAM-based criteria (\code{"fisherRSubread"}, \code{"gatk"})
-#'             require \code{bamFile} and work directly with the BAM file.
-#'     }
+#' The function supports two groups of criteria:
+#'
+#' * Table-based criteria (`"binomial"`, `"counting"`, `"entropy"`,
+#'   `"fisher"`, `"poisson"`, `"ml"`) require `fr_data`, a frequency
+#'   table produced by `collectBasesPileup()`.
+#' * BAM-based criteria (`"fisherRSubread"`, `"gatk"`) require
+#'   `bamFile` and work directly with the BAM file.
+#'
+#' The `"ml"` criterion applies one of five models trained with the
+#' [SNPSimulatoR](https://github.com/TalvinStrannik/SNPSimulatoR)
+#' package and stored in `inst/extdata`.
+#' `GenerateSNPSeqGamma()` draws read counts from gamma distributions.
+#' Those parameters were fitted to NA12878 pile-ups and HG001 variant
+#' calls on human chromosome 22 (GRCh37). The training table has 20000
+#' positions, half of them variant sites, and is split 80/20 after
+#' `set.seed(144)`. Features `x1` to `x4` are the reference count and
+#' the three non-reference counts in descending order. Fitting uses two
+#' columns derived from them: `x_sum_norm`, the non-reference sum
+#' divided by the total count, and `total`.
+#'
+#' `rpart.rds` is an `rpart` tree. `log_reg.rds` is a binomial `glm`,
+#' and the object keeps the training frame. `rand_forest.rds` is a
+#' `randomForest`. `SVM.rds` is a `LiblineaR` model of type 0 with
+#' cost 10. `xgboost.json` is a 250-round model with objective
+#' `binary:logistic`. Hyperparameters were left at the defaults of
+#' those functions. The same steps are written in
+#' `inst/scripts/train-ml-models.R`. SNPSimulatoR is the package to
+#' use when a different simulated table or a newly trained model is
+#' needed.
 #' @author Dzianis D. Sarnatski, Mikalai M. Yatskou, Vasily V. Grinev
 #' @examples
 #' ex <- system.file("extdata", package = "huGSVcalleR")

@@ -142,16 +142,36 @@ various low-level functions for identification of single nucleotide
 variations from NGS data.
 }
 \details{
-\if{html}{\out{<div class="sourceCode">}}\preformatted{The function supports two groups of criteria:
-\\itemize\{
-  \\item Table-based criteria (\code{"binomial"}, \code{"counting"},
-        \code{"entropy"}, \code{"fisher"}, \code{"poisson"},
-        \code{"ml"}) require \code{fr_data} --- a frequency table
-        produced by \code{collectBasesPileup()}.
-  \\item BAM-based criteria (\code{"fisherRSubread"}, \code{"gatk"})
-        require \code{bamFile} and work directly with the BAM file.
-\}
-}\if{html}{\out{</div>}}
+The function supports two groups of criteria:
+\itemize{
+\item Table-based criteria (\code{"binomial"}, \code{"counting"}, \code{"entropy"},
+\code{"fisher"}, \code{"poisson"}, \code{"ml"}) require \code{fr_data}, a frequency
+table produced by \code{collectBasesPileup()}.
+\item BAM-based criteria (\code{"fisherRSubread"}, \code{"gatk"}) require
+\code{bamFile} and work directly with the BAM file.
+}
+
+The \code{"ml"} criterion applies one of five models trained with the
+\href{https://github.com/TalvinStrannik/SNPSimulatoR}{SNPSimulatoR}
+package and stored in \code{inst/extdata}.
+\code{GenerateSNPSeqGamma()} draws read counts from gamma distributions.
+Those parameters were fitted to NA12878 pile-ups and HG001 variant
+calls on human chromosome 22 (GRCh37). The training table has 20000
+positions, half of them variant sites, and is split 80/20 after
+\code{set.seed(144)}. Features \code{x1} to \code{x4} are the reference count and
+the three non-reference counts in descending order. Fitting uses two
+columns derived from them: \code{x_sum_norm}, the non-reference sum
+divided by the total count, and \code{total}.
+
+\code{rpart.rds} is an \code{rpart} tree. \code{log_reg.rds} is a binomial \code{glm},
+and the object keeps the training frame. \code{rand_forest.rds} is a
+\code{randomForest}. \code{SVM.rds} is a \code{LiblineaR} model of type 0 with
+cost 10. \code{xgboost.json} is a 250-round model with objective
+\code{binary:logistic}. Hyperparameters were left at the defaults of
+those functions. The same steps are written in
+\code{inst/scripts/train-ml-models.R}. SNPSimulatoR is the package to
+use when a different simulated table or a newly trained model is
+needed.
 }
 \examples{
 ex <- system.file("extdata", package = "huGSVcalleR")
