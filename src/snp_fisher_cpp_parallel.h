@@ -3,7 +3,6 @@
 
 #include <Rcpp.h>
 #include <RcppParallel.h>
-#include <random>
 
 using namespace Rcpp;
 using namespace RcppParallel;

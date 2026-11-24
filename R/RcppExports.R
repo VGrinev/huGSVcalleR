@@ -122,13 +122,13 @@ snp_counting_cpp_parallel <- function(df_d) {
 #'      the reference allele.
 #' 5. Normalizes nucleotide counts to probabilities.
 #' 6. Computes entropy using the formula:
-#'    Entropy = -sum(p_i * log10(p_i))
+#'    Entropy = -sum(p_i * log(p_i))
 #'    where p_i is the normalized count of nucleotide i.
 #' 7. If p_value = TRUE, computes the chi-square statistic using the
 #'    entropy and total coverage, then derives the p-value:
 #'    chi^2 = 2 * total coverage * Entropy
 #'    The p-value is calculated using the chi-square distribution with
-#'    4 degrees of freedom.
+#'    3 degrees of freedom.
 #' 8. Executes the calculations in parallel across multiple cores for
 #'    faster processing of large datasets.
 #'
@@ -160,16 +160,11 @@ snp_entropy_cpp_parallel <- function(df_d, p_value = FALSE) {
 #'   significance.
 #'
 #' @details
-#' The function performs the following steps:
-#' 1. For each SNP position, the nucleotide counts for A, C, G, T are
-#'    extracted from the input data frame.
-#' 2. Intermediate quantities such as `cn`, `ct`, `cr`, and others are
-#'    computed using parallel processing.
-#' 3. Fisher's exact test statistics are calculated for each SNP
-#'    position using binomial coefficients. The computation is performed
-#'    in log-space via `lgamma` to avoid overflow for large counts.
-#' 4. The function is optimized for parallel execution, distributing the
-#'    workload across multiple cores.
+#' The sample row is the reference count versus all other bases. The
+#' control row has the same depth and contains only the reference base
+#' The p-value is the two-sided hypergeometric probability, with the
+#' ordinary denominator C(n, column total). It does not depend on a
+#' random draw
 #'
 #' @author Dzianis D. Sarnatski, Mikalai M. Yatskou
 #' @keywords internal
@@ -196,7 +191,7 @@ snp_fisher_cpp_parallel <- function(df_d) {
 #' @return A numeric vector containing the Poisson-based probability for
 #'         each position. This probability represents the likelihood of
 #'         observing the non-reference allele count under the Poisson
-#'         model with a fixed mutation rate (default: 9/20000).
+#'         model with a fixed mutation rate of 1/1000
 #'
 #' @details
 #' The function performs the following steps:
@@ -211,8 +206,8 @@ snp_fisher_cpp_parallel <- function(df_d) {
 #' 5. The calculations are performed in parallel for efficiency on large
 #'    datasets.
 #'
-#' @note The mutation rate used in the Poisson model is fixed at 9/20000
-#' by default.
+#' @note The mutation rate used in the Poisson model is fixed at 1/1000
+#' The reported probability is the binomial upper tail at that rate
 #' @keywords internal
 #' @noRd
 snp_poisson_cpp_parallel <- function(df_d) {

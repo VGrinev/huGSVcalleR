@@ -1,7 +1,48 @@
 #include "snp_fisher_cpp_parallel.h"
 #include "utils.h"
+#include <algorithm>
 #include <cmath>
 #include <limits>
+
+// Two-sided Fisher's exact test
+// The sample row is the reference count against every other base
+// The control row has the same depth and only the reference base
+// The denominator is the ordinary hypergeometric C(n, column)
+static double fisher_twosided(int ref_count, int alt_count) {
+  if (alt_count <= 0) {
+    return 1.0;
+  }
+  int total = ref_count + alt_count;
+  int r1 = total;
+  int r2 = total;
+  int k1 = ref_count + total;
+  int n = r1 + r2;
+  int lo = std::max(0, r1 + k1 - n);
+  int hi = std::min(r1, k1);
+  auto log_prob = [&](int x) {
+    return cpp_lchoose(r1, x) + cpp_lchoose(r2, k1 - x) - cpp_lchoose(n, k1);
+  };
+  double log_obs = log_prob(ref_count);
+  double log_sum = R_NegInf;
+  for (int x = lo; x <= hi; ++x) {
+    double log_x = log_prob(x);
+    if (log_x <= log_obs + 1e-7) {
+      log_sum = log_sum_exp(log_sum, log_x);
+    }
+  }
+  if (!std::isfinite(log_sum)) {
+    return 1.0;
+  }
+  double p = std::exp(log_sum);
+  if (!std::isfinite(p) || p > 1.0) {
+    return 1.0;
+  }
+  // exp underflows to 0 long before the probability is actually zero
+  if (p == 0.0) {
+    return std::numeric_limits<double>::min();
+  }
+  return p;
+}
 
 struct FisherWorker : public Worker {
   const std::vector<int>& A;
@@ -9,94 +50,22 @@ struct FisherWorker : public Worker {
   const std::vector<int>& G;
   const std::vector<int>& T;
   const std::vector<std::string>& reference;
-
-  RVector<int> cn, ct, cr, cm, ctr, ctr_max;
+  RVector<double> fisher;
 
   FisherWorker(const std::vector<int>& A, const std::vector<int>& C,
                const std::vector<int>& G, const std::vector<int>& T,
                const std::vector<std::string>& reference,
-               IntegerVector& cn, IntegerVector& ct,
-               IntegerVector& cr, IntegerVector& cm, IntegerVector& ctr,
-               IntegerVector& ctr_max)
-    : A(A), C(C), G(G), T(T), reference(reference),
-      cn(cn), ct(ct), cr(cr), cm(cm), ctr(ctr), ctr_max(ctr_max) {}
+               NumericVector& fisher)
+    : A(A), C(C), G(G), T(T), reference(reference), fisher(fisher) {}
 
-  void operator()(std::size_t begin, std::size_t end)
-  {
-    static thread_local std::mt19937 gen(std::random_device{}());
-
-    for (std::size_t j = begin; j < end; ++j)
-    {
+  void operator()(std::size_t begin, std::size_t end) {
+    for (std::size_t j = begin; j < end; ++j) {
       int total = A[j] + C[j] + G[j] + T[j];
       int ref_count = (reference[j] == "A") * A[j] +
         (reference[j] == "C") * C[j] +
         (reference[j] == "G") * G[j] +
         (reference[j] == "T") * T[j];
-
-      std::uniform_real_distribution<> dis1(0.0, total % 2 + 1);
-      cn[j] = static_cast<int>(std::min(total / 2 + dis1(gen),
-                                        1.25 * ref_count + 1));
-      ct[j] = total - cn[j];
-      cr[j] = ref_count;
-      cm[j] = total - ref_count;
-
-      std::uniform_real_distribution<> dis2(0.8 * cm[j], cm[j] + 1.0);
-      ctr[j] = ct[j] - std::min(static_cast<int>(dis2(gen)), ct[j]);
-      ctr_max[j] = ctr[j];
-    }
-  }
-};
-
-struct FisherCalcWorker : public Worker
-{
-  const RVector<int> cn;
-  const RVector<int> ct;
-  const RVector<int> cr;
-  const RVector<int> cm;
-  const RVector<int> ctr_max;
-
-  RVector<int> ctr;
-
-  RVector<double> fisher;
-
-  FisherCalcWorker(const IntegerVector& cn, const IntegerVector& ct,
-                   const IntegerVector& cr, const IntegerVector& cm,
-                   const IntegerVector& ctr_max, const IntegerVector& ctr,
-                   NumericVector& fisher)
-    : cn(cn), ct(ct), cr(cr), cm(cm), ctr_max(ctr_max), ctr(ctr), fisher(fisher)
-    {}
-
-  void operator()(std::size_t begin, std::size_t end)
-  {
-    for (std::size_t j = begin; j < end; ++j)
-    {
-      // Accumulate in log-space to avoid overflow.
-      double log_fisher = R_NegInf;
-      for (int i = 0; i <= ctr_max[j]; ++i)
-      {
-        if (ctr[j] >= i)
-        {
-          double log_temp = cpp_lchoose(ct[j], i) +
-            cpp_lchoose(cn[j], cr[j] - i) -
-            cpp_lchoose(ct[j] + cm[j], cm[j]);
-          // log-sum-exp accumulation
-          if (log_fisher == R_NegInf) {
-            log_fisher = log_temp;
-          } else {
-            double m = std::max(log_fisher, log_temp);
-            log_fisher = m + std::log1p(std::exp(std::min(log_fisher, log_temp)
-                                                   - m));
-          }
-        }
-      }
-      fisher[j] = std::exp(log_fisher);
-      // Safety clamp to [0, 1] (p-value cannot exceed 1).
-      if (!std::isfinite(fisher[j]) || fisher[j] > 1.0) {
-        fisher[j] = 1.0;
-      }
-      if (fisher[j] < 0.0) {
-        fisher[j] = 0.0;
-      }
+      fisher[j] = fisher_twosided(ref_count, total - ref_count);
     }
   }
 };
@@ -123,16 +92,11 @@ struct FisherCalcWorker : public Worker
 //'   significance.
 //'
 //' @details
-//' The function performs the following steps:
-//' 1. For each SNP position, the nucleotide counts for A, C, G, T are
-//'    extracted from the input data frame.
-//' 2. Intermediate quantities such as `cn`, `ct`, `cr`, and others are
-//'    computed using parallel processing.
-//' 3. Fisher's exact test statistics are calculated for each SNP
-//'    position using binomial coefficients. The computation is performed
-//'    in log-space via `lgamma` to avoid overflow for large counts.
-//' 4. The function is optimized for parallel execution, distributing the
-//'    workload across multiple cores.
+//' The sample row is the reference count versus all other bases. The
+//' control row has the same depth and contains only the reference base
+//' The p-value is the two-sided hypergeometric probability, with the
+//' ordinary denominator C(n, column total). It does not depend on a
+//' random draw
 //'
 //' @author Dzianis D. Sarnatski, Mikalai M. Yatskou
 //' @keywords internal
@@ -140,19 +104,11 @@ struct FisherCalcWorker : public Worker
 // [[Rcpp::export]]
 NumericVector snp_fisher_cpp_parallel(DataFrame& df_d)
 {
-   int n = df_d.nrows();
-   NumericVector fisher(n);
-   IntegerVector cn(n), ct(n), cr(n), cm(n), ctr(n), ctr_max(n);
-
-   // 1. Parallel computation of cn, ct, cr, cm, ctr
-   BaseCounts counts = read_base_counts(df_d);
-   FisherWorker worker(counts.A, counts.C, counts.G, counts.T,
-                       counts.reference, cn, ct, cr, cm, ctr, ctr_max);
-   parallelFor(0, n, worker);
-
-   // 2. Parallel computation of fisher p-values
-   FisherCalcWorker fisherCalcWorker(cn, ct, cr, cm, ctr, ctr_max, fisher);
-   parallelFor(0, n, fisherCalcWorker);
-
-   return fisher;
- }
+  int n = df_d.nrows();
+  NumericVector fisher(n);
+  BaseCounts counts = read_base_counts(df_d);
+  FisherWorker worker(counts.A, counts.C, counts.G, counts.T,
+                      counts.reference, fisher);
+  parallelFor(0, n, worker);
+  return fisher;
+}
