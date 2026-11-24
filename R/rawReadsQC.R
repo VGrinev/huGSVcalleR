@@ -294,53 +294,46 @@ assessQRawReads <- function(fastqDir = NULL,
 #' @description Internal helper for .computePerCycleQuality(). Repeats each
 #'     observed quality score according to its count.
 #' @param QA ShortRead::qa() output.
-#' @return matrix of raw per-cycle quality scores.
+#' @return list of quality scores, one numeric vector per cycle
 #' @author Vasily V. Grinev.
 #' @keywords internal
 #' @noRd
 .expandPerCycleQuality <- function(QA) {
-    do.call(
-        what = rbind,
-        args = lapply(
-            X = split(
-                x = QA[["perCycle"]]$quality,
-                f = QA[["perCycle"]]$quality$Cycle
-            ),
-            FUN = function(y) {
-                rep(x = y[, 3], times = y[, 4])
-            }
-        )
+    # Later cycles can be shorter after trimming, so the vectors are not rbind-ed
+    lapply(
+        X = split(
+            x = QA[["perCycle"]]$quality,
+            f = QA[["perCycle"]]$quality$Cycle
+        ),
+        FUN = function(y) {
+            rep(x = y[, 3], times = y[, 4])
+        }
     )
 }
 
 #' Bin per-cycle quality scores in windows of 5 cycles
 #' @description Internal helper for .computePerCycleQuality(). Computes
 #'     quantiles for each 5-cycle window.
-#' @param PCQRs matrix of raw per-cycle quality scores.
+#' @param PCQRs list of quality scores, one numeric vector per cycle
 #' @return list of character/numeric vectors ready for rbind.
 #' @author Vasily V. Grinev.
 #' @keywords internal
 #' @noRd
 .binPerCycleQuality <- function(PCQRs) {
     m <- list()
-    for (i in seq(from = 1, to = nrow(x = PCQRs), by = 5)) {
-        if (i + 4 < nrow(x = PCQRs)) {
-            m[[i]] <- c(
-                paste(i, i + 4, sep = "-"),
-                quantile(
-                    x = PCQRs[i:(i + 4), ],
-                    probs = c(0.1, 0.25, 0.5, 0.75, 0.9)
-                )
-            )
+    n <- length(PCQRs)
+    for (i in seq(from = 1, to = n, by = 5)) {
+        if (i + 4 < n) {
+            scores <- unlist(PCQRs[i:(i + 4)], use.names = FALSE)
+            label <- paste(i, i + 4, sep = "-")
         } else {
-            m[[i]] <- c(
-                paste(i, nrow(x = PCQRs), sep = "-"),
-                quantile(
-                    x = PCQRs[i:nrow(x = PCQRs), ],
-                    probs = c(0.1, 0.25, 0.5, 0.75, 0.9)
-                )
-            )
+            scores <- unlist(PCQRs[i:n], use.names = FALSE)
+            label <- paste(i, n, sep = "-")
         }
+        m[[i]] <- c(
+            label,
+            quantile(x = scores, probs = c(0.1, 0.25, 0.5, 0.75, 0.9))
+        )
     }
     m
 }
@@ -397,50 +390,44 @@ assessQRawReads <- function(fastqDir = NULL,
 #' @description Internal helper for .computePerCycleBases(). Repeats each
 #'     observed base according to its count.
 #' @param QA ShortRead::qa() output.
-#' @return matrix of raw per-cycle base calls.
+#' @return list of base calls, one character vector per cycle
 #' @author Vasily V. Grinev.
 #' @keywords internal
 #' @noRd
 .expandPerCycleBases <- function(QA) {
     PCCBs <- QA[["perCycle"]]$baseCall[, -4]
     PCCBs$Base <- as.character(x = PCCBs$Base)
-    do.call(
-        what = rbind,
-        args = lapply(
-            X = split(x = PCCBs, f = PCCBs$Cycle),
-            FUN = function(y) {
-                rep(x = y[, 2], times = y[, 3])
-            }
-        )
+    # Later cycles can be shorter after trimming, so the vectors are not rbind-ed
+    lapply(
+        X = split(x = PCCBs, f = PCCBs$Cycle),
+        FUN = function(y) {
+            rep(x = y[, 2], times = y[, 3])
+        }
     )
 }
 
 #' Bin per-cycle base calls in windows of 5 cycles
 #' @description Internal helper for .computePerCycleBases(). Computes
 #'     per-window base counts.
-#' @param PCCBs matrix of raw per-cycle base calls.
+#' @param PCCBs list of base calls, one character vector per cycle
 #' @return data.frame with cycles and base counts.
 #' @author Vasily V. Grinev.
 #' @keywords internal
 #' @noRd
 .binPerCycleBases <- function(PCCBs) {
     m <- data.frame(cycles = "", A = 0, C = 0, G = 0, T = 0, N = 0)
-    for (i in seq(from = 1, to = nrow(x = PCCBs), by = 5)) {
-        if (i + 4 < nrow(x = PCCBs)) {
-            bases <- c(
-                paste(i, i + 4, sep = "-"),
-                table(PCCBs[i:(i + 4), ])
-            )
-            m[i, 1] <- bases[1]
-            m[i, -1] <- bases[match(colnames(x = m), names(x = bases))][-1]
+    n <- length(PCCBs)
+    for (i in seq(from = 1, to = n, by = 5)) {
+        if (i + 4 < n) {
+            observed <- unlist(PCCBs[i:(i + 4)], use.names = FALSE)
+            label <- paste(i, i + 4, sep = "-")
         } else {
-            bases <- c(
-                paste(i, nrow(x = PCCBs), sep = "-"),
-                table(PCCBs[i:nrow(x = PCCBs), ])
-            )
-            m[i, 1] <- bases[1]
-            m[i, -1] <- bases[match(colnames(x = m), names(x = bases))][-1]
+            observed <- unlist(PCCBs[i:n], use.names = FALSE)
+            label <- paste(i, n, sep = "-")
         }
+        bases <- c(label, table(observed))
+        m[i, 1] <- bases[1]
+        m[i, -1] <- bases[match(colnames(x = m), names(x = bases))][-1]
     }
     m
 }

@@ -36,6 +36,37 @@ test_that("assessQRawReads finds adapters", {
     expect_true(nrow(res$ASs) > 0)
 })
 
+test_that("per-cycle summaries keep unequal cycle lengths", {
+    quality <- data.frame(
+        Cycle = c(1, 2, 3),
+        Quality = c("I", "I", "I"),
+        Score = c(10, 20, 30),
+        Count = c(4, 4, 2),
+        lane = "x"
+    )
+    base_call <- data.frame(
+        Cycle = c(1, 2, 3),
+        Base = c("A", "C", "G"),
+        Count = c(4, 4, 2),
+        lane = "x"
+    )
+    qa <- list(perCycle = list(quality = quality, baseCall = base_call))
+    expect_silent(scores <- huGSVcalleR:::.expandPerCycleQuality(qa))
+    expect_equal(lengths(scores), c("1" = 4, "2" = 4, "3" = 2))
+    binned <- huGSVcalleR:::.binPerCycleQuality(scores)
+    expected <- quantile(
+        c(rep(10, 4), rep(20, 4), rep(30, 2)),
+        probs = c(0.1, 0.25, 0.5, 0.75, 0.9)
+    )
+    expect_equal(as.numeric(binned[[1]][-1]), as.numeric(expected))
+    expect_silent(bases <- huGSVcalleR:::.expandPerCycleBases(qa))
+    expect_equal(lengths(bases), c("1" = 4, "2" = 4, "3" = 2))
+    counted <- huGSVcalleR:::.binPerCycleBases(bases)
+    expect_equal(as.numeric(counted$A[1]), 4)
+    expect_equal(as.numeric(counted$C[1]), 4)
+    expect_equal(as.numeric(counted$G[1]), 2)
+})
+
 test_that("assessQRawReads stops on invalid extension", {
     expect_error(
         assessQRawReads(
