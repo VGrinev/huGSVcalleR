@@ -1163,6 +1163,30 @@ generateVCF <- function(
     invisible(NULL)
 }
 
+#' Rank chromosomes for VCF coordinate order
+#' @description Internal helper for .prepareVcfTable. Puts 1-22, X, Y and M
+#'     ahead of other names, with or without a chr prefix
+#' @param chrom character vector of chromosome names
+#' @return integer vector of sort keys
+#' @author Dzianis D. Sarnatski
+#' @keywords internal
+#' @noRd
+.vcfChromRank <- function(chrom) {
+    bare <- sub(pattern = "^chr", replacement = "", x = as.character(chrom))
+    rank <- suppressWarnings(as.integer(bare))
+    rank[bare == "X"] <- 23L
+    rank[bare == "Y"] <- 24L
+    rank[bare %in% c("M", "MT")] <- 25L
+    unknown <- is.na(rank)
+    if (any(unknown)) {
+        extra <- bare[unknown]
+        rank[unknown] <- 100L + as.integer(
+            factor(extra, levels = unique(extra))
+        )
+    }
+    rank
+}
+
 #' Prepare VCF table from call data
 #' @description Internal helper for generateVCF(). Transforms the call table
 #'     into the VCF-like structure with CHROM, POS, ID, REF, ALT, QUAL,
@@ -1193,11 +1217,13 @@ generateVCF <- function(
     vcf_pre <- rbind(A, C, G, T_sub)
     VCF <- .buildPositionSummary(vcf_pre)
     VCF$CHROM <- gsub(pattern = ":.+", replacement = "", x = VCF$position)
-    VCF$POS <- as.numeric(x = gsub(
+    VCF$POS <- as.integer(round(as.numeric(x = gsub(
         pattern = ".+:",
         replacement = "",
         x = VCF$position
-    ))
+    ))))
+    VCF$DP <- as.integer(round(VCF$DP))
+    VCF$MMsum <- as.integer(round(VCF$MMsum))
     VCF$ID <- paste(
         paste(VCF$position, VCF$reference, sep = "_"),
         VCF$ALT,
@@ -1213,6 +1239,8 @@ generateVCF <- function(
     )
     VCF$REF <- VCF$reference
     VCF <- data.frame(VCF)
+    VCF <- VCF[order(.vcfChromRank(VCF$CHROM), VCF$POS), ]
+    rownames(x = VCF) <- NULL
     ### Keep the test columns along with the standard VCF columns.
     VCF[, c(
         "CHROM", "POS", "ID", "REF", "ALT",
@@ -1238,7 +1266,10 @@ generateVCF <- function(
     MMsum <- vcf_pre[, sum(MM), by = position]
     MMsum <- MMsum[order(x = MMsum$position), ]
     VCF$MMsum <- MMsum$V1
-    MM <- vcf_pre[, paste(MM, collapse = ","), by = position]
+    MM <- vcf_pre[, paste(
+        format(MM, scientific = FALSE, trim = TRUE),
+        collapse = ","
+    ), by = position]
     MM <- MM[order(x = MM$position), ]
     VCF$MM <- MM$V1
     VCF
@@ -1329,7 +1360,7 @@ generateVCF <- function(
             " for alternative allele(-s)\">"
         ),
         paste0(
-            "##INFO=<ID=MM,Number=1,Type=String,",
+            "##INFO=<ID=MM,Number=A,Type=Integer,",
             "Description=\"Number of supporting reads",
             " for each alternative allele\">"
         ),
