@@ -36,6 +36,8 @@
 #' alleles (`k`), using the binomial coefficient formula and the
 #' probability mass function for the binomial distribution.
 #'
+#' @note The mutation probability p is fixed at 1/1000, the same average
+#' polymorphism rate as the Poisson test
 #' @author Dzianis D. Sarnatski, Mikalai M. Yatskou
 #' @keywords internal
 #' @noRd

@@ -82,6 +82,8 @@ struct SNPBinomialWorker : public Worker
 //' alleles (`k`), using the binomial coefficient formula and the
 //' probability mass function for the binomial distribution.
 //'
+//' @note The mutation probability p is fixed at 1/1000, the same average
+//' polymorphism rate as the Poisson test
 //' @author Dzianis D. Sarnatski, Mikalai M. Yatskou
 //' @keywords internal
 //' @noRd
@@ -90,7 +92,7 @@ NumericVector snp_binomial_cpp_parallel(DataFrame& df_d)
 {
   int n = df_d.nrows();
 
-  double p = 1e-5;
+  double p = 1.0 / 1000.0;
   NumericVector binom(n);
 
   BaseCounts counts = read_base_counts(df_d);
