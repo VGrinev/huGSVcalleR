@@ -101,7 +101,7 @@
 #' )
 #' @export
 #' @importFrom data.table data.table fwrite as.data.table
-#' @importFrom BiocParallel bplapply SnowParam
+#' @importFrom BiocParallel bplapply SnowParam SerialParam
 #' @importFrom Rsamtools BamFile ScanBamParam seqinfo pileup PileupParam
 #' @importFrom GenomicRanges makeGRangesFromDataFrame GRanges
 #' @importFrom BSgenome getSeq
@@ -195,7 +195,16 @@ collectBasesPileup <- function(
 #' @noRd
 .runPileupInParallel <- function(GRs, bam_link, depth, baseq, mapq,
     coverage, genome_obj, tmpDir, threads) {
-    bpparam <- SnowParam(workers = threads, stop.on.error = TRUE)
+    # One worker still opens a PSOCK process and serializes package:stats
+    bpparam <- if (threads <= 1L) {
+        SerialParam()
+    } else {
+        SnowParam(
+            workers = threads,
+            exportglobals = FALSE,
+            stop.on.error = TRUE
+        )
+    }
     bplapply(
         X = seq_along(GRs),
         FUN = .computePileupChunk,

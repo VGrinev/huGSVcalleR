@@ -38,6 +38,7 @@
 #' @export
 #' @importFrom Biostrings DNAStringSet PhredQuality width letterFrequency
 #' @importFrom ShortRead countFastq qa dustyScore
+#' @importFrom BiocParallel bpparam register SerialParam
 #' @importFrom data.table data.table rbindlist
 #' @importFrom IRanges IntegerList
 #' @importFrom stats density quantile
@@ -80,6 +81,29 @@ assessQRawReads <- function(fastqDir = NULL,
     )
 }
 
+#' Run ShortRead::qa on one FASTQ file
+#' @description Internal helper for .loadQaInputs. ShortRead::qa sends
+#'     the file to a PSOCK worker
+#'     Serializing that task warns that package:stats may not be available
+#'     One file is scored in this process instead
+#' @param path character string with the FASTQ directory
+#' @param fastq character string with the FASTQ file name
+#' @param n integer or NULL, maximum number of reads
+#' @return ShortRead QA object
+#' @author Dzianis D. Sarnatski
+#' @keywords internal
+#' @noRd
+.qaShortRead <- function(path, fastq, n) {
+    old <- bpparam()
+    register(SerialParam())
+    on.exit(register(old), add = TRUE)
+    if (is.null(x = n)) {
+        qa(dirPath = path, pattern = fastq)
+    } else {
+        qa(dirPath = path, pattern = fastq, n = n)
+    }
+}
+
 #' Load FASTQ reads and ShortRead::qa() output
 #' @description Internal helper for assessQRawReads(). Reads the FASTQ
 #'     file via readFASTQ() and computes the ShortRead::qa() summary.
@@ -101,11 +125,7 @@ assessQRawReads <- function(fastqDir = NULL,
         fastqDir = fastqDir, fastq = fastq, n = n,
         workDir = workDir
     )
-    if (is.null(x = n)) {
-        QA <- qa(dirPath = path, pattern = fastq)
-    } else {
-        QA <- qa(dirPath = path, pattern = fastq, n = n)
-    }
+    QA <- .qaShortRead(path = path, fastq = fastq, n = n)
     list(
         reads = reads,
         QA = QA,

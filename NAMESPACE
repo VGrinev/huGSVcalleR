@@ -45,8 +45,11 @@ importFrom(BiocGenerics,
   match
 )
 importFrom(BiocParallel,
+  SerialParam,
   SnowParam,
-  bplapply
+  bplapply,
+  bpparam,
+  register
 )
 importFrom(Biostrings,
   DNAStringSet,
