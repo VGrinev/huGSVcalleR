@@ -143,30 +143,18 @@ Generic function for trimming and filtering of low-quality
 DNA- and/or RNA-Seq short reads.
 }
 \examples{
+ex <- system.file("extdata", package = "huGSVcalleR")
+workDir <- tempdir()
+file.copy(file.path(ex, "test_R1.fastq"), workDir, overwrite = TRUE)
 cleanRawReads(
-    fastqDir = "Files_FASTQ",
-    fastq1 = "example_seq.read1.fastq",
-    fastq2 = "example_seq.read2.fastq",
-    adapters = "adapters.txt",
-    error = 0.2,
-    min_match_flank = 3L,
-    anchored = TRUE,
-    indels = FALSE,
-    tr_score = 20,
-    tr_start = 10,
-    tr_end = 30,
-    phred = "phred_scores.txt",
-    k = 3,
-    halfwidth = 5,
-    successive = TRUE,
-    readl = 100,
-    readq = 20,
-    readn = 3,
-    dustScore = 875,
-    batchSize = NA,
-    postfix = "filtered",
+    fastqDir = NULL,
+    fastq1 = "test_R1.fastq",
+    adapters = NULL,
+    tr_start = 5,
+    tr_end = 5,
+    postfix = "example",
     overwrite = TRUE,
-    workDir = "D:/Vasily Grinev"
+    workDir = workDir
 )
 }
 \author{

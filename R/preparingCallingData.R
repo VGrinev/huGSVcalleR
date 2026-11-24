@@ -84,21 +84,26 @@
 #'     counts for A, C, G and T.
 #' @author Vasily V. Grinev, Dzianis D. Sarnatski, Mikalai M. Yatskou
 #' @examples
-#' res <- collectBasesPileup(
-#'     bamDir = "Files_BAM",
-#'     bamFile = "SRR21721515.bam",
-#'     gr = "genomic_intervals.txt",
-#'     canChr = TRUE,
-#'     depth = 1e6,
-#'     baseq = 20,
-#'     mapq = 20,
-#'     coverage = 10,
-#'     genome = "BSgenome.Hsapiens.UCSC.hg38",
-#'     tmpDir = tempdir(),
-#'     postfix = "PileupResults",
-#'     threads = 2,
-#'     workDir = "D:/Vasily Grinev"
-#' )
+#' if (requireNamespace("BSgenome.Hsapiens.UCSC.hg38", quietly = TRUE)) {
+#'     ex <- system.file("extdata", package = "huGSVcalleR")
+#'     workDir <- tempdir()
+#'     file.copy(
+#'         file.path(ex, c("test.bam", "test.bam.bai")),
+#'         workDir,
+#'         overwrite = TRUE
+#'     )
+#'     collectBasesPileup(
+#'         bamDir = NULL,
+#'         bamFile = "test.bam",
+#'         gr = "SeqInfo",
+#'         baseq = 0,
+#'         mapq = 0,
+#'         coverage = NULL,
+#'         threads = 1,
+#'         postfix = "example",
+#'         workDir = workDir
+#'     )
+#' }
 #' @export
 #' @importFrom data.table data.table fwrite as.data.table
 #' @importFrom BiocParallel bplapply SnowParam SerialParam
@@ -556,17 +561,19 @@ collectBasesPileup <- function(
 #'     with postfix "filtered".
 #' @author Vasily V. Grinev
 #' @examples
+#' ex <- system.file("extdata", package = "huGSVcalleR")
+#' workDir <- tempdir()
+#' file.copy(
+#'     file.path(ex, c("test.bam", "test.bam.bai")),
+#'     workDir,
+#'     overwrite = TRUE
+#' )
 #' filterBamFile(
-#'     bamDir = "Files_BAM",
-#'     bamFile = "SRR21721515.bam",
-#'     gr = "genomic_intervals.txt",
-#'     flag = scanBamFlag(isPaired = TRUE, isProperPair = TRUE),
-#'     tlen = 300,
+#'     bamDir = NULL,
+#'     bamFile = "test.bam",
 #'     mapq = 20,
-#'     index = TRUE,
-#'     threads = 10,
 #'     overwrite = TRUE,
-#'     workDir = "D:/Vasily Grinev"
+#'     workDir = workDir
 #' )
 #' @export
 #' @importFrom Rsamtools scanBamFlag ScanBamParam filterBam
@@ -742,19 +749,20 @@ filterBamFile <- function(bamDir = NULL,
 #'     (optionally) auxillary file with standard error log.
 #' @author Ilia M. Ilyushonak, Vasily V. Grinev.
 #' @examples
-#' groupReadsGATK(
-#'     bamDir = "Files_BAM",
-#'     bamFile = "SRR21721515.filtered.bam",
-#'     postfix = "RG",
-#'     SE = TRUE,
-#'     RGID = "Bam.Recal.RG",
-#'     RGLB = "default.LIBRARY.ID",
-#'     RGPL = "default.ILLUMINA",
-#'     RGPU = "default.PLATFORM",
-#'     RGSM = "default.SAMPLE",
-#'     gatk_path = "gatk",
-#'     workDir = "D:/Vasily Grinev"
+#' ex <- system.file("extdata", package = "huGSVcalleR")
+#' workDir <- tempdir()
+#' file.copy(
+#'     file.path(ex, c("test.bam", "test.bam.bai")),
+#'     workDir,
+#'     overwrite = TRUE
 #' )
+#' if (nzchar(Sys.which("gatk"))) {
+#'     groupReadsGATK(
+#'         bamDir = NULL,
+#'         bamFile = "test.bam",
+#'         workDir = workDir
+#'     )
+#' }
 #' @export
 groupReadsGATK <- function(bamDir = NULL,
     bamFile,
@@ -862,14 +870,19 @@ groupReadsGATK <- function(bamDir = NULL,
 #' @return index files in working directory.
 #' @author Ilia M. Ilyushonak, Vasily V. Grinev.
 #' @examples
-#' indexGenomeGATK(
-#'     fastaDir = "Files_FASTA",
-#'     faFile = "Homo_sapiens.GRCh38.dna.primary_assembly.fa",
-#'     fai = TRUE,
-#'     dict = TRUE,
-#'     gatk_path = "gatk",
-#'     workDir = "D:/Vasily Grinev"
+#' workDir <- tempdir()
+#' dir.create(file.path(workDir, "fasta"), showWarnings = FALSE)
+#' writeLines(
+#'     c(">chr1", paste(rep("ACGT", 40), collapse = "")),
+#'     file.path(workDir, "fasta", "tiny.fa")
 #' )
+#' if (nzchar(Sys.which("gatk"))) {
+#'     indexGenomeGATK(
+#'         fastaDir = "fasta",
+#'         faFile = "tiny.fa",
+#'         workDir = workDir
+#'     )
+#' }
 #' @export
 #' @importFrom Rsamtools indexFa
 indexGenomeGATK <- function(fastaDir = NULL,
@@ -930,13 +943,20 @@ indexGenomeGATK <- function(fastaDir = NULL,
 #' @return .tbi file in working directory.
 #' @author Ilia M. Ilyushonak, Vasily V. Grinev.
 #' @examples
-#' indexVcfGATK(
-#'     vcfDir = "Files_VCF",
-#'     vcfFile = "00-All.vcf.gz",
-#'     output_name = NULL,
-#'     gatk_path = "gatk",
-#'     workDir = "D:/Vasily Grinev"
+#' ex <- system.file("extdata", package = "huGSVcalleR")
+#' workDir <- tempdir()
+#' file.copy(
+#'     file.path(ex, "test_truth.vcf"),
+#'     file.path(workDir, "test.vcf"),
+#'     overwrite = TRUE
 #' )
+#' if (nzchar(Sys.which("gatk"))) {
+#'     indexVcfGATK(
+#'         vcfDir = NULL,
+#'         vcfFile = "test.vcf",
+#'         workDir = workDir
+#'     )
+#' }
 #' @export
 indexVcfGATK <- function(vcfDir = NULL,
     vcfFile = NULL,
@@ -1003,15 +1023,20 @@ indexVcfGATK <- function(vcfDir = NULL,
 #'     of input BAM file and (optionally) a file with standard error log.
 #' @author Ilia M. Ilyushonak, Vasily V. Grinev.
 #' @examples
-#' markDuplicatesGATK(
-#'     bamDir = "Files_BAM",
-#'     bamFile = "SRR21721515.RG.bam",
-#'     postfix = "markedDuplicates",
-#'     removeDupls = "no",
-#'     SE = TRUE,
-#'     gatk_path = "gatk",
-#'     workDir = "D:/Vasily Grinev"
+#' ex <- system.file("extdata", package = "huGSVcalleR")
+#' workDir <- tempdir()
+#' file.copy(
+#'     file.path(ex, c("test.bam", "test.bam.bai")),
+#'     workDir,
+#'     overwrite = TRUE
 #' )
+#' if (nzchar(Sys.which("gatk"))) {
+#'     markDuplicatesGATK(
+#'         bamDir = NULL,
+#'         bamFile = "test.bam",
+#'         workDir = workDir
+#'     )
+#' }
 #' @export
 markDuplicatesGATK <- function(bamDir = NULL,
     bamFile,
@@ -1162,21 +1187,29 @@ markDuplicatesGATK <- function(bamDir = NULL,
 #'     error log in working directory.
 #' @author Ilia M. Ilyushonak, Vasily V. Grinev.
 #' @examples
-#' recalibrateBamGATK(
-#'     bamDir = "Files_BAM",
-#'     bamFile = "SRR21721515.markedDuplicates.bam",
-#'     vcfDir = "Files_VCF",
-#'     vcfFile = "00-All.vcf.gz",
-#'     fastaDir = "Files_FASTA",
-#'     faFile = "Homo_sapiens.GRCh38.dna.primary_assembly.fa",
-#'     createBQSR = TRUE,
-#'     recalibrate = TRUE,
-#'     nameBQSR = "SRR21721515.bqsr.table",
-#'     postfix = "Recalibrated",
-#'     SE = TRUE,
-#'     gatk_path = "gatk",
-#'     workDir = "D:/Vasily Grinev"
+#' ex <- system.file("extdata", package = "huGSVcalleR")
+#' workDir <- tempdir()
+#' file.copy(
+#'     file.path(ex, c("test.bam", "test.bam.bai", "test_truth.vcf")),
+#'     workDir,
+#'     overwrite = TRUE
 #' )
+#' dir.create(file.path(workDir, "fasta"), showWarnings = FALSE)
+#' writeLines(
+#'     c(">chr1", paste(rep("ACGT", 40), collapse = "")),
+#'     file.path(workDir, "fasta", "tiny.fa")
+#' )
+#' if (nzchar(Sys.which("gatk"))) {
+#'     recalibrateBamGATK(
+#'         bamDir = NULL,
+#'         bamFile = "test.bam",
+#'         vcfDir = NULL,
+#'         vcfFile = "test_truth.vcf",
+#'         fastaDir = "fasta",
+#'         faFile = "tiny.fa",
+#'         workDir = workDir
+#'     )
+#' }
 #' @export
 recalibrateBamGATK <- function(
         bamDir = NULL,

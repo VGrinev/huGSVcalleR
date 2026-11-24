@@ -35,12 +35,12 @@ frequency data on the presence of adapter sequences in short reads.
 Identification of the adapter sequences in short reads.
 }
 \examples{
+ex <- system.file("extdata", package = "huGSVcalleR")
 ad <- findAdapters(
-    fastqDir = "Files_FASTQ",
-    fastq = "2-Galkina-A_S2_L001_R1_001.fastq.gz",
-    n = 1e5,
+    fastqDir = NULL,
+    fastq = "test_R1.fastq",
     adapters = "adapters.txt",
-    workDir = "D:/Vasily Grinev"
+    workDir = ex
 )
 }
 \author{

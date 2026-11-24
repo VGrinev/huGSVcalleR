@@ -30,10 +30,11 @@ Extraction of the genomic coordinates of splice sites
 using genomic/transcriptomic annotations.
 }
 \examples{
-res <- extractSSsCoordsGTF(
-    x = "Ensembl_GRCh38.p14_release.114.gtf",
-    gtfDir = "Files_GTF",
-    workDir = "D:/Vasily Grinev"
+ex <- system.file("extdata", package = "huGSVcalleR")
+extractSSsCoordsGTF(
+    x = "test_annotation.gtf",
+    gtfDir = NULL,
+    workDir = ex
 )
 }
 \author{

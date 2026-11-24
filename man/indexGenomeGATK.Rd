@@ -45,14 +45,19 @@ CreateSequenceDictionary() from package GATK to built .dict and/or .fai
 indices for reference genome of interest.
 }
 \examples{
-indexGenomeGATK(
-    fastaDir = "Files_FASTA",
-    faFile = "Homo_sapiens.GRCh38.dna.primary_assembly.fa",
-    fai = TRUE,
-    dict = TRUE,
-    gatk_path = "gatk",
-    workDir = "D:/Vasily Grinev"
+workDir <- tempdir()
+dir.create(file.path(workDir, "fasta"), showWarnings = FALSE)
+writeLines(
+    c(">chr1", paste(rep("ACGT", 40), collapse = "")),
+    file.path(workDir, "fasta", "tiny.fa")
 )
+if (nzchar(Sys.which("gatk"))) {
+    indexGenomeGATK(
+        fastaDir = "fasta",
+        faFile = "tiny.fa",
+        workDir = workDir
+    )
+}
 }
 \author{
 Ilia M. Ilyushonak, Vasily V. Grinev.

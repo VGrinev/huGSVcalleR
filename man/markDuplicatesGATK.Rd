@@ -52,15 +52,20 @@ MarkDuplicates() from package GATK to find out and mark duplicated reads
 in BAM file(-s) of interest.
 }
 \examples{
-markDuplicatesGATK(
-    bamDir = "Files_BAM",
-    bamFile = "SRR21721515.RG.bam",
-    postfix = "markedDuplicates",
-    removeDupls = "no",
-    SE = TRUE,
-    gatk_path = "gatk",
-    workDir = "D:/Vasily Grinev"
+ex <- system.file("extdata", package = "huGSVcalleR")
+workDir <- tempdir()
+file.copy(
+    file.path(ex, c("test.bam", "test.bam.bai")),
+    workDir,
+    overwrite = TRUE
 )
+if (nzchar(Sys.which("gatk"))) {
+    markDuplicatesGATK(
+        bamDir = NULL,
+        bamFile = "test.bam",
+        workDir = workDir
+    )
+}
 }
 \author{
 Ilia M. Ilyushonak, Vasily V. Grinev.

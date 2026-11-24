@@ -51,13 +51,13 @@ reads.
 Calculation of the quality scores for short reads.
 }
 \examples{
+ex <- system.file("extdata", package = "huGSVcalleR")
 qa <- assessQRawReads(
-    fastqDir = "Files_FASTQ",
-    fastq = "2-Galkina-A_S2_L001_R1_001.fastq.gz",
-    n = 1e5,
+    fastqDir = NULL,
+    fastq = "test_R1.fastq",
     adapters = NULL,
     contaminants = NULL,
-    workDir = "D:/Vasily Grinev"
+    workDir = ex
 )
 }
 \author{

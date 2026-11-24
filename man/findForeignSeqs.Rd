@@ -36,12 +36,12 @@ frequency data on the presence of foreign sequences in short reads.
 Identification of the foreign sequences in short reads.
 }
 \examples{
+ex <- system.file("extdata", package = "huGSVcalleR")
 conts <- findForeignSeqs(
-    fastqDir = "Files_FASTQ",
-    fastq = "2-Galkina-A_S2_L001_R1_001.fastq.gz",
-    n = 1e5,
+    fastqDir = NULL,
+    fastq = "test_R1.fastq",
     contaminants = "contaminants.txt",
-    workDir = "D:/Vasily Grinev"
+    workDir = ex
 )
 }
 \author{

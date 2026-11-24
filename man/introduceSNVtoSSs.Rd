@@ -47,15 +47,39 @@ Introduction of single nucleotide variant(-s) into the
 splice site sequence(-s).
 }
 \examples{
-coords <- "EEJs.Kasumi_1.RR_KD.PMC_BSU.fiveSSs.txt"
-vcf <- "test_seq4, fisherCalleR, SNVs.filtered.vcf"
-intrSNVtoSSs <- introduceSNVtoSSs(
-    x = coords,
-    vcfDir = "Files_VCF",
-    vcfFile = vcf,
-    genome = "BSgenome.Hsapiens.UCSC.hg38",
-    workDir = "D:/Vasily Grinev"
-)
+if (requireNamespace("BSgenome.Hsapiens.UCSC.hg38", quietly = TRUE)) {
+    genome <- getExportedValue(
+        "BSgenome.Hsapiens.UCSC.hg38",
+        "BSgenome.Hsapiens.UCSC.hg38"
+    )
+    pos <- 100000L
+    ref <- as.character(BSgenome::getSeq(
+        genome,
+        GenomicRanges::GRanges("chr1", IRanges::IRanges(pos, pos))
+    ))
+    alt <- setdiff(c("A", "C", "G", "T"), ref)[1]
+    workDir <- tempdir()
+    writeLines(
+        c(
+            "##fileformat=VCFv4.2",
+            "##contig=<ID=chr1,length=248956422>",
+            "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO",
+            paste("chr1", pos, ".", ref, alt, "10", "PASS", ".", sep = "\t")
+        ),
+        file.path(workDir, "splice.vcf")
+    )
+    introduceSNVtoSSs(
+        x = GenomicRanges::GRanges(
+            "chr1:99995-100010:+",
+            ss_id = "ss1",
+            gene_id = "GENE1",
+            transcript_id = "TX1"
+        ),
+        vcfDir = NULL,
+        vcfFile = "splice.vcf",
+        workDir = workDir
+    )
+}
 }
 \author{
 Vasily V. Grinev, Nadzeya A. Boyeva.

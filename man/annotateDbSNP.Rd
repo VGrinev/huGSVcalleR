@@ -80,13 +80,69 @@ tested on GCF_000001405.40 release of dbSNP. List of extracted
 dbSNP fields is fixed for now and cannot be changed.
 }
 \examples{
+ex <- system.file("extdata", package = "huGSVcalleR")
+workDir <- tempdir()
+file.copy(
+    file.path(ex, "test_annotation.vcf"),
+    file.path(workDir, "test.vcf"),
+    overwrite = TRUE
+)
+file.copy(file.path(ex, "ref_genes.txt"), workDir, overwrite = TRUE)
+annotateBasic(
+    vcfDir = NULL,
+    vcfFile = "test.vcf",
+    ref_genes = "ref_genes.txt",
+    output = "example",
+    workDir = workDir
+)
+anno <- read.delim(
+    file.path(workDir, "example.basic annotation.txt"),
+    sep = "\t"
+)
+snv <- anno[1, ]
+fields <- c(
+    RS = "Integer", dbSNPBuildID = "Integer", SAO = "Integer",
+    PM = "Integer", FREQ = "String", COMMON = "Integer",
+    CLNHGVS = "String", CLNVI = "String", CLNORIGIN = "String",
+    CLNSIG = "String", CLNDISDB = "String", CLNDN = "String",
+    CLNREVSTAT = "String", CLNACC = "String"
+)
+header <- c(
+    "##fileformat=VCFv4.2",
+    "##contig=<ID=chr1,length=1000000>",
+    paste0(
+        "##INFO=<ID=", names(fields),
+        ",Number=1,Type=", fields,
+        ",Description=\"x\">"
+    ),
+    "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO"
+)
+info <- paste(
+    "RS=1", "dbSNPBuildID=150", "SAO=0", "PM=0", "FREQ=0.01",
+    "COMMON=1", "CLNHGVS=.", "CLNVI=.", "CLNORIGIN=.", "CLNSIG=.",
+    "CLNDISDB=.", "CLNDN=.", "CLNREVSTAT=.", "CLNACC=.",
+    sep = ";"
+)
+record <- paste(
+    snv$seqnames, snv$start, ".", snv$ref, snv$alt,
+    ".", "PASS", info,
+    sep = "\t"
+)
+writeLines(c(header, record), file.path(workDir, "dbsnp.vcf"))
+gz <- Rsamtools::bgzip(
+    file.path(workDir, "dbsnp.vcf"),
+    dest = file.path(workDir, "dbsnp.vcf.gz"),
+    overwrite = TRUE
+)
+Rsamtools::indexTabix(gz, format = "vcf")
 annotateDbSNP(
-    annoDir = "annotation_dir",
-    annoFile = "SNVs, basic annotation.txt",
-    dbDir = "database_dir", dbFile = "GCF_000001405.40.gz",
-    chrToNC = TRUE,
-    chrID = "RefSeq Accessions & UCSC chromosomes.txt",
-    workDir = "D:/VCF_calling"
+    annoDir = NULL,
+    annoFile = "example.basic annotation.txt",
+    dbDir = NULL,
+    dbFile = "dbsnp.vcf.gz",
+    chrToNC = FALSE,
+    chrID = "unused.txt",
+    workDir = workDir
 )
 }
 \author{

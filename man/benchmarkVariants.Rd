@@ -55,12 +55,23 @@ truth variants of this class were missed.
 }\if{html}{\out{</div>}}
 }
 \examples{
-res <- benchmarkVariants(
-    vcfDir = "Files_VCF",
-    ref_vcf = "test_truth.vcf",
-    query_vcf = "test_query.vcf",
-    featureTable = FALSE,
-    workDir = "D:/Vasily Grinev"
+ex <- system.file("extdata", package = "huGSVcalleR")
+workDir <- tempdir()
+file.copy(
+    file.path(ex, "test_truth.vcf"),
+    file.path(workDir, "ref.vcf"),
+    overwrite = TRUE
+)
+file.copy(
+    file.path(ex, "test_query.vcf"),
+    file.path(workDir, "query.vcf"),
+    overwrite = TRUE
+)
+benchmarkVariants(
+    vcfDir = NULL,
+    ref_vcf = "ref.vcf",
+    query_vcf = "query.vcf",
+    workDir = workDir
 )
 }
 \author{

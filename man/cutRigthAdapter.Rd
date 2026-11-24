@@ -64,15 +64,12 @@ functions cutRseq() of R/Bioconductor package FastqCleaner and
 trimLRpattern() of R/Bioconductor package Biostrings.
 }
 \examples{
-trimL <- cutRigthAdapter(
-    fastqDir = "Files_FASTQ",
-    fastq = "example_seq.read1.fastq",
+ex <- system.file("extdata", package = "huGSVcalleR")
+trimR <- cutRigthAdapter(
+    fastqDir = NULL,
+    fastq = "test_R1.fastq",
     adapters = "adapters.txt",
-    error = 0.2,
-    min_match_flank = 3L,
-    anchored = TRUE,
-    indels = FALSE,
-    workDir = "D:/Vasily Grinev"
+    workDir = ex
 )
 }
 \author{

@@ -28,11 +28,14 @@ http://hollywood.mit.edu/burgelab/maxent or
 https://github.com/matthdsm/MaxEntScan.
 }
 \examples{
-res <- scoreSSs(
-    x = "EEJs.Kasumi_1.RR_KD.PMC_BSU.fiveSSs.fasta",
-    type = 5,
-    workDir = "D:/Vasily Grinev"
-)
+if (nzchar(Sys.which("perl"))) {
+    sites <- Biostrings::DNAStringSet(c(donor = "CAGGTAAGT"))
+    local({
+        old <- setwd(system.file("extdata", package = "huGSVcalleR"))
+        on.exit(setwd(old))
+        scoreSSs(x = sites, type = 5)
+    })
+}
 }
 \author{
 Vasily V. Grinev, Nadzeya A. Boyeva.

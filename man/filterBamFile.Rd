@@ -73,17 +73,19 @@ with postfix "filtered".
 Multiparameter BAM file filtering.
 }
 \examples{
+ex <- system.file("extdata", package = "huGSVcalleR")
+workDir <- tempdir()
+file.copy(
+    file.path(ex, c("test.bam", "test.bam.bai")),
+    workDir,
+    overwrite = TRUE
+)
 filterBamFile(
-    bamDir = "Files_BAM",
-    bamFile = "SRR21721515.bam",
-    gr = "genomic_intervals.txt",
-    flag = scanBamFlag(isPaired = TRUE, isProperPair = TRUE),
-    tlen = 300,
+    bamDir = NULL,
+    bamFile = "test.bam",
     mapq = 20,
-    index = TRUE,
-    threads = 10,
     overwrite = TRUE,
-    workDir = "D:/Vasily Grinev"
+    workDir = workDir
 )
 }
 \author{

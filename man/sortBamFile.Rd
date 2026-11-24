@@ -38,12 +38,19 @@ This is a wrapper function that uses the low-level function
 sortBam() from package Rsamtools to sort and index BAM file(-s).
 }
 \examples{
+ex <- system.file("extdata", package = "huGSVcalleR")
+workDir <- tempdir()
+file.copy(
+    file.path(ex, c("test.bam", "test.bam.bai")),
+    workDir,
+    overwrite = TRUE
+)
 sortBamFile(
-    bamDir = "Files_BAM",
-    bamFile = "SRR21721515.bam",
-    byQname = TRUE,
-    threads = 10,
-    workDir = "D:/Vasily Grinev"
+    bamDir = NULL,
+    bamFile = "test.bam",
+    byQname = FALSE,
+    threads = 1,
+    workDir = workDir
 )
 }
 \author{

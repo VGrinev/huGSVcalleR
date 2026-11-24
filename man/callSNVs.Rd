@@ -154,12 +154,15 @@ variations from NGS data.
 }\if{html}{\out{</div>}}
 }
 \examples{
-res <- callSNVs(
-    fr_data = "test_seq.PileupResults.csv",
+ex <- system.file("extdata", package = "huGSVcalleR")
+workDir <- tempdir()
+file.copy(file.path(ex, "test_pileup.csv"), workDir, overwrite = TRUE)
+callSNVs(
+    fr_data = "test_pileup.csv",
     criteria = "fisher",
-    vcfDir = "Files_VCF",
+    vcfDir = NULL,
     outputVCF = "test_seq.fisher",
-    workDir = "D:/Vasily Grinev"
+    workDir = workDir
 )
 }
 \author{

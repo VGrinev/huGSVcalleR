@@ -33,11 +33,10 @@ Extraction of splice site sequences from the reference
 genome.
 }
 \examples{
-res <- extractSeqSSs(
-    x = "EEJs.Kasumi_1.RR_KD.PMC_BSU.fiveSSs.txt",
-    genome = "BSgenome.Hsapiens.UCSC.hg38",
-    workDir = "D:/Vasily Grinev"
-)
+if (requireNamespace("BSgenome.Hsapiens.UCSC.hg38", quietly = TRUE)) {
+    coords <- GenomicRanges::GRanges("chr1:100000-100008:+")
+    extractSeqSSs(x = coords)
+}
 }
 \author{
 Vasily V. Grinev, Nadzeya A. Boyeva.

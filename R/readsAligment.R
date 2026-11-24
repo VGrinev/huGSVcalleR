@@ -26,21 +26,33 @@
 #'     bamDir directory.
 #' @author Vasily V. Grinev
 #' @examples
-#' genome <- "Reference_Genomes/GRCh38/GRCh38"
-#' fastq1 <- c("example_seq.read1.fastq.gz")
-#' fastq2 <- c("example_seq.read1.fastq.gz")
-#' fastqDir <- "Files_FASTQ"
-#' bamDir <- "Files_BAM"
-#' bam <- "example_seq.bam"
-#' workDir <- "/mnt/data/grinev"
-#' al <- alignDNASubread(
-#'     genome = genome,
-#'     fastqDir = fastqDir, fastq1 = fastq1, fastq2 = fastq2,
-#'     bamDir = bamDir,
-#'     bamFile = bam,
-#'     orientation = "fr",
-#'     threads = 28,
-#'     SV = FALSE,
+#' ex <- system.file("extdata", package = "huGSVcalleR")
+#' workDir <- file.path(tempdir(), "align_example")
+#' dir.create(file.path(workDir, "fasta"), recursive = TRUE)
+#' dir.create(file.path(workDir, "bam"), showWarnings = FALSE)
+#' writeLines(
+#'     c(">chr1", paste(rep("ACGT", 40), collapse = "")),
+#'     file.path(workDir, "fasta", "tiny.fa")
+#' )
+#' buildIndexSubread(
+#'     ref_genome = "index",
+#'     ref_fasta = "fasta",
+#'     index = "tiny",
+#'     fa = "tiny.fa",
+#'     memory = 200,
+#'     workDir = workDir
+#' )
+#' reads <- readLines(file.path(ex, "test_R1.fastq"))
+#' gz <- gzfile(file.path(workDir, "test_R1.fastq.gz"), "w")
+#' writeLines(reads, gz)
+#' close(gz)
+#' alignDNASubread(
+#'     genome = "index/tiny",
+#'     fastqDir = NULL,
+#'     fastq1 = "test_R1.fastq.gz",
+#'     bamDir = "bam",
+#'     bamFile = "example.bam",
+#'     threads = 1,
 #'     workDir = workDir
 #' )
 #' @export
@@ -100,10 +112,11 @@ alignDNASubread <- function(
 #'     short reads.
 #' @author Vasily V. Grinev
 #' @examples
+#' ex <- system.file("extdata", package = "huGSVcalleR")
 #' qal <- assessQAlignedReads(
-#'     bamDir = "Files_BAM",
-#'     bamFile = "SRR21721515.bam",
-#'     workDir = "D:/Vasily Grinev"
+#'     bamDir = NULL,
+#'     bamFile = "test.bam",
+#'     workDir = ex
 #' )
 #' @export
 #' @importFrom Rsamtools scanBam ScanBamParam bamFlagAsBitMatrix
@@ -185,13 +198,19 @@ assessQAlignedReads <- function(bamDir = NULL,
 #'     directory.
 #' @author Vasily V. Grinev
 #' @examples
-#' hash <- buildIndexSubread(
-#'     ref_genome = "Reference_Genomes",
-#'     ref_fasta = "Files_FASTA",
-#'     index = "GRCh38",
-#'     fa = "GRCh38.fa",
-#'     memory = 8000,
-#'     workDir = "/mnt/data/grinev"
+#' workDir <- file.path(tempdir(), "index_example")
+#' dir.create(file.path(workDir, "fasta"), recursive = TRUE)
+#' writeLines(
+#'     c(">chr1", paste(rep("ACGT", 40), collapse = "")),
+#'     file.path(workDir, "fasta", "tiny.fa")
+#' )
+#' buildIndexSubread(
+#'     ref_genome = "index",
+#'     ref_fasta = "fasta",
+#'     index = "tiny",
+#'     fa = "tiny.fa",
+#'     memory = 200,
+#'     workDir = workDir
 #' )
 #' @export
 #' @importFrom Rsubread buildindex
@@ -239,11 +258,13 @@ buildIndexSubread <- function(ref_genome,
 #' @return a series of text and graphic files.
 #' @author Vasily V. Grinev
 #' @examples
-#' report <- reportQAlResults(
-#'     x = qal,
-#'     output = NULL,
-#'     workDir = "D:/Vasily Grinev"
+#' ex <- system.file("extdata", package = "huGSVcalleR")
+#' qal <- assessQAlignedReads(
+#'     bamDir = NULL,
+#'     bamFile = "test.bam",
+#'     workDir = ex
 #' )
+#' reportQAlResults(x = qal, output = "example", workDir = tempdir())
 #' @export
 #' @importFrom grid grid.draw textGrob gpar gTree gList
 #' @importFrom gridExtra tableGrob ttheme_minimal
@@ -791,12 +812,19 @@ reportQAlResults <- function(x,
 #'     Name-sorted files are not indexed, because indexBam() rejects them
 #' @author Vasily V. Grinev
 #' @examples
+#' ex <- system.file("extdata", package = "huGSVcalleR")
+#' workDir <- tempdir()
+#' file.copy(
+#'     file.path(ex, c("test.bam", "test.bam.bai")),
+#'     workDir,
+#'     overwrite = TRUE
+#' )
 #' sortBamFile(
-#'     bamDir = "Files_BAM",
-#'     bamFile = "SRR21721515.bam",
-#'     byQname = TRUE,
-#'     threads = 10,
-#'     workDir = "D:/Vasily Grinev"
+#'     bamDir = NULL,
+#'     bamFile = "test.bam",
+#'     byQname = FALSE,
+#'     threads = 1,
+#'     workDir = workDir
 #' )
 #' @export
 #' @importFrom Rsamtools sortBam indexBam

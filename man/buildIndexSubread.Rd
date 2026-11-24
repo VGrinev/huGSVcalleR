@@ -41,13 +41,19 @@ buildindex() from package Subread to build the hash table for the
 reference genome.
 }
 \examples{
-hash <- buildIndexSubread(
-    ref_genome = "Reference_Genomes",
-    ref_fasta = "Files_FASTA",
-    index = "GRCh38",
-    fa = "GRCh38.fa",
-    memory = 8000,
-    workDir = "/mnt/data/grinev"
+workDir <- file.path(tempdir(), "index_example")
+dir.create(file.path(workDir, "fasta"), recursive = TRUE)
+writeLines(
+    c(">chr1", paste(rep("ACGT", 40), collapse = "")),
+    file.path(workDir, "fasta", "tiny.fa")
+)
+buildIndexSubread(
+    ref_genome = "index",
+    ref_fasta = "fasta",
+    index = "tiny",
+    fa = "tiny.fa",
+    memory = 200,
+    workDir = workDir
 )
 }
 \author{

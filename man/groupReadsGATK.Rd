@@ -62,19 +62,20 @@ file of interest. This stage could be unnecessary, if BAM file already
 contains read group tags.
 }
 \examples{
-groupReadsGATK(
-    bamDir = "Files_BAM",
-    bamFile = "SRR21721515.filtered.bam",
-    postfix = "RG",
-    SE = TRUE,
-    RGID = "Bam.Recal.RG",
-    RGLB = "default.LIBRARY.ID",
-    RGPL = "default.ILLUMINA",
-    RGPU = "default.PLATFORM",
-    RGSM = "default.SAMPLE",
-    gatk_path = "gatk",
-    workDir = "D:/Vasily Grinev"
+ex <- system.file("extdata", package = "huGSVcalleR")
+workDir <- tempdir()
+file.copy(
+    file.path(ex, c("test.bam", "test.bam.bai")),
+    workDir,
+    overwrite = TRUE
 )
+if (nzchar(Sys.which("gatk"))) {
+    groupReadsGATK(
+        bamDir = NULL,
+        bamFile = "test.bam",
+        workDir = workDir
+    )
+}
 }
 \author{
 Ilia M. Ilyushonak, Vasily V. Grinev.

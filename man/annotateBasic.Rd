@@ -50,13 +50,20 @@ nucleotide variations given in the standard VCF format, and
 defines its allegiace to gene.
 }
 \examples{
-genes <- "Ensembl release 114, GRCh38.p14, annotations of genes.txt"
-annoSNVs <- annotateBasic(
-    vcfDir = "Files_VCF",
-    vcfFile = "example_seq.vcf",
-    ref_genes,
-    output = "example_seq, annotated SNVs",
-    workDir = "D:/Vasily Grinev"
+ex <- system.file("extdata", package = "huGSVcalleR")
+workDir <- tempdir()
+file.copy(
+    file.path(ex, "test_annotation.vcf"),
+    file.path(workDir, "test.vcf"),
+    overwrite = TRUE
+)
+file.copy(file.path(ex, "ref_genes.txt"), workDir, overwrite = TRUE)
+annotateBasic(
+    vcfDir = NULL,
+    vcfFile = "test.vcf",
+    ref_genes = "ref_genes.txt",
+    output = "example",
+    workDir = workDir
 )
 }
 \author{

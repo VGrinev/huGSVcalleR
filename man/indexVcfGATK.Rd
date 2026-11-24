@@ -44,13 +44,20 @@ IndexFeatureFile() from package GATK to built a .tbi index for VCF file
 with known variants.
 }
 \examples{
-indexVcfGATK(
-    vcfDir = "Files_VCF",
-    vcfFile = "00-All.vcf.gz",
-    output_name = NULL,
-    gatk_path = "gatk",
-    workDir = "D:/Vasily Grinev"
+ex <- system.file("extdata", package = "huGSVcalleR")
+workDir <- tempdir()
+file.copy(
+    file.path(ex, "test_truth.vcf"),
+    file.path(workDir, "test.vcf"),
+    overwrite = TRUE
 )
+if (nzchar(Sys.which("gatk"))) {
+    indexVcfGATK(
+        vcfDir = NULL,
+        vcfFile = "test.vcf",
+        workDir = workDir
+    )
+}
 }
 \author{
 Ilia M. Ilyushonak, Vasily V. Grinev.

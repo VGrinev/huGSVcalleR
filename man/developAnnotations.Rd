@@ -58,16 +58,36 @@ This function converts a standard GTF/GFF file with
 experimental transcriptome to Ensembl-like annotations.
 }
 \examples{
-anno <- developAnnotations(
-    gtfDir = "Files_GTF",
-    gtfFile = "test.data_6.gtf",
-    orf = "test.data_6.txt",
-    gtf = "test.data_6.anno.gtf",
-    src = "StringTie",
-    organism = "Homo sapiens",
-    sqlite = "test.data_6.anno.sqlite",
-    workDir = "D:/Vasily Grinev"
+ex <- system.file("extdata", package = "huGSVcalleR")
+workDir <- tempdir()
+file.copy(
+    file.path(ex, "test_annotation.gtf"),
+    workDir,
+    overwrite = TRUE
 )
+write.table(
+    data.frame(
+        transcript_id = "TX1",
+        orf_start = 1L,
+        orf_end = 30L
+    ),
+    file = file.path(workDir, "orfs.txt"),
+    sep = "\t",
+    quote = FALSE,
+    row.names = FALSE
+)
+if (requireNamespace("GenomeInfoDbData", quietly = TRUE)) {
+developAnnotations(
+    gtfDir = NULL,
+    gtfFile = "test_annotation.gtf",
+    orf = "orfs.txt",
+    gtf = "example.anno.gtf",
+    src = "example",
+    organism = "Homo sapiens",
+    sqlite = "example.anno.sqlite",
+    workDir = workDir
+)
+}
 }
 \author{
 Vasily V. Grinev.

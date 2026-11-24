@@ -429,12 +429,15 @@ fisherCalleR <- function(bamDir = NULL,
 #'     }
 #' @author Dzianis D. Sarnatski, Mikalai M. Yatskou, Vasily V. Grinev
 #' @examples
-#' res <- callSNVs(
-#'     fr_data = "test_seq.PileupResults.csv",
+#' ex <- system.file("extdata", package = "huGSVcalleR")
+#' workDir <- tempdir()
+#' file.copy(file.path(ex, "test_pileup.csv"), workDir, overwrite = TRUE)
+#' callSNVs(
+#'     fr_data = "test_pileup.csv",
 #'     criteria = "fisher",
-#'     vcfDir = "Files_VCF",
+#'     vcfDir = NULL,
 #'     outputVCF = "test_seq.fisher",
-#'     workDir = "D:/Vasily Grinev"
+#'     workDir = workDir
 #' )
 #' @export
 #' @importFrom data.table data.table

@@ -27,13 +27,13 @@
 #'     reads.
 #' @author Vasily V. Grinev
 #' @examples
+#' ex <- system.file("extdata", package = "huGSVcalleR")
 #' qa <- assessQRawReads(
-#'     fastqDir = "Files_FASTQ",
-#'     fastq = "2-Galkina-A_S2_L001_R1_001.fastq.gz",
-#'     n = 1e5,
+#'     fastqDir = NULL,
+#'     fastq = "test_R1.fastq",
 #'     adapters = NULL,
 #'     contaminants = NULL,
-#'     workDir = "D:/Vasily Grinev"
+#'     workDir = ex
 #' )
 #' @export
 #' @importFrom Biostrings DNAStringSet PhredQuality width letterFrequency
@@ -516,11 +516,11 @@ assessQRawReads <- function(fastqDir = NULL,
 #'     sequences and PhredQuality object of read quality scores.
 #' @author Vasily V. Grinev
 #' @examples
+#' ex <- system.file("extdata", package = "huGSVcalleR")
 #' fq <- readFASTQ(
-#'     fastqDir = "Files_FASTQ",
-#'     fastq = "example_seq.read1.fastq.gz",
-#'     n = 1e5,
-#'     workDir = "D:/Vasily Grinev"
+#'     fastqDir = NULL,
+#'     fastq = "test_R1.fastq",
+#'     workDir = ex
 #' )
 #' @export
 #' @importFrom Biostrings DNAStringSet PhredQuality
@@ -681,30 +681,18 @@ readFASTQ <- function(
 #'     input FASTQ file(-s).
 #' @author Vasily V. Grinev.
 #' @examples
+#' ex <- system.file("extdata", package = "huGSVcalleR")
+#' workDir <- tempdir()
+#' file.copy(file.path(ex, "test_R1.fastq"), workDir, overwrite = TRUE)
 #' cleanRawReads(
-#'     fastqDir = "Files_FASTQ",
-#'     fastq1 = "example_seq.read1.fastq",
-#'     fastq2 = "example_seq.read2.fastq",
-#'     adapters = "adapters.txt",
-#'     error = 0.2,
-#'     min_match_flank = 3L,
-#'     anchored = TRUE,
-#'     indels = FALSE,
-#'     tr_score = 20,
-#'     tr_start = 10,
-#'     tr_end = 30,
-#'     phred = "phred_scores.txt",
-#'     k = 3,
-#'     halfwidth = 5,
-#'     successive = TRUE,
-#'     readl = 100,
-#'     readq = 20,
-#'     readn = 3,
-#'     dustScore = 875,
-#'     batchSize = NA,
-#'     postfix = "filtered",
+#'     fastqDir = NULL,
+#'     fastq1 = "test_R1.fastq",
+#'     adapters = NULL,
+#'     tr_start = 5,
+#'     tr_end = 5,
+#'     postfix = "example",
 #'     overwrite = TRUE,
-#'     workDir = "D:/Vasily Grinev"
+#'     workDir = workDir
 #' )
 #' @export
 #' @importFrom ShortRead readFastq writeFastq trimTailw trimTails id
@@ -1287,15 +1275,12 @@ cleanRawReads <- function(
 #'     sequence(-s).
 #' @author Ilia M. Ilyushonak, Vasily V. Grinev.
 #' @examples
+#' ex <- system.file("extdata", package = "huGSVcalleR")
 #' trimL <- cutLeftAdapter(
-#'     fastqDir = "Files_FASTQ",
-#'     fastq = "example_seq.read1.fastq",
+#'     fastqDir = NULL,
+#'     fastq = "test_R1.fastq",
 #'     adapters = "adapters.txt",
-#'     error = 0.2,
-#'     min_match_flank = 3L,
-#'     anchored = TRUE,
-#'     indels = FALSE,
-#'     workDir = "D:/Vasily Grinev"
+#'     workDir = ex
 #' )
 #' @export
 #' @importFrom ShortRead readFastq
@@ -1364,15 +1349,12 @@ cutLeftAdapter <- function(
 #'     sequence(-s).
 #' @author Ilia M. Ilyushonak, Vasily V. Grinev.
 #' @examples
-#' trimL <- cutRigthAdapter(
-#'     fastqDir = "Files_FASTQ",
-#'     fastq = "example_seq.read1.fastq",
+#' ex <- system.file("extdata", package = "huGSVcalleR")
+#' trimR <- cutRigthAdapter(
+#'     fastqDir = NULL,
+#'     fastq = "test_R1.fastq",
 #'     adapters = "adapters.txt",
-#'     error = 0.2,
-#'     min_match_flank = 3L,
-#'     anchored = TRUE,
-#'     indels = FALSE,
-#'     workDir = "D:/Vasily Grinev"
+#'     workDir = ex
 #' )
 #' @export
 #' @importFrom ShortRead readFastq trimLRPatterns
@@ -1591,12 +1573,12 @@ cutRigthAdapter <- function(
 #'     frequency data on the presence of adapter sequences in short reads.
 #' @author Vasily V. Grinev
 #' @examples
+#' ex <- system.file("extdata", package = "huGSVcalleR")
 #' ad <- findAdapters(
-#'     fastqDir = "Files_FASTQ",
-#'     fastq = "2-Galkina-A_S2_L001_R1_001.fastq.gz",
-#'     n = 1e5,
+#'     fastqDir = NULL,
+#'     fastq = "test_R1.fastq",
 #'     adapters = "adapters.txt",
-#'     workDir = "D:/Vasily Grinev"
+#'     workDir = ex
 #' )
 #' @export
 #' @importFrom Biostrings vmatchPattern width
@@ -1735,12 +1717,12 @@ findAdapters <- function(fastqDir = NULL,
 #'     frequency data on the presence of foreign sequences in short reads.
 #' @author Vasily V. Grinev
 #' @examples
+#' ex <- system.file("extdata", package = "huGSVcalleR")
 #' conts <- findForeignSeqs(
-#'     fastqDir = "Files_FASTQ",
-#'     fastq = "2-Galkina-A_S2_L001_R1_001.fastq.gz",
-#'     n = 1e5,
+#'     fastqDir = NULL,
+#'     fastq = "test_R1.fastq",
 #'     contaminants = "contaminants.txt",
-#'     workDir = "D:/Vasily Grinev"
+#'     workDir = ex
 #' )
 #' @export
 #' @importFrom Biostrings vmatchPattern width
@@ -1788,11 +1770,15 @@ findForeignSeqs <- function(
 #' @return a series of text and graphic files.
 #' @author Vasily V. Grinev
 #' @examples
-#' report <- reportQAResults(
-#'     x = qa,
-#'     output = NULL,
-#'     workDir = "D:/Vasily Grinev"
+#' ex <- system.file("extdata", package = "huGSVcalleR")
+#' qa <- assessQRawReads(
+#'     fastqDir = NULL,
+#'     fastq = "test_R1.fastq",
+#'     adapters = NULL,
+#'     contaminants = NULL,
+#'     workDir = ex
 #' )
+#' reportQAResults(x = qa, output = "example", workDir = tempdir())
 #' @export
 #' @importFrom Biostrings DNAStringSet writeXStringSet
 #' @importFrom grid grid.draw textGrob gpar gTree gList

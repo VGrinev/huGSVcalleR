@@ -52,17 +52,69 @@ Prediction of amino acid coding changes for single
 nucleotide variants.
 }
 \examples{
-vcfFile <- "test_seq5, fisherCalleR, SNVs.vcf"
-proteins <- "Ensembl_GRCh38.p14_release.114_proteins.txt"
-intrSNVtoAAs <- introduceSNVtoAAs(
-    vcfDir = "Files_VCF",
-    vcfFile = vcfFile,
-    OrgDb = "org.Hs.eg.db",
-    TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
-    genome = "BSgenome.Hsapiens.UCSC.hg38",
-    proteins = proteins,
-    workDir = "D:/Vasily Grinev/SNVs"
-)
+ready <- all(vapply(
+    c(
+        "BSgenome.Hsapiens.UCSC.hg38",
+        "org.Hs.eg.db",
+        "TxDb.Hsapiens.UCSC.hg38.knownGene"
+    ),
+    requireNamespace,
+    logical(1),
+    quietly = TRUE
+))
+if (ready) {
+    txdb <- getExportedValue(
+        "TxDb.Hsapiens.UCSC.hg38.knownGene",
+        "TxDb.Hsapiens.UCSC.hg38.knownGene"
+    )
+    genome <- getExportedValue(
+        "BSgenome.Hsapiens.UCSC.hg38",
+        "BSgenome.Hsapiens.UCSC.hg38"
+    )
+    cds <- GenomicFeatures::cdsBy(txdb, by = "tx")
+    ok <- vapply(cds, function(gr) {
+        as.character(BiocGenerics::strand(gr)[1]) == "+" &&
+            sum(IRanges::width(gr)) >= 3
+    }, logical(1))
+    gr <- cds[[which(ok)[1]]]
+    pos <- BiocGenerics::start(gr)[1]
+    chr <- as.character(GenomicRanges::seqnames(gr)[1])
+    ref <- as.character(BSgenome::getSeq(
+        genome,
+        GenomicRanges::GRanges(chr, IRanges::IRanges(pos, pos))
+    ))
+    alt <- paste(setdiff(c("A", "C", "G", "T"), ref), collapse = ",")
+    workDir <- tempdir()
+    writeLines(
+        c(
+            "##fileformat=VCFv4.2",
+            sprintf("##contig=<ID=\%s,length=\%s>", chr, pos + 10),
+            "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO",
+            paste(chr, pos, ".", ref, alt, "10", "PASS", ".", sep = "\t")
+        ),
+        file.path(workDir, "coding.vcf")
+    )
+    write.table(
+        data.frame(
+            transcript_id = "TX",
+            gene_id = "GENE",
+            protein_id = "PROT",
+            pdb_id = NA_character_,
+            swissprot = NA_character_,
+            trembl = NA_character_
+        ),
+        file = file.path(workDir, "proteins.txt"),
+        sep = "\t",
+        quote = FALSE,
+        row.names = FALSE
+    )
+    introduceSNVtoAAs(
+        vcfDir = NULL,
+        vcfFile = "coding.vcf",
+        proteins = "proteins.txt",
+        workDir = workDir
+    )
+}
 }
 \author{
 Vasily V. Grinev.

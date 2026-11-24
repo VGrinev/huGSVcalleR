@@ -78,21 +78,29 @@ BaseRecalibrator() and ApplyBQSR() from package GATK to recalibrate
 sequencing quality scores of bases in BAM file of interest.
 }
 \examples{
-recalibrateBamGATK(
-    bamDir = "Files_BAM",
-    bamFile = "SRR21721515.markedDuplicates.bam",
-    vcfDir = "Files_VCF",
-    vcfFile = "00-All.vcf.gz",
-    fastaDir = "Files_FASTA",
-    faFile = "Homo_sapiens.GRCh38.dna.primary_assembly.fa",
-    createBQSR = TRUE,
-    recalibrate = TRUE,
-    nameBQSR = "SRR21721515.bqsr.table",
-    postfix = "Recalibrated",
-    SE = TRUE,
-    gatk_path = "gatk",
-    workDir = "D:/Vasily Grinev"
+ex <- system.file("extdata", package = "huGSVcalleR")
+workDir <- tempdir()
+file.copy(
+    file.path(ex, c("test.bam", "test.bam.bai", "test_truth.vcf")),
+    workDir,
+    overwrite = TRUE
 )
+dir.create(file.path(workDir, "fasta"), showWarnings = FALSE)
+writeLines(
+    c(">chr1", paste(rep("ACGT", 40), collapse = "")),
+    file.path(workDir, "fasta", "tiny.fa")
+)
+if (nzchar(Sys.which("gatk"))) {
+    recalibrateBamGATK(
+        bamDir = NULL,
+        bamFile = "test.bam",
+        vcfDir = NULL,
+        vcfFile = "test_truth.vcf",
+        fastaDir = "fasta",
+        faFile = "tiny.fa",
+        workDir = workDir
+    )
+}
 }
 \author{
 Ilia M. Ilyushonak, Vasily V. Grinev.

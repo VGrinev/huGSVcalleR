@@ -26,11 +26,13 @@ results of evaluation of the alignment quality metrics for aligned
 DAN-Seq and/or RNA-Seq short reads.
 }
 \examples{
-report <- reportQAlResults(
-    x = qal,
-    output = NULL,
-    workDir = "D:/Vasily Grinev"
+ex <- system.file("extdata", package = "huGSVcalleR")
+qal <- assessQAlignedReads(
+    bamDir = NULL,
+    bamFile = "test.bam",
+    workDir = ex
 )
+reportQAlResults(x = qal, output = "example", workDir = tempdir())
 }
 \author{
 Vasily V. Grinev

@@ -25,10 +25,11 @@ Evaluation of the alignment quality metrics for aligned DAN-Seq
 and/or RNA-Seq short reads.
 }
 \examples{
+ex <- system.file("extdata", package = "huGSVcalleR")
 qal <- assessQAlignedReads(
-    bamDir = "Files_BAM",
-    bamFile = "SRR21721515.bam",
-    workDir = "D:/Vasily Grinev"
+    bamDir = NULL,
+    bamFile = "test.bam",
+    workDir = ex
 )
 }
 \author{

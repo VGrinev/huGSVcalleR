@@ -50,13 +50,69 @@
 #'     others columns will contain NA).
 #' @author Ilia M. Ilyushonak, Vasily V. Grinev.
 #' @examples
+#' ex <- system.file("extdata", package = "huGSVcalleR")
+#' workDir <- tempdir()
+#' file.copy(
+#'     file.path(ex, "test_annotation.vcf"),
+#'     file.path(workDir, "test.vcf"),
+#'     overwrite = TRUE
+#' )
+#' file.copy(file.path(ex, "ref_genes.txt"), workDir, overwrite = TRUE)
+#' annotateBasic(
+#'     vcfDir = NULL,
+#'     vcfFile = "test.vcf",
+#'     ref_genes = "ref_genes.txt",
+#'     output = "example",
+#'     workDir = workDir
+#' )
+#' anno <- read.delim(
+#'     file.path(workDir, "example.basic annotation.txt"),
+#'     sep = "\t"
+#' )
+#' snv <- anno[1, ]
+#' fields <- c(
+#'     RS = "Integer", dbSNPBuildID = "Integer", SAO = "Integer",
+#'     PM = "Integer", FREQ = "String", COMMON = "Integer",
+#'     CLNHGVS = "String", CLNVI = "String", CLNORIGIN = "String",
+#'     CLNSIG = "String", CLNDISDB = "String", CLNDN = "String",
+#'     CLNREVSTAT = "String", CLNACC = "String"
+#' )
+#' header <- c(
+#'     "##fileformat=VCFv4.2",
+#'     "##contig=<ID=chr1,length=1000000>",
+#'     paste0(
+#'         "##INFO=<ID=", names(fields),
+#'         ",Number=1,Type=", fields,
+#'         ",Description=\"x\">"
+#'     ),
+#'     "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO"
+#' )
+#' info <- paste(
+#'     "RS=1", "dbSNPBuildID=150", "SAO=0", "PM=0", "FREQ=0.01",
+#'     "COMMON=1", "CLNHGVS=.", "CLNVI=.", "CLNORIGIN=.", "CLNSIG=.",
+#'     "CLNDISDB=.", "CLNDN=.", "CLNREVSTAT=.", "CLNACC=.",
+#'     sep = ";"
+#' )
+#' record <- paste(
+#'     snv$seqnames, snv$start, ".", snv$ref, snv$alt,
+#'     ".", "PASS", info,
+#'     sep = "\t"
+#' )
+#' writeLines(c(header, record), file.path(workDir, "dbsnp.vcf"))
+#' gz <- Rsamtools::bgzip(
+#'     file.path(workDir, "dbsnp.vcf"),
+#'     dest = file.path(workDir, "dbsnp.vcf.gz"),
+#'     overwrite = TRUE
+#' )
+#' Rsamtools::indexTabix(gz, format = "vcf")
 #' annotateDbSNP(
-#'     annoDir = "annotation_dir",
-#'     annoFile = "SNVs, basic annotation.txt",
-#'     dbDir = "database_dir", dbFile = "GCF_000001405.40.gz",
-#'     chrToNC = TRUE,
-#'     chrID = "RefSeq Accessions & UCSC chromosomes.txt",
-#'     workDir = "D:/VCF_calling"
+#'     annoDir = NULL,
+#'     annoFile = "example.basic annotation.txt",
+#'     dbDir = NULL,
+#'     dbFile = "dbsnp.vcf.gz",
+#'     chrToNC = FALSE,
+#'     chrID = "unused.txt",
+#'     workDir = workDir
 #' )
 #' @export
 #' @importFrom data.table data.table
@@ -435,13 +491,20 @@ annotateDbSNP <- function(
 #'     provided single nucleotide variations.
 #' @author Ilia M. Ilyushonak, Vasily V. Grinev.
 #' @examples
-#' genes <- "Ensembl release 114, GRCh38.p14, annotations of genes.txt"
-#' annoSNVs <- annotateBasic(
-#'     vcfDir = "Files_VCF",
-#'     vcfFile = "example_seq.vcf",
-#'     ref_genes,
-#'     output = "example_seq, annotated SNVs",
-#'     workDir = "D:/Vasily Grinev"
+#' ex <- system.file("extdata", package = "huGSVcalleR")
+#' workDir <- tempdir()
+#' file.copy(
+#'     file.path(ex, "test_annotation.vcf"),
+#'     file.path(workDir, "test.vcf"),
+#'     overwrite = TRUE
+#' )
+#' file.copy(file.path(ex, "ref_genes.txt"), workDir, overwrite = TRUE)
+#' annotateBasic(
+#'     vcfDir = NULL,
+#'     vcfFile = "test.vcf",
+#'     ref_genes = "ref_genes.txt",
+#'     output = "example",
+#'     workDir = workDir
 #' )
 #' @export
 #' @importFrom data.table data.table
@@ -642,16 +705,36 @@ annotateBasic <- function(
 #'     annotations of the experimental transcriptome.
 #' @author Vasily V. Grinev.
 #' @examples
-#' anno <- developAnnotations(
-#'     gtfDir = "Files_GTF",
-#'     gtfFile = "test.data_6.gtf",
-#'     orf = "test.data_6.txt",
-#'     gtf = "test.data_6.anno.gtf",
-#'     src = "StringTie",
-#'     organism = "Homo sapiens",
-#'     sqlite = "test.data_6.anno.sqlite",
-#'     workDir = "D:/Vasily Grinev"
+#' ex <- system.file("extdata", package = "huGSVcalleR")
+#' workDir <- tempdir()
+#' file.copy(
+#'     file.path(ex, "test_annotation.gtf"),
+#'     workDir,
+#'     overwrite = TRUE
 #' )
+#' write.table(
+#'     data.frame(
+#'         transcript_id = "TX1",
+#'         orf_start = 1L,
+#'         orf_end = 30L
+#'     ),
+#'     file = file.path(workDir, "orfs.txt"),
+#'     sep = "\t",
+#'     quote = FALSE,
+#'     row.names = FALSE
+#' )
+#' if (requireNamespace("GenomeInfoDbData", quietly = TRUE)) {
+#' developAnnotations(
+#'     gtfDir = NULL,
+#'     gtfFile = "test_annotation.gtf",
+#'     orf = "orfs.txt",
+#'     gtf = "example.anno.gtf",
+#'     src = "example",
+#'     organism = "Homo sapiens",
+#'     sqlite = "example.anno.sqlite",
+#'     workDir = workDir
+#' )
+#' }
 #' @export
 #' @importFrom rtracklayer import export
 #' @importFrom txdbmaker makeTxDbFromGFF
@@ -1198,11 +1281,10 @@ developAnnotations <- function(gtfDir = NULL,
 #' @return object of class DNAStringSet containing splice site sequences.
 #' @author Vasily V. Grinev, Nadzeya A. Boyeva.
 #' @examples
-#' res <- extractSeqSSs(
-#'     x = "EEJs.Kasumi_1.RR_KD.PMC_BSU.fiveSSs.txt",
-#'     genome = "BSgenome.Hsapiens.UCSC.hg38",
-#'     workDir = "D:/Vasily Grinev"
-#' )
+#' if (requireNamespace("BSgenome.Hsapiens.UCSC.hg38", quietly = TRUE)) {
+#'     coords <- GenomicRanges::GRanges("chr1:100000-100008:+")
+#'     extractSeqSSs(x = coords)
+#' }
 #' @export
 #' @importFrom BSgenome getSeq
 #' @importFrom GenomicRanges makeGRangesFromDataFrame seqnames start
@@ -1319,10 +1401,12 @@ extractSeqSSs <- function(
 #'     genomic coordinates of 5' and 3' splice sites.
 #' @author Vasily V. Grinev, Nadzeya A. Boyeva.
 #' @examples
-#' res <- extractSSsCoordsEEJs(
-#'     x = "EEJs.Kasumi_1.RR_KD.PMC_BSU.txt",
-#'     eejDir = "Files_EEJs",
-#'     workDir = "D:/Vasily Grinev"
+#' ex <- system.file("extdata", package = "huGSVcalleR")
+#' extractSSsCoordsEEJs(
+#'     x = "test_eejs.txt",
+#'     eejDir = NULL,
+#'     thr = 5,
+#'     workDir = ex
 #' )
 #' @export
 #' @importFrom GenomicRanges makeGRangesFromDataFrame start end strand
@@ -1422,10 +1506,11 @@ extractSSsCoordsEEJs <- function(
 #'     genomic coordinates of 5' and 3' splice sites.
 #' @author Vasily V. Grinev, Nadzeya A. Boyeva.
 #' @examples
-#' res <- extractSSsCoordsGTF(
-#'     x = "Ensembl_GRCh38.p14_release.114.gtf",
-#'     gtfDir = "Files_GTF",
-#'     workDir = "D:/Vasily Grinev"
+#' ex <- system.file("extdata", package = "huGSVcalleR")
+#' extractSSsCoordsGTF(
+#'     x = "test_annotation.gtf",
+#'     gtfDir = NULL,
+#'     workDir = ex
 #' )
 #' @export
 #' @importFrom rtracklayer import
@@ -1550,17 +1635,69 @@ extractSSsCoordsGTF <- function(x, gtfDir = NULL, workDir = NULL) {
 #'     acid coding changes for single nucleotide variants.
 #' @author Vasily V. Grinev.
 #' @examples
-#' vcfFile <- "test_seq5, fisherCalleR, SNVs.vcf"
-#' proteins <- "Ensembl_GRCh38.p14_release.114_proteins.txt"
-#' intrSNVtoAAs <- introduceSNVtoAAs(
-#'     vcfDir = "Files_VCF",
-#'     vcfFile = vcfFile,
-#'     OrgDb = "org.Hs.eg.db",
-#'     TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
-#'     genome = "BSgenome.Hsapiens.UCSC.hg38",
-#'     proteins = proteins,
-#'     workDir = "D:/Vasily Grinev/SNVs"
-#' )
+#' ready <- all(vapply(
+#'     c(
+#'         "BSgenome.Hsapiens.UCSC.hg38",
+#'         "org.Hs.eg.db",
+#'         "TxDb.Hsapiens.UCSC.hg38.knownGene"
+#'     ),
+#'     requireNamespace,
+#'     logical(1),
+#'     quietly = TRUE
+#' ))
+#' if (ready) {
+#'     txdb <- getExportedValue(
+#'         "TxDb.Hsapiens.UCSC.hg38.knownGene",
+#'         "TxDb.Hsapiens.UCSC.hg38.knownGene"
+#'     )
+#'     genome <- getExportedValue(
+#'         "BSgenome.Hsapiens.UCSC.hg38",
+#'         "BSgenome.Hsapiens.UCSC.hg38"
+#'     )
+#'     cds <- GenomicFeatures::cdsBy(txdb, by = "tx")
+#'     ok <- vapply(cds, function(gr) {
+#'         as.character(BiocGenerics::strand(gr)[1]) == "+" &&
+#'             sum(IRanges::width(gr)) >= 3
+#'     }, logical(1))
+#'     gr <- cds[[which(ok)[1]]]
+#'     pos <- BiocGenerics::start(gr)[1]
+#'     chr <- as.character(GenomicRanges::seqnames(gr)[1])
+#'     ref <- as.character(BSgenome::getSeq(
+#'         genome,
+#'         GenomicRanges::GRanges(chr, IRanges::IRanges(pos, pos))
+#'     ))
+#'     alt <- paste(setdiff(c("A", "C", "G", "T"), ref), collapse = ",")
+#'     workDir <- tempdir()
+#'     writeLines(
+#'         c(
+#'             "##fileformat=VCFv4.2",
+#'             sprintf("##contig=<ID=%s,length=%s>", chr, pos + 10),
+#'             "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO",
+#'             paste(chr, pos, ".", ref, alt, "10", "PASS", ".", sep = "\t")
+#'         ),
+#'         file.path(workDir, "coding.vcf")
+#'     )
+#'     write.table(
+#'         data.frame(
+#'             transcript_id = "TX",
+#'             gene_id = "GENE",
+#'             protein_id = "PROT",
+#'             pdb_id = NA_character_,
+#'             swissprot = NA_character_,
+#'             trembl = NA_character_
+#'         ),
+#'         file = file.path(workDir, "proteins.txt"),
+#'         sep = "\t",
+#'         quote = FALSE,
+#'         row.names = FALSE
+#'     )
+#'     introduceSNVtoAAs(
+#'         vcfDir = NULL,
+#'         vcfFile = "coding.vcf",
+#'         proteins = "proteins.txt",
+#'         workDir = workDir
+#'     )
+#' }
 #' @export
 #' @importFrom VariantAnnotation readVcf alt alt<- predictCoding
 #' @importFrom SummarizedExperiment rowRanges
@@ -1812,15 +1949,39 @@ introduceSNVtoAAs <- function(vcfDir = NULL,
 #'     splice sites and DNAStringSet with corrected splice site sequences.
 #' @author Vasily V. Grinev, Nadzeya A. Boyeva.
 #' @examples
-#' coords <- "EEJs.Kasumi_1.RR_KD.PMC_BSU.fiveSSs.txt"
-#' vcf <- "test_seq4, fisherCalleR, SNVs.filtered.vcf"
-#' intrSNVtoSSs <- introduceSNVtoSSs(
-#'     x = coords,
-#'     vcfDir = "Files_VCF",
-#'     vcfFile = vcf,
-#'     genome = "BSgenome.Hsapiens.UCSC.hg38",
-#'     workDir = "D:/Vasily Grinev"
-#' )
+#' if (requireNamespace("BSgenome.Hsapiens.UCSC.hg38", quietly = TRUE)) {
+#'     genome <- getExportedValue(
+#'         "BSgenome.Hsapiens.UCSC.hg38",
+#'         "BSgenome.Hsapiens.UCSC.hg38"
+#'     )
+#'     pos <- 100000L
+#'     ref <- as.character(BSgenome::getSeq(
+#'         genome,
+#'         GenomicRanges::GRanges("chr1", IRanges::IRanges(pos, pos))
+#'     ))
+#'     alt <- setdiff(c("A", "C", "G", "T"), ref)[1]
+#'     workDir <- tempdir()
+#'     writeLines(
+#'         c(
+#'             "##fileformat=VCFv4.2",
+#'             "##contig=<ID=chr1,length=248956422>",
+#'             "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO",
+#'             paste("chr1", pos, ".", ref, alt, "10", "PASS", ".", sep = "\t")
+#'         ),
+#'         file.path(workDir, "splice.vcf")
+#'     )
+#'     introduceSNVtoSSs(
+#'         x = GenomicRanges::GRanges(
+#'             "chr1:99995-100010:+",
+#'             ss_id = "ss1",
+#'             gene_id = "GENE1",
+#'             transcript_id = "TX1"
+#'         ),
+#'         vcfDir = NULL,
+#'         vcfFile = "splice.vcf",
+#'         workDir = workDir
+#'     )
+#' }
 #' @export
 #' @importFrom VariantAnnotation readVcf
 #' @importFrom SummarizedExperiment rowRanges
@@ -2005,11 +2166,14 @@ introduceSNVtoSSs <- function(
 #'     splice sites, splice site sequences and MaxEntScan scores.
 #' @author Vasily V. Grinev, Nadzeya A. Boyeva.
 #' @examples
-#' res <- scoreSSs(
-#'     x = "EEJs.Kasumi_1.RR_KD.PMC_BSU.fiveSSs.fasta",
-#'     type = 5,
-#'     workDir = "D:/Vasily Grinev"
-#' )
+#' if (nzchar(Sys.which("perl"))) {
+#'     sites <- Biostrings::DNAStringSet(c(donor = "CAGGTAAGT"))
+#'     local({
+#'         old <- setwd(system.file("extdata", package = "huGSVcalleR"))
+#'         on.exit(setwd(old))
+#'         scoreSSs(x = sites, type = 5)
+#'     })
+#' }
 #' @export
 #' @importFrom Biostrings readDNAStringSet width uniqueLetters
 #' @importFrom methods is

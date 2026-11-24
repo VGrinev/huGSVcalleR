@@ -93,16 +93,18 @@ to a particular caller are applied only if the corresponding INFO
 or GENO field is present in the VCF.
 }
 \examples{
-SNVs_filter <- filterVariants(
-    vcfDir = "Files_VCF",
-    vcfFile = "example_seq.vcf",
-    gr = "genomic_intervals.txt",
-    depth = 10,
-    score = 5,
-    heterozyg = 0.2,
-    heterozyg1 = 0.2,
-    index = TRUE,
-    workDir = "D:/Vasily Grinev"
+ex <- system.file("extdata", package = "huGSVcalleR")
+workDir <- tempdir()
+file.copy(
+    file.path(ex, "test_truth.vcf"),
+    file.path(workDir, "test.vcf"),
+    overwrite = TRUE
+)
+filterVariants(
+    vcfDir = NULL,
+    vcfFile = "test.vcf",
+    depth = 5,
+    workDir = workDir
 )
 }
 \author{

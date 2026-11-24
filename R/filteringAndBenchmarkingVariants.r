@@ -49,16 +49,18 @@
 #' @return filtered VCF file with postfix "filtered".
 #' @author Vasily V. Grinev.
 #' @examples
-#' SNVs_filter <- filterVariants(
-#'     vcfDir = "Files_VCF",
-#'     vcfFile = "example_seq.vcf",
-#'     gr = "genomic_intervals.txt",
-#'     depth = 10,
-#'     score = 5,
-#'     heterozyg = 0.2,
-#'     heterozyg1 = 0.2,
-#'     index = TRUE,
-#'     workDir = "D:/Vasily Grinev"
+#' ex <- system.file("extdata", package = "huGSVcalleR")
+#' workDir <- tempdir()
+#' file.copy(
+#'     file.path(ex, "test_truth.vcf"),
+#'     file.path(workDir, "test.vcf"),
+#'     overwrite = TRUE
+#' )
+#' filterVariants(
+#'     vcfDir = NULL,
+#'     vcfFile = "test.vcf",
+#'     depth = 5,
+#'     workDir = workDir
 #' )
 #' @export
 #' @importFrom VariantAnnotation readVcf writeVcf
@@ -456,12 +458,23 @@ filterVariants <- function(
 #'     truth variants of this class were missed.
 #' @author Liudmila S. Varaniuk.
 #' @examples
-#' res <- benchmarkVariants(
-#'     vcfDir = "Files_VCF",
-#'     ref_vcf = "test_truth.vcf",
-#'     query_vcf = "test_query.vcf",
-#'     featureTable = FALSE,
-#'     workDir = "D:/Vasily Grinev"
+#' ex <- system.file("extdata", package = "huGSVcalleR")
+#' workDir <- tempdir()
+#' file.copy(
+#'     file.path(ex, "test_truth.vcf"),
+#'     file.path(workDir, "ref.vcf"),
+#'     overwrite = TRUE
+#' )
+#' file.copy(
+#'     file.path(ex, "test_query.vcf"),
+#'     file.path(workDir, "query.vcf"),
+#'     overwrite = TRUE
+#' )
+#' benchmarkVariants(
+#'     vcfDir = NULL,
+#'     ref_vcf = "ref.vcf",
+#'     query_vcf = "query.vcf",
+#'     workDir = workDir
 #' )
 #' @export
 #' @importFrom data.table fread as.data.table data.table fifelse
