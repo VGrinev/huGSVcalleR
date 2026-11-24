@@ -255,19 +255,17 @@ collectBasesPileup <- function(
             quote = "\"",
             as.is = TRUE
         )
-        if (isTRUE(x = canChr)) {
-            GRs <- .filterCanonicalChromosomes(GRs, bam_link)
-        }
-        if (grepl(pattern = "chr", x = seqnames(seqinfo(x = bam_link))[1])) {
-            makeGRangesFromDataFrame(df = GRs)
-        } else {
-            GRs$seqnames <- gsub(
-                pattern = "chr",
+        if (!.bamHasChrPrefix(bam_link)) {
+            GRs$seqnames <- sub(
+                pattern = "^chr",
                 replacement = "",
                 x = GRs$seqnames
             )
-            makeGRangesFromDataFrame(df = GRs)
         }
+        if (isTRUE(x = canChr)) {
+            GRs <- .filterCanonicalChromosomes(GRs, bam_link)
+        }
+        makeGRangesFromDataFrame(df = GRs)
     }
 }
 
@@ -280,12 +278,26 @@ collectBasesPileup <- function(
 #' @author Vasily V. Grinev, Dzianis D. Sarnatski, Mikalai M. Yatskou.
 #' @keywords internal
 #' @noRd
+.bamHasChrPrefix <- function(bam_link) {
+    grepl(pattern = "chr", x = seqnames(seqinfo(x = bam_link))[1])
+}
+
+#' Keep canonical chromosome names
+#' @description Internal helper for .filterCanonicalChromosomes. Ensembl-style
+#'     names keep 1-22, X, Y, M and MT. A length check dropped 10-22
+#' @param has_chr logical, whether the BAM uses a chr prefix
+#' @return character vector of chromosome names
+#' @author Dzianis D. Sarnatski
+#' @keywords internal
+#' @noRd
+.canonicalSeqnames <- function(has_chr) {
+    base <- c(as.character(seq_len(22)), "X", "Y", "M", "MT")
+    if (isTRUE(has_chr)) paste0("chr", base) else base
+}
+
 .filterCanonicalChromosomes <- function(GRs, bam_link) {
-    if (grepl(pattern = "chr", x = seqnames(seqinfo(x = bam_link))[1])) {
-        GRs[nchar(x = GRs$seqnames) <= 5, ]
-    } else {
-        GRs[nchar(x = GRs$seqnames) == 1, ]
-    }
+    keep <- .canonicalSeqnames(.bamHasChrPrefix(bam_link))
+    GRs[GRs$seqnames %in% keep, ]
 }
 
 #' Compute pileup for a single genomic chunk
