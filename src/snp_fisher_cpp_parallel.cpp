@@ -4,17 +4,17 @@
 #include <limits>
 
 struct FisherWorker : public Worker {
-  const RVector<int> A;
-  const RVector<int> C;
-  const RVector<int> G;
-  const RVector<int> T;
-  const CharacterVector reference;
+  const std::vector<int>& A;
+  const std::vector<int>& C;
+  const std::vector<int>& G;
+  const std::vector<int>& T;
+  const std::vector<std::string>& reference;
 
   RVector<int> cn, ct, cr, cm, ctr, ctr_max;
 
-  FisherWorker(const IntegerVector& A, const IntegerVector& C,
-               const IntegerVector& G, const IntegerVector& T,
-               const CharacterVector& reference,
+  FisherWorker(const std::vector<int>& A, const std::vector<int>& C,
+               const std::vector<int>& G, const std::vector<int>& T,
+               const std::vector<std::string>& reference,
                IntegerVector& cn, IntegerVector& ct,
                IntegerVector& cr, IntegerVector& cm, IntegerVector& ctr,
                IntegerVector& ctr_max)
@@ -145,8 +145,9 @@ NumericVector snp_fisher_cpp_parallel(DataFrame& df_d)
    IntegerVector cn(n), ct(n), cr(n), cm(n), ctr(n), ctr_max(n);
 
    // 1. Parallel computation of cn, ct, cr, cm, ctr
-   FisherWorker worker(df_d["A"], df_d["C"], df_d["G"], df_d["T"],
-                       df_d["reference"], cn, ct, cr, cm, ctr, ctr_max);
+   BaseCounts counts = read_base_counts(df_d);
+   FisherWorker worker(counts.A, counts.C, counts.G, counts.T,
+                       counts.reference, cn, ct, cr, cm, ctr, ctr_max);
    parallelFor(0, n, worker);
 
    // 2. Parallel computation of fisher p-values

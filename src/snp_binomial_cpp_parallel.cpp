@@ -3,17 +3,17 @@
 
 struct SNPBinomialWorker : public Worker
 {
-  const RVector<int> A;
-  const RVector<int> C;
-  const RVector<int> G;
-  const RVector<int> T;
-  const CharacterVector reference;
+  const std::vector<int>& A;
+  const std::vector<int>& C;
+  const std::vector<int>& G;
+  const std::vector<int>& T;
+  const std::vector<std::string>& reference;
   const double p;
   RVector<double> binom;
 
-  SNPBinomialWorker(const IntegerVector& A, const IntegerVector& C,
-                    const IntegerVector& G, const IntegerVector& T,
-                    const CharacterVector& reference,
+  SNPBinomialWorker(const std::vector<int>& A, const std::vector<int>& C,
+                    const std::vector<int>& G, const std::vector<int>& T,
+                    const std::vector<std::string>& reference,
                     const double& p, NumericVector& binom)
     : A(A), C(C), G(G), T(T), reference(reference), p(p), binom(binom) {}
 
@@ -93,9 +93,9 @@ NumericVector snp_binomial_cpp_parallel(DataFrame& df_d)
   double p = 1e-5;
   NumericVector binom(n);
 
-  // Creating a Worker for parallel calculations
-  SNPBinomialWorker worker(df_d["A"], df_d["C"], df_d["G"], df_d["T"],
-                           df_d["reference"], p, binom);
+  BaseCounts counts = read_base_counts(df_d);
+  SNPBinomialWorker worker(counts.A, counts.C, counts.G, counts.T,
+                           counts.reference, p, binom);
   parallelFor(0, n, worker);
 
   return binom;

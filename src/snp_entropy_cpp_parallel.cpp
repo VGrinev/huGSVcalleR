@@ -1,24 +1,24 @@
 #include "snp_entropy_cpp_parallel.h"
+#include "utils.h"
 
 struct SNPEntropyWorker : public Worker
 {
-  const RVector<int> A;
-  const RVector<int> C;
-  const RVector<int> G;
-  const RVector<int> T;
+  const std::vector<int>& A;
+  const std::vector<int>& C;
+  const std::vector<int>& G;
+  const std::vector<int>& T;
   const bool p_value;
-  const CharacterVector reference;
+  const std::vector<std::string>& reference;
   RVector<double> results;
+  std::vector<double>& chi;
 
-  const CharacterVector nucleotides;
-
-  SNPEntropyWorker(const CharacterVector& reference, const IntegerVector& A,
-                   const IntegerVector& C, const IntegerVector& G,
-                   const IntegerVector& T, const bool& p_value_arg,
-                   NumericVector& results)
+  SNPEntropyWorker(const std::vector<std::string>& reference,
+                   const std::vector<int>& A, const std::vector<int>& C,
+                   const std::vector<int>& G, const std::vector<int>& T,
+                   const bool& p_value_arg, NumericVector& results,
+                   std::vector<double>& chi)
     : A(A), C(C), G(G), T(T), p_value(p_value_arg), reference(reference),
-      results(results),
-      nucleotides(CharacterVector::create("A", "C", "G", "T")) {}
+      results(results), chi(chi) {}
 
   void operator()(std::size_t begin, std::size_t end)
   {
@@ -52,10 +52,11 @@ struct SNPEntropyWorker : public Worker
         }
       }
 
-      std::string refCite = Rcpp::as<std::string>(reference[i]);
+      static const char* nucleotides[] = {"A", "C", "G", "T"};
+      std::string refCite = reference[i];
 
       // Correct SampleCite if the reference does not match the maximum
-      if (refCite != Rcpp::as<std::string>(nucleotides[maxIndex]))
+      if (refCite != nucleotides[maxIndex])
       {
          double m = SampleCite[maxIndex];
          SampleCite[maxIndex] = m / 2;
@@ -79,10 +80,7 @@ struct SNPEntropyWorker : public Worker
          }
        }
        if (p_value) {
-         // Compute chi-square statistics and p-value
-         double chiStats = 2 * NumOfCovers * entropy;
-         double p = R::pchisq(chiStats, 4, 0, false);
-         results[i] = p;
+         chi[i] = 2 * NumOfCovers * entropy;
        } else {
          results[i] = entropy;
        }
@@ -147,10 +145,21 @@ NumericVector snp_entropy_cpp_parallel(DataFrame& df_d, bool p_value = false)
 {
   int n = df_d.nrows();
   NumericVector results(n);
+  std::vector<double> chi(n, NA_REAL);
+  BaseCounts counts = read_base_counts(df_d);
 
-  SNPEntropyWorker worker(df_d["reference"], df_d["A"], df_d["C"],
-                           df_d["G"], df_d["T"], p_value, results);
+  SNPEntropyWorker worker(counts.reference, counts.A, counts.C,
+                           counts.G, counts.T, p_value, results, chi);
   parallelFor(0, n, worker);
+
+  if (p_value) {
+    for (int i = 0; i < n; ++i) {
+      if (R_IsNA(chi[i])) {
+        continue;
+      }
+      results[i] = R::pchisq(chi[i], 4, 0, false);
+    }
+  }
 
   return results;
 }

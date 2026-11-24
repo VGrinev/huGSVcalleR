@@ -1,19 +1,20 @@
 #include "snp_counting_cpp_parallel.h"
+#include "utils.h"
 
  struct SNPCounting : public Worker
  {
-   const CharacterVector reference;
-   const RVector<int> A;
-   const RVector<int> C;
-   const RVector<int> G;
-   const RVector<int> T;
+   const std::vector<std::string>& reference;
+   const std::vector<int>& A;
+   const std::vector<int>& C;
+   const std::vector<int>& G;
+   const std::vector<int>& T;
 
    RVector<double> count;
 
-   SNPCounting(const CharacterVector& reference,
-               const IntegerVector& A, const IntegerVector& C,
-               const IntegerVector& G, const IntegerVector& T,
-               const NumericVector& count)
+   SNPCounting(const std::vector<std::string>& reference,
+               const std::vector<int>& A, const std::vector<int>& C,
+               const std::vector<int>& G, const std::vector<int>& T,
+               NumericVector& count)
      : reference(reference), A(A), C(C), G(G), T(T),
        count(count) {}
 
@@ -80,8 +81,9 @@ NumericVector snp_counting_cpp_parallel(DataFrame& df_d)
 
   NumericVector count(n);
 
-  SNPCounting snpCounting(df_d["reference"], df_d["A"], df_d["C"],
-                          df_d["G"], df_d["T"], count);
+  BaseCounts counts = read_base_counts(df_d);
+  SNPCounting snpCounting(counts.reference, counts.A, counts.C,
+                          counts.G, counts.T, count);
 
   parallelFor(0, n, snpCounting);
 

@@ -1,4 +1,5 @@
 #include "vectorise_data_cpp_parallel.h"
+#include "utils.h"
 
 bool check_match_with_non_ref_quantity(const std::vector<int>& counts,
                                        int ref_index) {
@@ -83,19 +84,19 @@ double log_error_prob(const std::vector<int>& counts,
 }
 
 struct VectoriseWorker : public Worker {
-  const RVector<int> A;
-  const RVector<int> C;
-  const RVector<int> G;
-  const RVector<int> T;
-  const CharacterVector reference;
+  const std::vector<int>& A;
+  const std::vector<int>& C;
+  const std::vector<int>& G;
+  const std::vector<int>& T;
+  const std::vector<std::string>& reference;
   RMatrix<double> results;
   std::unordered_set<std::string> selected_features;
 
-  VectoriseWorker(const IntegerVector& A,
-                  const IntegerVector& C,
-                  const IntegerVector& G,
-                  const IntegerVector& T,
-                  const CharacterVector& reference,
+  VectoriseWorker(const std::vector<int>& A,
+                  const std::vector<int>& C,
+                  const std::vector<int>& G,
+                  const std::vector<int>& T,
+                  const std::vector<std::string>& reference,
                   NumericMatrix& results,
                   const std::unordered_set<std::string>& selected_features)
     : A(A), C(C), G(G), T(T),
@@ -110,7 +111,7 @@ struct VectoriseWorker : public Worker {
       counts[2] = G[i];
       counts[3] = T[i];
 
-      std::string ref = as<std::string>(reference[i]);
+      std::string ref = reference[i];
       int ref_index = (ref == "A" ? 0 :
                          ref == "C" ? 1 :
                          ref == "G" ? 2 : 3);
@@ -258,8 +259,9 @@ DataFrame vectorise_data_cpp_parallel(DataFrame& df_d,
      results(_, col++) = snp_poisson_cpp_parallel(df_d);
    }
 
-   VectoriseWorker worker(df_d["A"], df_d["C"], df_d["G"], df_d["T"],
-                          df_d["reference"], results, selected_features);
+   BaseCounts counts = read_base_counts(df_d);
+   VectoriseWorker worker(counts.A, counts.C, counts.G, counts.T,
+                          counts.reference, results, selected_features);
    parallelFor(0, n, worker);
 
    DataFrame output = DataFrame(results);

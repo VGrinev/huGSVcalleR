@@ -1,4 +1,4 @@
-#include <Rcpp.h>
+#include "utils.h"
 #include <cmath>
 using namespace Rcpp;
 
@@ -8,7 +8,7 @@ using namespace Rcpp;
 double cpp_lchoose(int n, int k) {
   if (k < 0 || k > n) return R_NegInf;
   if (k == 0 || k == n) return 0.0;
-  return R::lgammafn(n + 1.0) - R::lgammafn(k + 1.0) - R::lgammafn(n - k + 1.0);
+  return std::lgamma(n + 1.0) - std::lgamma(k + 1.0) - std::lgamma(n - k + 1.0);
 }
 
 // This function calculates the binomial coefficient C(n, k),
@@ -28,6 +28,22 @@ double cpp_choose(int n, int k) {
     result *= (n - i + 1) / static_cast<double>(i);
   }
   return result;
+}
+
+static std::vector<int> column_as_int(DataFrame& df, const char* name) {
+  IntegerVector col = as<IntegerVector>(df[name]);
+  return as<std::vector<int>>(col);
+}
+
+BaseCounts read_base_counts(DataFrame& df) {
+  BaseCounts out;
+  out.A = column_as_int(df, "A");
+  out.C = column_as_int(df, "C");
+  out.G = column_as_int(df, "G");
+  out.T = column_as_int(df, "T");
+  CharacterVector reference = as<CharacterVector>(df["reference"]);
+  out.reference = as<std::vector<std::string>>(reference);
+  return out;
 }
 
 double log_sum_exp(double a, double b) {

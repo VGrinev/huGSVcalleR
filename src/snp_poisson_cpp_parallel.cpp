@@ -3,26 +3,25 @@
 
  // The Worker framework for parallel computing of the Poisson test
  struct SNPPoissonWorker : public Worker {
-  const CharacterVector reference;
-  const RVector<int> A;
-  const RVector<int> C;
-  const RVector<int> G;
-  const RVector<int> T;
+  const std::vector<std::string>& reference;
+  const std::vector<int>& A;
+  const std::vector<int>& C;
+  const std::vector<int>& G;
+  const std::vector<int>& T;
 
   RVector<double> results;
 
-  SNPPoissonWorker(const CharacterVector& reference,
-              const IntegerVector& A, const IntegerVector& C,
-              const IntegerVector& G, const IntegerVector& T,
-              const NumericVector& results)
+  SNPPoissonWorker(const std::vector<std::string>& reference,
+              const std::vector<int>& A, const std::vector<int>& C,
+              const std::vector<int>& G, const std::vector<int>& T,
+              NumericVector& results)
     : reference(reference), A(A), C(C), G(G), T(T),
       results(results) {}
 
   void operator()(size_t begin, size_t end) {
     double p = 1.0 / 1000.0;
     for (size_t j = begin; j < end; ++j) {
-      int N = A[j] + C[j] + G[j] +T[j];  // Сумма A, C, G, T
-      std::string ref = as<std::string>(reference[j]);
+      int N = A[j] + C[j] + G[j] +T[j];
       int ref_count = A[j] * (reference[j] == "A") +
         C[j] * (reference[j] == "C") +
         G[j] * (reference[j] == "G") +
@@ -88,8 +87,9 @@ NumericVector snp_poisson_cpp_parallel(DataFrame& df_d)
 
   NumericVector results(n);  // Vector of results
 
-  SNPPoissonWorker worker(df_d["reference"], df_d["A"], df_d["C"],
-                          df_d["G"], df_d["T"], results);
+  BaseCounts counts = read_base_counts(df_d);
+  SNPPoissonWorker worker(counts.reference, counts.A, counts.C,
+                          counts.G, counts.T, results);
 
   // Parallel processing
   parallelFor(0, n, worker);
