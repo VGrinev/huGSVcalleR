@@ -587,10 +587,14 @@ filterBamFile <- function(bamDir = NULL,
     param <- .buildFilterParam(gr, flag, tlen, mapq, workDir)
     filter <- .buildFilterRules(tlen)
     ### Output file and overwrite check.
-    dest <- gsub(
-        pattern = "bam",
-        replacement = "filtered.bam",
-        x = paste(path, bamFile, sep = "/")
+    dest <- paste(
+        path,
+        sub(
+            pattern = "\\.bam$",
+            replacement = ".filtered.bam",
+            x = bamFile
+        ),
+        sep = "/"
     )
     .checkFilteredBamOverwrite(dest, overwrite)
     ### Filtering.
@@ -606,7 +610,7 @@ filterBamFile <- function(bamDir = NULL,
     if (isTRUE(x = index)) {
         s <- sortBam(
             file = f,
-            destination = gsub(pattern = ".bam", replacement = "", x = f),
+            destination = sub(pattern = "\\.bam$", replacement = "", x = f),
             nThreads = threads
         )
         indexBam(files = s)
@@ -660,7 +664,10 @@ filterBamFile <- function(bamDir = NULL,
 .buildFilterRules <- function(tlen) {
     if (!is.null(x = tlen)) {
         FilterRules(list(function(x) {
-            x$isize <= tlen
+            # isize is negative on the reverse mate
+            ok <- abs(x = x$isize) <= tlen
+            ok[is.na(ok)] <- FALSE
+            ok
         }))
     } else {
         FilterRules()

@@ -787,7 +787,8 @@ reportQAlResults <- function(x,
 #'     If the core count cannot be detected, one thread is used.
 #' @param workDir character string giving the path to and name of working
 #'     directory. NULL by default that means the current working directory.
-#' @return sorted and indexed BAM file(-s).
+#' @return sorted BAM file(-s). Position-sorted files are also indexed.
+#'     Name-sorted files are not indexed, because indexBam() rejects them
 #' @author Vasily V. Grinev
 #' @examples
 #' sortBamFile(
@@ -826,9 +827,11 @@ sortBamFile <- function(bamDir,
             byQname = byQname,
             nThreads = threads
         )
-        invisible(utils::capture.output(
-            indexBam(files = sortedBam),
-            type = "message"
-        ))
+        if (!isTRUE(x = byQname)) {
+            invisible(utils::capture.output(
+                indexBam(files = sortedBam),
+                type = "message"
+            ))
+        }
     }
 }
