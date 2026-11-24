@@ -8,6 +8,19 @@ test_that("filterVariants filters by depth", {
         depth = 5, workDir = td
     )
     expect_s4_class(res, "CollapsedVCF")
+    expect_equal(length(res), 2L)
+})
+
+test_that("filterVariants drops sites below the depth threshold", {
+    vcf <- system.file("extdata", "test_truth.vcf", package = "huGSVcalleR")
+    skip_if(vcf == "", "test VCF not available")
+    td <- tempdir()
+    file.copy(vcf, file.path(td, "test.vcf"), overwrite = TRUE)
+    res <- filterVariants(
+        vcfDir = NULL, vcfFile = "test.vcf",
+        depth = 100, workDir = td
+    )
+    expect_equal(length(res), 0L)
 })
 
 test_that("filterVariants filters by region", {

@@ -1,8 +1,0 @@
-##fileformat=VCFv4.0
-##INFO=<ID=DP,Number=1,Type=Integer,Description="Read Depth">
-##INFO=<ID=MMsum,Number=1,Type=Integer,Description="Number of supporting reads for alternative allele(-s)">
-##INFO=<ID=MM,Number=A,Type=Integer,Description="Number of supporting reads for each alternative allele">
-#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO
-chr1	100	chr1:100_A/G	A	G	43.491	.	DP=10;MMsum=2;MM=2
-chr1	200	chr1:200_C/G	C	G	69.231	.	DP=10;MMsum=3;MM=3
-chr1	300	chr1:300_G/T	G	T	20.0195	.	DP=10;MMsum=1;MM=1

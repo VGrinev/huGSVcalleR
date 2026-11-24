@@ -10,10 +10,8 @@ test_that("reportQAlResults writes two PDF files", {
         workDir = td
     )
     reportQAlResults(x = qal, output = NULL, workDir = td)
-    expect_true(file.exists(
-        file.path(td, "Mapping quality metrics of test.pdf")
-    ))
-    expect_true(file.exists(
-        file.path(td, "Mapping quality plots of test.pdf")
-    ))
+    metrics <- file.path(td, "Mapping quality metrics of test.pdf")
+    plots <- file.path(td, "Mapping quality plots of test.pdf")
+    expect_gt(file.info(metrics)$size, 500)
+    expect_gt(file.info(plots)$size, 500)
 })

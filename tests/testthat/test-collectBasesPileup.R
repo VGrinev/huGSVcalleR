@@ -1,3 +1,35 @@
+test_that("collectBasesPileup writes A C G T counts", {
+    skip_if_not_installed("BSgenome.Hsapiens.UCSC.hg38")
+    bam <- system.file("extdata", "test.bam", package = "huGSVcalleR")
+    bai <- system.file("extdata", "test.bam.bai", package = "huGSVcalleR")
+    skip_if(bam == "" || bai == "", "test BAM not available")
+    td <- tempfile("pileup-")
+    dir.create(td)
+    file.copy(bam, file.path(td, "test.bam"), overwrite = TRUE)
+    file.copy(bai, file.path(td, "test.bam.bai"), overwrite = TRUE)
+    collectBasesPileup(
+        bamDir = NULL,
+        bamFile = "test.bam",
+        gr = "SeqInfo",
+        baseq = 0,
+        mapq = 0,
+        coverage = NULL,
+        threads = 1,
+        postfix = "example",
+        workDir = td
+    )
+    csv <- file.path(td, "test.example.csv")
+    expect_true(file.exists(csv))
+    tab <- data.table::fread(csv)
+    expect_true(all(c("position", "reference", "A", "C", "G", "T") %in%
+        colnames(tab)))
+    expect_false("T_count" %in% colnames(tab))
+    expect_gt(nrow(tab), 0)
+    expect_true(all(nchar(as.character(tab$reference)) == 1))
+    expect_true(all(tab$A >= 0 & tab$C >= 0 & tab$G >= 0 & tab$T >= 0))
+    expect_gt(sum(tab$A + tab$C + tab$G + tab$T), 0)
+})
+
 test_that("parallel pileup workers use the master summary", {
     pile <- data.frame(
         seqnames = "chr1",

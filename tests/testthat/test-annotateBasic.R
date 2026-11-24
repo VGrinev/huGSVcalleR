@@ -19,4 +19,6 @@ test_that("annotateBasic writes basic annotation TXT", {
         "ref", "alt", "pos_depth", "score", "gene_name"
     ) %in%
         colnames(anno)))
+    expect_equal(anno$gene_name, c("GENE1", "GENE2"))
+    expect_equal(anno$start, c(100, 300))
 })

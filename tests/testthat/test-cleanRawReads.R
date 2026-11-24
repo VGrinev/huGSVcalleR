@@ -30,7 +30,8 @@ test_that("cleanRawReads performs fixed trimming", {
         overwrite = TRUE,
         workDir   = td
     )
-    expect_true(file.exists(file.path(td, "test_R1.fixed.fastq.gz")))
+    out <- ShortRead::readFastq(file.path(td, "test_R1.fixed.fastq.gz"))
+    expect_equal(as.integer(Biostrings::width(out)), rep(40L, length(out)))
 })
 
 test_that("cleanRawReads performs dynamic trimming", {
