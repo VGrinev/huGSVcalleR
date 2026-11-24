@@ -21,6 +21,7 @@ Useful links:
 
 Authors:
 \itemize{
+  \item Dzianis D. Sarnatski \email{denisiussarnatski@gmail.com} (\href{https://orcid.org/0009-0006-4382-1062}{ORCID})
   \item Vasiliy V. Grinev \email{Grinev_vv@bsu.by} (\href{https://orcid.org/0000-0001-9981-7333}{ORCID})
   \item Ilia M. Ilyushonak \email{ilyushonakin@bsu.by} (\href{https://orcid.org/0000-0002-5377-366X}{ORCID})
   \item Liudmila S. Varaniuk

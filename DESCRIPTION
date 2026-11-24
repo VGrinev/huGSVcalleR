@@ -31,7 +31,6 @@ SystemRequirements:
     GATK (>= 4.0) for callSNVs(criteria = "gatk"),
     Perl (>= 5.0) for scoreSSs()
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
 Depends: R (>= 4.5.0)
 Imports: 
     Biostrings (>= 2.72.1),
@@ -93,3 +92,4 @@ VignetteBuilder: knitr
 URL: https://github.com/VGrinev/huGSVcalleR
 BugReports: https://github.com/VGrinev/huGSVcalleR/issues
 Config/testthat/edition: 3
+Config/roxygen2/version: 8.1.1

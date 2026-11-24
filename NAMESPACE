@@ -35,140 +35,182 @@ export(sortBamFile)
 import(LiblineaR)
 import(randomForest)
 import(rpart)
-importFrom(AnnotationDbi,mapIds)
-importFrom(AnnotationDbi,saveDb)
+importFrom(AnnotationDbi,
+  mapIds,
+  saveDb
+)
 importFrom(BSgenome,getSeq)
-importFrom(BiocGenerics,"%in%")
-importFrom(BiocGenerics,match)
-importFrom(BiocParallel,SnowParam)
-importFrom(BiocParallel,bplapply)
-importFrom(Biostrings,DNAStringSet)
-importFrom(Biostrings,DNAStringSetList)
-importFrom(Biostrings,PhredQuality)
-importFrom(Biostrings,letterFrequency)
-importFrom(Biostrings,quality)
-importFrom(Biostrings,readDNAStringSet)
-importFrom(Biostrings,reverseComplement)
-importFrom(Biostrings,trimLRPatterns)
-importFrom(Biostrings,uniqueLetters)
-importFrom(Biostrings,vmatchPattern)
-importFrom(Biostrings,width)
-importFrom(Biostrings,writeXStringSet)
+importFrom(BiocGenerics,
+  "%in%",
+  match
+)
+importFrom(BiocParallel,
+  SnowParam,
+  bplapply
+)
+importFrom(Biostrings,
+  DNAStringSet,
+  DNAStringSetList,
+  PhredQuality,
+  letterFrequency,
+  quality,
+  readDNAStringSet,
+  reverseComplement,
+  trimLRPatterns,
+  uniqueLetters,
+  vmatchPattern,
+  width,
+  writeXStringSet
+)
 importFrom(DelayedArray,mean)
-importFrom(GenomicRanges,"end<-")
-importFrom(GenomicRanges,"start<-")
-importFrom(GenomicRanges,GRanges)
-importFrom(GenomicRanges,elementMetadata)
-importFrom(GenomicRanges,end)
-importFrom(GenomicRanges,findOverlaps)
-importFrom(GenomicRanges,intersect)
-importFrom(GenomicRanges,makeGRangesFromDataFrame)
-importFrom(GenomicRanges,makeGRangesListFromDataFrame)
-importFrom(GenomicRanges,seqnames)
-importFrom(GenomicRanges,start)
-importFrom(GenomicRanges,strand)
-importFrom(IRanges,IRanges)
-importFrom(IRanges,IRangesList)
-importFrom(IRanges,IntegerList)
-importFrom(IRanges,disjoin)
-importFrom(IRanges,narrow)
-importFrom(IRanges,setdiff)
+importFrom(GenomicRanges,
+  "end<-",
+  "start<-",
+  GRanges,
+  elementMetadata,
+  end,
+  findOverlaps,
+  intersect,
+  makeGRangesFromDataFrame,
+  makeGRangesListFromDataFrame,
+  seqnames,
+  start,
+  strand
+)
+importFrom(IRanges,
+  IRanges,
+  IRangesList,
+  IntegerList,
+  disjoin,
+  narrow,
+  setdiff
+)
 importFrom(Rcpp,evalCpp)
 importFrom(RcppParallel,RcppParallelLibs)
-importFrom(Rsamtools,BamFile)
-importFrom(Rsamtools,PileupParam)
-importFrom(Rsamtools,ScanBamParam)
-importFrom(Rsamtools,bamFlagAsBitMatrix)
-importFrom(Rsamtools,filterBam)
-importFrom(Rsamtools,indexBam)
-importFrom(Rsamtools,indexFa)
-importFrom(Rsamtools,pileup)
-importFrom(Rsamtools,scanBam)
-importFrom(Rsamtools,scanBamFlag)
-importFrom(Rsamtools,seqinfo)
-importFrom(Rsamtools,sortBam)
-importFrom(Rsubread,align)
-importFrom(Rsubread,buildindex)
-importFrom(Rsubread,exactSNP)
-importFrom(S4Vectors,"mcols<-")
-importFrom(S4Vectors,FilterRules)
-importFrom(S4Vectors,colnames)
-importFrom(S4Vectors,mcols)
-importFrom(S4Vectors,queryHits)
-importFrom(S4Vectors,split)
-importFrom(S4Vectors,subjectHits)
+importFrom(Rsamtools,
+  BamFile,
+  PileupParam,
+  ScanBamParam,
+  bamFlagAsBitMatrix,
+  filterBam,
+  indexBam,
+  indexFa,
+  pileup,
+  scanBam,
+  scanBamFlag,
+  seqinfo,
+  sortBam
+)
+importFrom(Rsubread,
+  align,
+  buildindex,
+  exactSNP
+)
+importFrom(S4Vectors,
+  "mcols<-",
+  FilterRules,
+  colnames,
+  mcols,
+  queryHits,
+  split,
+  subjectHits
+)
 importFrom(Seqinfo,seqlengths)
-importFrom(ShortRead,countFastq)
-importFrom(ShortRead,dustyFilter)
-importFrom(ShortRead,dustyScore)
-importFrom(ShortRead,id)
-importFrom(ShortRead,occurrenceFilter)
-importFrom(ShortRead,polynFilter)
-importFrom(ShortRead,qa)
-importFrom(ShortRead,readFastq)
-importFrom(ShortRead,trimEnds)
-importFrom(ShortRead,trimLRPatterns)
-importFrom(ShortRead,trimTails)
-importFrom(ShortRead,trimTailw)
-importFrom(ShortRead,writeFastq)
-importFrom(SummarizedExperiment,"rowRanges<-")
-importFrom(SummarizedExperiment,rowRanges)
-importFrom(VariantAnnotation,"alt<-")
-importFrom(VariantAnnotation,"fixed<-")
-importFrom(VariantAnnotation,ScanVcfParam)
-importFrom(VariantAnnotation,alt)
-importFrom(VariantAnnotation,fixed)
-importFrom(VariantAnnotation,geno)
-importFrom(VariantAnnotation,info)
-importFrom(VariantAnnotation,predictCoding)
-importFrom(VariantAnnotation,readVcf)
-importFrom(VariantAnnotation,writeVcf)
-importFrom(data.table,as.data.table)
-importFrom(data.table,data.table)
-importFrom(data.table,fifelse)
-importFrom(data.table,fread)
-importFrom(data.table,fwrite)
-importFrom(data.table,rbindlist)
-importFrom(dplyr,across)
-importFrom(dplyr,arrange)
-importFrom(dplyr,case_when)
-importFrom(dplyr,filter)
-importFrom(dplyr,mutate)
-importFrom(dplyr,pull)
-importFrom(dplyr,select)
-importFrom(grDevices,cairo_pdf)
-importFrom(grDevices,dev.off)
-importFrom(grDevices,pdf)
-importFrom(grDevices,rgb)
-importFrom(graphics,axis)
-importFrom(graphics,barplot)
-importFrom(graphics,hist)
-importFrom(graphics,legend)
-importFrom(graphics,mtext)
-importFrom(graphics,par)
-importFrom(graphics,plot)
-importFrom(graphics,rect)
-importFrom(graphics,segments)
-importFrom(graphics,text)
-importFrom(graphics,title)
-importFrom(grid,gList)
-importFrom(grid,gTree)
-importFrom(grid,gpar)
-importFrom(grid,grid.draw)
-importFrom(grid,textGrob)
-importFrom(gridExtra,tableGrob)
-importFrom(gridExtra,ttheme_minimal)
-importFrom(methods,as)
-importFrom(methods,is)
+importFrom(ShortRead,
+  countFastq,
+  dustyFilter,
+  dustyScore,
+  id,
+  occurrenceFilter,
+  polynFilter,
+  qa,
+  readFastq,
+  trimEnds,
+  trimLRPatterns,
+  trimTails,
+  trimTailw,
+  writeFastq
+)
+importFrom(SummarizedExperiment,
+  "rowRanges<-",
+  rowRanges
+)
+importFrom(VariantAnnotation,
+  "alt<-",
+  "fixed<-",
+  ScanVcfParam,
+  alt,
+  fixed,
+  geno,
+  info,
+  predictCoding,
+  readVcf,
+  writeVcf
+)
+importFrom(data.table,
+  as.data.table,
+  data.table,
+  fifelse,
+  fread,
+  fwrite,
+  rbindlist
+)
+importFrom(dplyr,
+  across,
+  arrange,
+  case_when,
+  filter,
+  mutate,
+  pull,
+  select
+)
+importFrom(grDevices,
+  cairo_pdf,
+  dev.off,
+  pdf,
+  rgb
+)
+importFrom(graphics,
+  axis,
+  barplot,
+  hist,
+  legend,
+  mtext,
+  par,
+  plot,
+  rect,
+  segments,
+  text,
+  title
+)
+importFrom(grid,
+  gList,
+  gTree,
+  gpar,
+  grid.draw,
+  textGrob
+)
+importFrom(gridExtra,
+  tableGrob,
+  ttheme_minimal
+)
+importFrom(methods,
+  as,
+  is
+)
 importFrom(parallel,detectCores)
 importFrom(purrr,map_dfr)
 importFrom(rlang,.data)
-importFrom(rtracklayer,export)
-importFrom(rtracklayer,import)
-importFrom(stats,density)
-importFrom(stats,ks.test)
-importFrom(stats,median)
-importFrom(stats,quantile)
+importFrom(rtracklayer,
+  export,
+  import
+)
+importFrom(stats,
+  density,
+  ks.test,
+  median,
+  quantile
+)
 importFrom(stringr,str_match)
 importFrom(tibble,tibble)
 importFrom(tidyr,"%>%")
