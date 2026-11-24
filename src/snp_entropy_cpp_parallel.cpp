@@ -1,5 +1,6 @@
 #include "snp_entropy_cpp_parallel.h"
 #include "utils.h"
+#include <cmath>
 
 struct SNPEntropyWorker : public Worker
 {
@@ -72,7 +73,7 @@ struct SNPEntropyWorker : public Worker
          if (SampleCite[k] > 0)
          {
            SampleCite[k] /= NumOfCovers;
-           double log_value = log10(SampleCite[k]);
+           double log_value = std::log(SampleCite[k]);
            if (std::isfinite(log_value))
            {
              entropy -= SampleCite[k] * log_value;
@@ -128,13 +129,13 @@ struct SNPEntropyWorker : public Worker
 //'      the reference allele.
 //' 5. Normalizes nucleotide counts to probabilities.
 //' 6. Computes entropy using the formula:
-//'    Entropy = -sum(p_i * log10(p_i))
+//'    Entropy = -sum(p_i * log(p_i))
 //'    where p_i is the normalized count of nucleotide i.
 //' 7. If p_value = TRUE, computes the chi-square statistic using the
 //'    entropy and total coverage, then derives the p-value:
 //'    chi^2 = 2 * total coverage * Entropy
 //'    The p-value is calculated using the chi-square distribution with
-//'    4 degrees of freedom.
+//'    3 degrees of freedom.
 //' 8. Executes the calculations in parallel across multiple cores for
 //'    faster processing of large datasets.
 //'
@@ -157,7 +158,7 @@ NumericVector snp_entropy_cpp_parallel(DataFrame& df_d, bool p_value = false)
       if (R_IsNA(chi[i])) {
         continue;
       }
-      results[i] = R::pchisq(chi[i], 4, 0, false);
+      results[i] = R::pchisq(chi[i], 3, 0, false);
     }
   }
 

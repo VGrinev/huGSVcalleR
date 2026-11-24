@@ -61,7 +61,7 @@
 //' @return A numeric vector containing the Poisson-based probability for
 //'         each position. This probability represents the likelihood of
 //'         observing the non-reference allele count under the Poisson
-//'         model with a fixed mutation rate (default: 9/20000).
+//'         model with a fixed mutation rate of 1/1000
 //'
 //' @details
 //' The function performs the following steps:
@@ -76,8 +76,8 @@
 //' 5. The calculations are performed in parallel for efficiency on large
 //'    datasets.
 //'
-//' @note The mutation rate used in the Poisson model is fixed at 9/20000
-//' by default.
+//' @note The mutation rate used in the Poisson model is fixed at 1/1000
+//' The reported probability is the binomial upper tail at that rate
 //' @keywords internal
 //' @noRd
 // [[Rcpp::export]]
