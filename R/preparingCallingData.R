@@ -327,7 +327,7 @@ collectBasesPileup <- function(
     temp_stat <- .summarizePileupCounts(pileup_data)
     if (!is.null(x = coverage)) {
         temp_stat <- temp_stat[
-            rowSums(temp_stat[, c("A", "C", "G", "T")]) >= coverage,
+            rowSums(temp_stat[, c("A", "C", "G", "T_count")]) >= coverage,
         ]
     }
     temp_stat <- .assignReferenceNucleotides(temp_stat, genome_obj)
