@@ -284,7 +284,7 @@ assessQRawReads <- function(fastqDir = NULL,
     m <- .binPerCycleQuality(PCQRs)
     PCQRs <- data.frame(do.call(args = m, what = rbind))
     colnames(x = PCQRs) <- c(
-        "cycles", "minimum", "Q1", "median", "Q3", "maximum"
+        "cycles", "P10", "Q1", "median", "Q3", "P90"
     )
     PCQRs[, -1] <- apply(X = PCQRs[, -1], MARGIN = 2, FUN = as.numeric)
     PCQRs
@@ -326,9 +326,9 @@ assessQRawReads <- function(fastqDir = NULL,
     for (i in seq(from = 1, to = nrow(x = PCQRs), by = 5)) {
         if (i + 4 < nrow(x = PCQRs)) {
             m[[i]] <- c(
-                paste(i, i:i + 4, sep = "-"),
+                paste(i, i + 4, sep = "-"),
                 quantile(
-                    x = PCQRs[i:i + 4, ],
+                    x = PCQRs[i:(i + 4), ],
                     probs = c(0.1, 0.25, 0.5, 0.75, 0.9)
                 )
             )
@@ -368,7 +368,7 @@ assessQRawReads <- function(fastqDir = NULL,
     )
     metrics <- data.frame(cbind(colnames(x = BCs), metrics))
     colnames(x = metrics) <- c(
-        "nucleotide", "minimum", "Q1", "median", "Q3", "maximum"
+        "nucleotide", "P10", "Q1", "median", "Q3", "P90"
     )
     metrics[, -1] <- apply(X = metrics[, -1], MARGIN = 2, FUN = as.numeric)
     list(frequency = BCs, metrics = metrics)
@@ -428,8 +428,8 @@ assessQRawReads <- function(fastqDir = NULL,
     for (i in seq(from = 1, to = nrow(x = PCCBs), by = 5)) {
         if (i + 4 < nrow(x = PCCBs)) {
             bases <- c(
-                paste(i, i:i + 4, sep = "-"),
-                table(PCCBs[i:i + 4, ])
+                paste(i, i + 4, sep = "-"),
+                table(PCCBs[i:(i + 4), ])
             )
             m[i, 1] <- bases[1]
             m[i, -1] <- bases[match(colnames(x = m), names(x = bases))][-1]
@@ -1087,7 +1087,7 @@ cleanRawReads <- function(
     keep <- width(x = FQ) > (tr_start + tr_end)
     FQ <- FQ[keep]
     start_pos <- tr_start + 1
-    end_pos <- if (tr_end > 0) -tr_end else -1L
+    end_pos <- if (tr_end > 0) -(tr_end + 1L) else -1L
     narrow(x = FQ, start = start_pos, end = end_pos)
 }
 
@@ -1176,7 +1176,7 @@ cleanRawReads <- function(
     FQ <- FQ[occurrenceFilter(
         min = 1L, max = 1L,
         withSread = TRUE,
-        duplicates = "sample"
+        duplicates = "head"
     )(FQ)]
     if (!is.null(x = dustScore)) {
         FQ <- FQ[dustyFilter(
@@ -1185,6 +1185,19 @@ cleanRawReads <- function(
         )(FQ)]
     }
     FQ
+}
+
+#' Drop a mate suffix from a read id
+#' @description Internal helper for .synchronizePairedReads. Accepts
+#'     Illumina 1.8, /1 /2 and .1 .2 headers
+#' @param ids character vector of read ids
+#' @return character vector of pair ids
+#' @author Dzianis D. Sarnatski
+#' @keywords internal
+#' @noRd
+.pairReadIds <- function(ids) {
+    ids <- sub(pattern = " [12](:.*)?$", replacement = "", x = ids)
+    sub(pattern = "[\\./][12]$", replacement = "", x = ids)
 }
 
 #' Synchronize paired-end reads
@@ -1197,8 +1210,14 @@ cleanRawReads <- function(
 #' @keywords internal
 #' @noRd
 .synchronizePairedReads <- function(FQ1, FQ2) {
-    ID1 <- gsub(pattern = " 1.+", replacement = "", x = id(object = FQ1))
-    ID2 <- gsub(pattern = " 2.+", replacement = "", x = id(object = FQ2))
+    ID1 <- .pairReadIds(id(object = FQ1))
+    ID2 <- .pairReadIds(id(object = FQ2))
+    if (length(x = FQ1) > 0L && length(x = FQ2) > 0L &&
+        !any(ID1 %in% ID2)) {
+        warning(
+            "Paired reads could not be matched, so the output FASTQ files are empty"
+        )
+    }
     FQ1 <- FQ1[ID1 %in% ID2]
     FQ2 <- FQ2[ID2 %in% ID1]
     list(FQ1 = FQ1, FQ2 = FQ2)
@@ -2408,13 +2427,16 @@ reportQAResults <- function(x,
 #' @keywords internal
 #' @noRd
 .drawTheoreticalGcCurve <- function(frequency) {
-    lines(
-        density(x = rnorm(
-            n = length(x = frequency),
-            mean = mean(x = frequency),
-            sd = sd(x = frequency)
-        ))[seq_len(2)],
-        xlim = c(0, 1), lwd = 1,
+    mu <- mean(x = frequency)
+    sigma <- stats::sd(x = frequency)
+    grid <- seq(from = 0, to = 1, length.out = 512)
+    y <- if (is.finite(sigma) && sigma > 0) {
+        stats::dnorm(x = grid, mean = mu, sd = sigma)
+    } else {
+        rep(0, length(x = grid))
+    }
+    graphics::lines(
+        x = grid, y = y, lwd = 1,
         col = rgb(213, 94, 0, maxColorValue = 255)
     )
     invisible(NULL)
@@ -2453,10 +2475,13 @@ reportQAResults <- function(x,
 #' @keywords internal
 #' @noRd
 .addKsTestAnnotation <- function(frequency) {
+    mu <- mean(x = frequency)
+    sigma <- stats::sd(x = frequency)
     ks_p <- tryCatch(
-        ks.test(x = frequency, y = "pnorm")$p.value,
-        error = function(e) NA_real_,
-        warning = function(w) NA_real_
+        suppressWarnings(ks.test(
+            x = frequency, y = "pnorm", mean = mu, sd = sigma
+        )$p.value),
+        error = function(e) NA_real_
     )
     legend(
         x = "topright",
@@ -2523,7 +2548,7 @@ reportQAResults <- function(x,
 .addLowComplexityLegends <- function(DSs) {
     legend(
         x = 3.3, y = max(x = DSs$density[, 2]),
-        legend = c("minimum:", "Q1:", "median:", "Q3:", "maximum:"),
+        legend = c("P10:", "Q1:", "median:", "Q3:", "P90:"),
         lty = 0, bty = "n"
     )
     legend(
@@ -2573,10 +2598,11 @@ reportQAResults <- function(x,
 #' @noRd
 .plotContaminations <- function(data, main, ylab) {
     colrs <- .contaminationColors()
-    matplot(data[, -1],
+    values <- data[, -1, drop = FALSE]
+    matplot(values,
         ann = FALSE, axes = FALSE, ylim = c(0, 0.35),
         type = "l", lty = 1, lwd = 1,
-        col = colrs[seq_len(ncol(x = data[, -1]))]
+        col = colrs[seq_len(ncol(x = values))]
     )
     axis(
         side = 1, at = seq_along(data[, 1]), labels = FALSE,
@@ -2603,7 +2629,7 @@ reportQAResults <- function(x,
     legend(
         x = "topleft", legend = colnames(x = data)[-1],
         cex = 0.8, lty = 1, lwd = 1,
-        col = colrs[seq_len(ncol(x = data[, -1]))],
+        col = colrs[seq_len(ncol(x = values))],
         bty = "n"
     )
     invisible(NULL)
