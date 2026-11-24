@@ -209,6 +209,7 @@ collectBasesPileup <- function(
             stop.on.error = TRUE
         )
     }
+    # Passed from this process so a PSOCK worker does not run an older installed copy
     bplapply(
         X = seq_along(GRs),
         FUN = .computePileupChunk,
@@ -220,6 +221,9 @@ collectBasesPileup <- function(
         coverage = coverage,
         genome_obj = genome_obj,
         tmpDir = tmpDir,
+        summarize = .summarizePileupCounts,
+        assign_reference = .assignReferenceNucleotides,
+        write_chunk = .writePileupChunk,
         BPPARAM = bpparam
     )
 }
@@ -322,7 +326,10 @@ collectBasesPileup <- function(
 #' @keywords internal
 #' @noRd
 .computePileupChunk <- function(i, GRs, bam_link, depth, baseq, mapq,
-    coverage, genome_obj, tmpDir) {
+    coverage, genome_obj, tmpDir,
+    summarize = .summarizePileupCounts,
+    assign_reference = .assignReferenceNucleotides,
+    write_chunk = .writePileupChunk) {
     chunk <- GRs[i]
     pileup_data <- pileup(
         file = bam_link,
@@ -340,15 +347,18 @@ collectBasesPileup <- function(
         pileup_data$seqnames, pileup_data$pos,
         sep = ":"
     )
-    temp_stat <- .summarizePileupCounts(pileup_data)
+    temp_stat <- summarize(pileup_data)
     if (!is.null(x = coverage)) {
-        temp_stat <- temp_stat[
-            rowSums(temp_stat[, c("A", "C", "G", "T")]) >= coverage,
-        ]
+        base_cols <- c("A", "C", "G", "T")
+        # with = FALSE keeps the column name T from being read as TRUE
+        depth_ok <- rowSums(
+            temp_stat[, base_cols, with = FALSE]
+        ) >= coverage
+        temp_stat <- temp_stat[which(depth_ok)]
     }
-    temp_stat <- .assignReferenceNucleotides(temp_stat, genome_obj)
+    temp_stat <- assign_reference(temp_stat, genome_obj)
     if (nrow(x = temp_stat) > 0) {
-        .writePileupChunk(temp_stat, tmpDir)
+        write_chunk(temp_stat, tmpDir)
     }
     NULL
 }
