@@ -14,8 +14,8 @@ cleanRawReads(
   anchored = TRUE,
   indels = FALSE,
   tr_score = NULL,
-  tr_start = 10,
-  tr_end = 30,
+  tr_start = 0,
+  tr_end = 0,
   phred = NA,
   k = 3,
   halfwidth = NULL,
@@ -23,6 +23,7 @@ cleanRawReads(
   readl = 0,
   readq = 0,
   readn = 0,
+  rmDuplicates = FALSE,
   dustScore = NULL,
   batchSize = NA,
   postfix = "filtered",
@@ -73,16 +74,16 @@ of adapter with the read, at its beginning.}
 
 \item{tr_score}{integer value giving the quality score at or below of which
 a nucleotide will be marked as removable. NULL by default, which means
-that fixed (but nor dynamic) trimming will be applied to the low quality
-ends of short reads.}
+that fixed trimming of tr_start and tr_end nucleotides is used instead
+of dynamic trimming.}
 
 \item{tr_start}{integer specifying the number of nucleotides to be removed
 from the left end of short reads. This argument is used only when
-tr_score=NULL and fixed trimming is carrying out. Default value is 10.}
+tr_score=NULL and fixed trimming is carrying out. Default value is 0.}
 
 \item{tr_end}{integer specifying the number of nucleotides to be removed
 from the right end of short reads. This argument is used only when
-tr_score=NULL and fixed trimming is carrying out. Default value is 30.}
+tr_score=NULL and fixed trimming is carrying out. Default value is 0.}
 
 \item{phred}{temporary argument for internal use.}
 
@@ -111,6 +112,9 @@ Zero is the default, which will allow reads of any quality to be saved.}
 
 \item{readn}{integer specifying the maximum number of ambiguous nucleotides
 allowed in a read to be saved. Zero is the default.}
+
+\item{rmDuplicates}{logical. FALSE by default, so duplicate reads are
+kept. If TRUE, only the first copy of each duplicate sequence is kept}
 
 \item{dustScore}{integer specifying the maximum dust score at which reads to
 be saved. By default this argument is NULL and such filter is not used.}

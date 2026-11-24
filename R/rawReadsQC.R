@@ -633,14 +633,14 @@ readFASTQ <- function(
 #'     of adapter with the read, at its beginning.
 #' @param tr_score integer value giving the quality score at or below of which
 #'     a nucleotide will be marked as removable. NULL by default, which means
-#'     that fixed (but nor dynamic) trimming will be applied to the low quality
-#'     ends of short reads.
+#'     that fixed trimming of tr_start and tr_end nucleotides is used instead
+#'     of dynamic trimming.
 #' @param tr_start integer specifying the number of nucleotides to be removed
 #'     from the left end of short reads. This argument is used only when
-#'     tr_score=NULL and fixed trimming is carrying out. Default value is 10.
+#'     tr_score=NULL and fixed trimming is carrying out. Default value is 0.
 #' @param tr_end integer specifying the number of nucleotides to be removed
 #'     from the right end of short reads. This argument is used only when
-#'     tr_score=NULL and fixed trimming is carrying out. Default value is 30.
+#'     tr_score=NULL and fixed trimming is carrying out. Default value is 0.
 #' @param phred temporary argument for internal use.
 #' @param k integer value describing the number of failing nucleotides required
 #'     to trigger trimming. This argument is used only with dynamic trimming.
@@ -662,6 +662,8 @@ readFASTQ <- function(
 #'     Zero is the default, which will allow reads of any quality to be saved.
 #' @param readn integer specifying the maximum number of ambiguous nucleotides
 #'     allowed in a read to be saved. Zero is the default.
+#' @param rmDuplicates logical. FALSE by default, so duplicate reads are
+#'     kept. If TRUE, only the first copy of each duplicate sequence is kept
 #' @param dustScore integer specifying the maximum dust score at which reads to
 #'     be saved. By default this argument is NULL and such filter is not used.
 #' @param batchSize NA (by default) or integer value indicating the maximum
@@ -721,8 +723,8 @@ cleanRawReads <- function(
         anchored = TRUE,
         indels = FALSE,
         tr_score = NULL,
-        tr_start = 10,
-        tr_end = 30,
+        tr_start = 0,
+        tr_end = 0,
         phred = NA,
         k = 3,
         halfwidth = NULL,
@@ -730,6 +732,7 @@ cleanRawReads <- function(
         readl = 0,
         readq = 0,
         readn = 0,
+        rmDuplicates = FALSE,
         dustScore = NULL,
         batchSize = NA,
         postfix = "filtered",
@@ -752,6 +755,7 @@ cleanRawReads <- function(
         phred = phred, k = k, halfwidth = halfwidth,
         successive = successive,
         readl = readl, readq = readq, readn = readn,
+        rmDuplicates = rmDuplicates,
         dustScore = dustScore, batchSize = batchSize,
         workDir = workDir
     )
@@ -802,6 +806,7 @@ cleanRawReads <- function(
 #' @param readl integer, min read length.
 #' @param readq integer, min read quality.
 #' @param readn integer, max ambiguous nucleotides.
+#' @param rmDuplicates logical, drop duplicate reads
 #' @param dustScore integer or NULL.
 #' @param batchSize integer or NA.
 #' @param workDir character string with the working directory.
@@ -813,7 +818,7 @@ cleanRawReads <- function(
     min_match_flank, anchored, indels,
     tr_score, tr_start, tr_end, phred,
     k, halfwidth, successive,
-    readl, readq, readn,
+    readl, readq, readn, rmDuplicates,
     dustScore, batchSize, workDir) {
     PhSs <- NULL
     if (!is.null(x = tr_score)) {
@@ -836,6 +841,7 @@ cleanRawReads <- function(
         readl = readl,
         readq = readq,
         readn = readn,
+        rmDuplicates = rmDuplicates,
         dustScore = dustScore,
         batchSize = batchSize,
         workDir = workDir
@@ -863,6 +869,7 @@ cleanRawReads <- function(
         tr_end = ctx$tr_end, PhSs = ctx$PhSs, k = ctx$k,
         halfwidth = ctx$halfwidth, successive = ctx$successive,
         readl = ctx$readl, readq = ctx$readq, readn = ctx$readn,
+        rmDuplicates = ctx$rmDuplicates,
         dustScore = ctx$dustScore, batchSize = ctx$batchSize,
         workDir = ctx$workDir
     )
@@ -878,6 +885,7 @@ cleanRawReads <- function(
         tr_end = ctx$tr_end, PhSs = ctx$PhSs, k = ctx$k,
         halfwidth = ctx$halfwidth, successive = ctx$successive,
         readl = ctx$readl, readq = ctx$readq, readn = ctx$readn,
+        rmDuplicates = ctx$rmDuplicates,
         dustScore = ctx$dustScore, batchSize = ctx$batchSize,
         workDir = ctx$workDir
     )
@@ -961,6 +969,7 @@ cleanRawReads <- function(
 #' @param readl integer, min read length.
 #' @param readq integer, min read quality.
 #' @param readn integer, max ambiguous nucleotides.
+#' @param rmDuplicates logical, drop duplicate reads
 #' @param dustScore integer or NULL.
 #' @param batchSize integer or NA.
 #' @param workDir character string.
@@ -972,7 +981,7 @@ cleanRawReads <- function(
     min_match_flank, anchored, indels,
     tr_score, tr_start, tr_end, PhSs,
     k, halfwidth, successive,
-    readl, readq, readn,
+    readl, readq, readn, rmDuplicates,
     dustScore, batchSize, workDir) {
     FQ <- readFastq(dirPath = path, pattern = fastq, withIds = TRUE)
     FQ <- .trimAdaptersIfRequested(
@@ -985,7 +994,9 @@ cleanRawReads <- function(
             FQ, PhSs, tr_score, k, halfwidth, successive
         )
     }
-    .applyReadFilters(FQ, readl, readq, readn, dustScore, batchSize)
+    .applyReadFilters(
+        FQ, readl, readq, readn, dustScore, batchSize, rmDuplicates
+    )
 }
 
 #' Trim adapters if requested
@@ -1145,12 +1156,13 @@ cleanRawReads <- function(
 #' @param readn integer, maximum number of ambiguous nucleotides.
 #' @param dustScore integer, maximum dust score, or NULL.
 #' @param batchSize integer, batch size for dusty filter, or NA.
+#' @param rmDuplicates logical, keep only the first copy of a duplicate
 #' @return ShortReadQ object with filtered reads.
 #' @author Vasily V. Grinev.
 #' @keywords internal
 #' @noRd
 .applyReadFilters <- function(FQ, readl, readq, readn, dustScore,
-    batchSize) {
+    batchSize, rmDuplicates) {
     FQ <- FQ[width(x = FQ) >= readl]
     FQ <- FQ[rowMeans(
         x = as(quality(x = FQ), "matrix"),
@@ -1160,11 +1172,13 @@ cleanRawReads <- function(
         threshold = as.integer(x = readn),
         nuc = "other"
     )(FQ)]
-    FQ <- FQ[occurrenceFilter(
-        min = 1L, max = 1L,
-        withSread = TRUE,
-        duplicates = "head"
-    )(FQ)]
+    if (isTRUE(rmDuplicates)) {
+        FQ <- FQ[occurrenceFilter(
+            min = 1L, max = 1L,
+            withSread = TRUE,
+            duplicates = "head"
+        )(FQ)]
+    }
     if (!is.null(x = dustScore)) {
         FQ <- FQ[dustyFilter(
             threshold = dustScore,
