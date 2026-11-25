@@ -16,6 +16,35 @@ test_that("cleanRawReads keeps reads intact by default", {
     expect_equal(as.integer(Biostrings::width(out)), as.integer(Biostrings::width(raw)))
 })
 
+test_that("cleanRawReads does not read QA reports from the same directory", {
+    fq <- system.file("extdata", "test_R1.fastq", package = "huGSVcalleR")
+    skip_if(fq == "", "test FASTQ not available")
+    td <- tempfile("clean-qa-")
+    dir.create(td)
+    file.copy(fq, file.path(td, "test_R1.fastq"), overwrite = TRUE)
+    writeLines(
+        "not a fastq",
+        file.path(td, "QA metrics of test_R1.fastq.pdf")
+    )
+    writeLines(
+        "not a fastq",
+        file.path(td, "QA plots of test_R1.fastq.pdf")
+    )
+    writeLines(
+        "not a fastq",
+        file.path(td, "Overrepresented reads of test_R1.fastq.fasta")
+    )
+    cleanRawReads(
+        fastqDir = NULL,
+        fastq1 = "test_R1.fastq",
+        postfix = "named",
+        overwrite = TRUE,
+        workDir = td
+    )
+    out <- ShortRead::readFastq(file.path(td, "test_R1.named.fastq.gz"))
+    expect_equal(length(out), 10L)
+})
+
 test_that("cleanRawReads performs fixed trimming", {
     fq <- system.file("extdata", "test_R1.fastq", package = "huGSVcalleR")
     skip_if(fq == "", "test FASTQ not available")

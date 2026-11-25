@@ -4,3 +4,6 @@ R/.Rhistory
 src/*.dll
 src/*.o
 src/*.so
+vignettes/figure/
+vignettes/*_files/
+vignettes/*.knit.md

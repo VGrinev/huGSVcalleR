@@ -36,6 +36,21 @@ test_that("assessQRawReads finds adapters", {
     expect_true(nrow(res$ASs) > 0)
 })
 
+test_that("per-cycle base composition keeps every 5-cycle window", {
+    fq <- system.file("extdata", "test_R1.fastq", package = "huGSVcalleR")
+    skip_if(fq == "", "test FASTQ not available")
+    res <- assessQRawReads(
+        fastqDir = NULL,
+        fastq = basename(fq),
+        adapters = NULL,
+        contaminants = NULL,
+        workDir = dirname(fq)
+    )
+    expect_equal(nrow(res$PCCBs), 10)
+    expect_false(anyNA(res$PCCBs[, -1]))
+    expect_equal(rowSums(res$PCCBs[, -1]), rep(1, 10), tolerance = 1e-8)
+})
+
 test_that("per-cycle summaries keep unequal cycle lengths", {
     quality <- data.frame(
         Cycle = c(1, 2, 3),

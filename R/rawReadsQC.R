@@ -81,6 +81,19 @@ assessQRawReads <- function(fastqDir = NULL,
     )
 }
 
+#' Anchor a FASTQ file name for ShortRead
+#' @description ShortRead treats pattern as a regular expression
+#'     utils::glob2rx() matches that file name only, so a report such as
+#'     "QA metrics of test_R1.fastq.pdf" is not read as FASTQ
+#' @param fastq character string with the FASTQ file name
+#' @return character string with an anchored regular expression
+#' @author Dzianis D. Sarnatski
+#' @keywords internal
+#' @noRd
+.fastqNamePattern <- function(fastq) {
+    utils::glob2rx(fastq)
+}
+
 #' Run ShortRead::qa on one FASTQ file
 #' @description Internal helper for .loadQaInputs. ShortRead::qa sends
 #'     the file to a PSOCK worker
@@ -97,10 +110,11 @@ assessQRawReads <- function(fastqDir = NULL,
     old <- bpparam()
     register(SerialParam())
     on.exit(register(old), add = TRUE)
+    pattern <- .fastqNamePattern(fastq)
     if (is.null(x = n)) {
-        qa(dirPath = path, pattern = fastq)
+        qa(dirPath = path, pattern = pattern)
     } else {
-        qa(dirPath = path, pattern = fastq, n = n)
+        qa(dirPath = path, pattern = pattern, n = n)
     }
 }
 
@@ -118,7 +132,7 @@ assessQRawReads <- function(fastqDir = NULL,
 #' @noRd
 .loadQaInputs <- function(fastqDir, fastq, n, path, workDir) {
     sample_name <- gsub(pattern = ".fastq.+", replacement = "", x = fastq)
-    TNBs <- countFastq(dirPath = path, pattern = fastq)
+    TNBs <- countFastq(dirPath = path, pattern = .fastqNamePattern(fastq))
     TNRs <- TNBs[[1]]
     TNBs <- TNBs[[2]]
     reads <- readFASTQ(
@@ -376,13 +390,14 @@ assessQRawReads <- function(fastqDir = NULL,
 #' @keywords internal
 #' @noRd
 .computePerCycleBases <- function(QA) {
-    PCCBs <- .expandPerCycleBases(QA)
-    m <- .binPerCycleBases(PCCBs)
-    PCCBs <- m[!is.na(x = m$cycles), ]
-    PCCBs[is.na(x = PCCBs$N), ]$N <- 0
-    PCCBs[, -1] <- apply(X = PCCBs[, -1], MARGIN = 2, FUN = as.numeric)
+    PCCBs <- .binPerCycleBases(.expandPerCycleBases(QA))
+    PCCBs <- PCCBs[!is.na(x = PCCBs$cycles), ]
+    counts <- data.matrix(PCCBs[, -1, drop = FALSE])
+    counts[is.na(counts)] <- 0
+    totals <- rowSums(counts)
+    totals[totals == 0] <- NA_real_
+    PCCBs[, -1] <- counts / totals
     rownames(x = PCCBs) <- NULL
-    PCCBs[, -1] <- PCCBs[, -1] / rowSums(x = PCCBs[, -1])
     PCCBs
 }
 
@@ -415,21 +430,26 @@ assessQRawReads <- function(fastqDir = NULL,
 #' @keywords internal
 #' @noRd
 .binPerCycleBases <- function(PCCBs) {
-    m <- data.frame(cycles = "", A = 0, C = 0, G = 0, T = 0, N = 0)
     n <- length(PCCBs)
+    rows <- list()
     for (i in seq(from = 1, to = n, by = 5)) {
-        if (i + 4 < n) {
-            observed <- unlist(PCCBs[i:(i + 4)], use.names = FALSE)
-            label <- paste(i, i + 4, sep = "-")
-        } else {
-            observed <- unlist(PCCBs[i:n], use.names = FALSE)
-            label <- paste(i, n, sep = "-")
+        hi <- min(i + 4L, n)
+        observed <- unlist(PCCBs[i:hi], use.names = FALSE)
+        counts <- c(A = 0, C = 0, G = 0, T = 0, N = 0)
+        if (length(observed)) {
+            tab <- table(observed)
+            known <- intersect(names(tab), names(counts))
+            counts[known] <- as.integer(tab[known])
         }
-        bases <- c(label, table(observed))
-        m[i, 1] <- bases[1]
-        m[i, -1] <- bases[match(colnames(x = m), names(x = bases))][-1]
+        rows[[length(rows) + 1L]] <- data.frame(
+            cycles = paste(i, hi, sep = "-"),
+            t(counts),
+            stringsAsFactors = FALSE
+        )
     }
-    m
+    out <- do.call(what = rbind, args = rows)
+    rownames(out) <- NULL
+    out
 }
 
 #' Compute GC composition
@@ -971,7 +991,11 @@ cleanRawReads <- function(
     k, halfwidth, successive,
     readl, readq, readn, rmDuplicates,
     dustScore, batchSize, workDir) {
-    FQ <- readFastq(dirPath = path, pattern = fastq, withIds = TRUE)
+    FQ <- readFastq(
+        dirPath = path,
+        pattern = .fastqNamePattern(fastq),
+        withIds = TRUE
+    )
     FQ <- .trimAdaptersIfRequested(
         FQ, adapters, error, min_match_flank, anchored, indels, workDir
     )
@@ -1409,7 +1433,11 @@ cutRigthAdapter <- function(
     if (!frt %in% c("fastq", "gz")) {
         stop("Invalid format of FASTQ file")
     }
-    readFastq(dirPath = path, pattern = fastq, withIds = TRUE)
+    readFastq(
+        dirPath = path,
+        pattern = .fastqNamePattern(fastq),
+        withIds = TRUE
+    )
 }
 
 #' Load adapter table

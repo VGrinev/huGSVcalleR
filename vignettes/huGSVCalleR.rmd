@@ -30,13 +30,64 @@ knitr::opts_chunk$set(
     collapse = TRUE,
     comment  = "#>"
 )
+# BiocStyle registers a crop hook that asks for magick on every plot
+knitr::knit_hooks$set(crop = function(before, ...) NULL)
 # Working directory for all vignette outputs
 workDir <- tempdir()
+# Same page size and outer margins as the PDF reports
+draw_report_page <- function(draw) {
+    label <- knitr::opts_current$get("label")
+    input_file <- knitr::current_input(dir = TRUE)
+    input_dir <- if (is.null(input_file) || !nzchar(input_file)) {
+        getwd()
+    } else {
+        dirname(input_file)
+    }
+    dir <- file.path(input_dir, "figure")
+    dir.create(dir, recursive = TRUE, showWarnings = FALSE)
+    fig <- normalizePath(
+        file.path(dir, paste0(label, ".png")),
+        winslash = "/",
+        mustWork = FALSE
+    )
+    grDevices::png(
+        fig, width = 8.27, height = 11.69, units = "in", res = 140
+    )
+    on.exit(grDevices::dev.off(), add = TRUE)
+    par(mfrow = c(3, 2), omi = c(0.79, 0.79, 1, 0.79))
+    draw()
+    fig
+}
+# Missing bases used to erase a whole 5-cycle window in PCCBs
+fill_base_windows <- function(reads) {
+    mat <- as.matrix(reads)
+    n <- ncol(mat)
+    rows <- list()
+    for (i in seq(from = 1L, to = n, by = 5L)) {
+        hi <- min(i + 4L, n)
+        counts <- c(A = 0, C = 0, G = 0, T = 0, N = 0)
+        tab <- table(mat[, i:hi])
+        known <- intersect(names(tab), names(counts))
+        counts[known] <- as.integer(tab[known])
+        total <- sum(counts)
+        if (total > 0) {
+            counts <- counts / total
+        }
+        rows[[length(rows) + 1L]] <- data.frame(
+            cycles = paste(i, hi, sep = "-"),
+            t(counts),
+            stringsAsFactors = FALSE
+        )
+    }
+    out <- do.call(rbind, rows)
+    rownames(out) <- NULL
+    out
+}
 ```
 
 <font size="2">This document describes the usage of the functions integrated in the package and is meant to be a reference document for the end user. </font>
 
-<font size="2">The huGSVcalleR package is considered stable and will undergo few changes from now on. Please, report potential bugs and incompatibilities to [bioinformatics.rfct.bio.bsu\@gmail.com](mailto:bioinformatics.rfct.bio.bsu@gmail.com){.email}. </font>
+<font size="2">The huGSVcalleR package is version 0.99.0, and its interface may still change. Please report potential bugs and incompatibilities to [bioinformatics.rfct.bio.bsu\@gmail.com](mailto:bioinformatics.rfct.bio.bsu@gmail.com){.email}. </font>
 
 The usage of the package functions for identification and annotation of single nucleotide variation sites is shown for a small test dataset. The test FASTQ, BAM and CSV files are shipped with the package in `inst/extdata/` and can be accessed via `system.file()`. All calls use `workDir <- tempdir()` so that output files do not pollute the user's working directory.
 
@@ -97,8 +148,8 @@ qa_r1 <- assessQRawReads(
         package = "huGSVcalleR"
     )),
     n = NULL,
-    adapters = NULL,
-    contaminants = NULL,
+    adapters = "adapters.txt",
+    contaminants = "contaminants.txt",
     workDir = dirname(system.file("extdata", "test_R1.fastq",
         package = "huGSVcalleR"
     ))
@@ -106,14 +157,23 @@ qa_r1 <- assessQRawReads(
 str(qa_r1, max.level = 1)
 ```
 
-where the argument `adapters` is the name of a tab-delimited TXT file with adapter sequences (three fields: `adapter_id`, `adapter_name`, `adapter_sequence`), and `contaminants` is the name of a tab-delimited TXT file with foreign sequences (`foreign_id`, `foreign_name`, `foreign_sequence`). If `adapters` or `contaminants` is NULL, the corresponding search is not performed.
+where the argument `adapters` is the name of a tab-delimited TXT file with adapter sequences (three fields: `adapter_id`, `adapter_name`, `adapter_sequence`), and `contaminants` is the name of a tab-delimited TXT file with foreign sequences (`foreign_id`, `foreign_name`, `foreign_sequence`). The chunk above uses the packaged `adapters.txt` and `contaminants.txt`. If `adapters` or `contaminants` is NULL, the corresponding search is not performed.
 
 The function returns a list with 15 slots: sample name, file name, total numbers of reads and bases, read length distribution, per-read and per-cycle quality, base composition, GC content, low-complexity (dusty) scores, read frequency, overrepresented reads, and (optionally) adapter and foreign-sequence hits. As demonstrated in Figure 1, the distribution of reads by quality is replaced by the distribution of the fraction of reads exceeding a quality threshold, and the Q-Q plot of GC content is replaced by the density plot of empirical and theoretical (normal) distributions with the Kolmogorov–Smirnov test.
 
-```{r figure1, echo=FALSE, fig.wide=TRUE, out.width='100%'}
-knitr::include_graphics("Figure_1.jpg")
+```{r figure1, echo=FALSE, out.width="100%"}
+qa_r1$PCCBs <- fill_base_windows(fq$reads)
+fig <- draw_report_page(function() {
+    huGSVcalleR:::.plotReadQualityDistribution(qa_r1)
+    huGSVcalleR:::.plotReadQualityThreshold(qa_r1)
+    huGSVcalleR:::.plotPerCycleQuality(qa_r1)
+    huGSVcalleR:::.plotBaseComposition(qa_r1)
+    huGSVcalleR:::.plotPerCycleBaseComposition(qa_r1)
+    huGSVcalleR:::.plotGcComposition(qa_r1)
+})
+knitr::include_graphics(fig, rel_path = FALSE)
 ```
-Figure 1. Summary plots of raw read quality: distribution of reads quality, thresholding of reads quality, per cycle quality of reads, base composition of reads, per cycle composition of reads, and GC composition of reads.
+Figure 1. Summary plots of raw read quality, drawn from `qa_r1` while the vignette is built: distribution of reads quality, thresholding of reads quality, per cycle quality of reads, base composition of reads, per cycle composition of reads, and GC composition of reads.
 
 The function `reportQAResults()` consolidates the results into three files:
 
@@ -130,22 +190,34 @@ list.files(workDir, pattern = "^QA|^Overrepresented")
 -   `QA plots of <sample>.pdf` — a multi-page graphical report (Figure 2);
 -   `Overrepresented reads of <sample>.fasta` — most frequent reads.
 
-```{r figure2, echo=FALSE, fig.wide=TRUE, out.width='100%'}
-knitr::include_graphics("Figure_2.jpg")
+```{r figure2, echo=FALSE, out.width="100%"}
+fig <- draw_report_page(function() {
+    huGSVcalleR:::.plotLowComplexity(qa_r1)
+    huGSVcalleR:::.plotReadFrequency(qa_r1)
+    huGSVcalleR:::.plotContaminationsIfPresent(
+        qa_r1$ASs, "Adapter contaminations", "Adapter frequency"
+    )
+    huGSVcalleR:::.plotContaminationsIfPresent(
+        qa_r1$FSs, "Foreign sequence contaminations", "Sequence frequency"
+    )
+})
+knitr::include_graphics(fig, rel_path = FALSE)
 ```
-Figure 2. Summary plots of raw read quality (continuation): low-complexity of reads (log10 of dusty scores), frequency of reads, adapter contaminations, and foreign sequence contaminations.
+Figure 2. Summary plots of raw read quality (continuation), drawn from `qa_r1`: low-complexity of reads (log10 of dusty scores), frequency of reads, adapter contaminations, and foreign sequence contaminations.
 
 The function `cleanRawReads()` performs up to seven filtering steps: adapter trimming (left and right), fixed or dynamic quality trimming (`trimEnds`, `trimTails`, `trimTailw`), length filter, quality filter, ambiguous nucleotide filter, duplicate filter, and low-complexity filter:
 
 ```{r module1-clean}
+cleanDir <- file.path(workDir, "cleaned")
+dir.create(cleanDir, showWarnings = FALSE)
 file.copy(
     system.file("extdata", "test_R1.fastq", package = "huGSVcalleR"),
-    file.path(workDir, "test_R1.fastq"),
+    file.path(cleanDir, "test_R1.fastq"),
     overwrite = TRUE
 )
 file.copy(
     system.file("extdata", "test_R2.fastq", package = "huGSVcalleR"),
-    file.path(workDir, "test_R2.fastq"),
+    file.path(cleanDir, "test_R2.fastq"),
     overwrite = TRUE
 )
 cleanRawReads(
@@ -157,7 +229,7 @@ cleanRawReads(
     tr_end = 0,
     postfix = "filtered",
     overwrite = TRUE,
-    workDir = workDir
+    workDir = cleanDir
 )
 ```
 
@@ -242,10 +314,17 @@ list.files(workDir, pattern = "^Mapping quality")
 
 `assessQAlignedReads()` returns a list with six slots: sample name, file name, total number of reads, mapping quality scores, template lengths, and flag bit counts. `reportQAlResults()` writes two PDF files (Figure 3).
 
-```{r figure3, echo=FALSE, fig.wide=TRUE, out.width='100%'}
-knitr::include_graphics("Figure_3.jpg")
+```{r figure3, echo=FALSE, out.width="100%"}
+fig <- draw_report_page(function() {
+    huGSVcalleR:::.plotMappingQualityDistribution(qal)
+    huGSVcalleR:::.plotMappingQualityThreshold(qal)
+    huGSVcalleR:::.plotTemplateLengthDistribution(qal)
+    huGSVcalleR:::.plotTemplateLengthThreshold(qal)
+    huGSVcalleR:::.addAlReportHeader(qal)
+})
+knitr::include_graphics(fig, rel_path = FALSE)
 ```
-Figure 3. Summary plots of alignment quality: distribution of mapping qualities, thresholding of mapping quality, distribution of template lengths, and thresholding of template lengths.
+Figure 3. Summary plots of alignment quality, drawn from `qal` while the vignette is built: distribution of mapping qualities, thresholding of mapping quality, distribution of template lengths, and thresholding of template lengths.
 
 # Data preparation for calling
 
@@ -369,25 +448,32 @@ Each position is reduced to four counts. `x1` is the count of the reference base
 
 Hyperparameters were not searched. The names above are the values of the `model` argument.
 
-For BAM-based criteria:
+For BAM-based criteria the reference FASTA has to use the same contig name and length as the BAM. The packaged `test.bam` is `chr1` of length 1000. `fisherRSubread` runs below. The GATK call runs only when `gatk` is on the `PATH` and the platform is not Windows.
 
-```{r module4-bam, eval = FALSE}
-callSNVs(
-    criteria = "fisherRSubread",
-    bamDir   = NULL,
-    bamFile  = "test.bam",
-    fastaDir = "fasta",
-    faFile   = "tiny.fa",
-    workDir  = workDir
+```{r module4-bam}
+dir.create(file.path(workDir, "fasta"), showWarnings = FALSE)
+writeLines(
+    c(">chr1", paste(rep("ACGT", 250), collapse = "")),
+    file.path(workDir, "fasta", "chr1.fa")
 )
+callSNVs(
+    criteria  = "fisherRSubread",
+    bamDir    = NULL,
+    bamFile   = "test.bam",
+    fastaDir  = "fasta",
+    faFile    = "chr1.fa",
+    outputVCF = "subread",
+    workDir   = workDir
+)
+list.files(workDir, pattern = "subread")
 
-if (nzchar(Sys.which("gatk"))) {
+if (nzchar(Sys.which("gatk")) && .Platform$OS.type != "windows") {
     callSNVs(
         criteria  = "gatk",
         bamDir    = NULL,
         bamFile   = "test.bam",
         fastaDir  = "fasta",
-        faFile    = "tiny.fa",
+        faFile    = "chr1.fa",
         gatk_path = "gatk",
         workDir   = workDir
     )
@@ -752,7 +838,9 @@ Putting everything together, a minimal end-to-end pipeline looks like this:
 
 ```{r pipeline}
 ex <- system.file("extdata", package = "huGSVcalleR")
-file.copy(file.path(ex, "test_R1.fastq"), workDir, overwrite = TRUE)
+fastqDir <- file.path(workDir, "pipeline-fastq")
+dir.create(fastqDir, showWarnings = FALSE)
+file.copy(file.path(ex, "test_R1.fastq"), fastqDir, overwrite = TRUE)
 file.copy(file.path(ex, "test_pileup.csv"), workDir, overwrite = TRUE)
 file.copy(
     file.path(ex, "test_annotation.vcf"),
@@ -763,12 +851,12 @@ file.copy(file.path(ex, "ref_genes.txt"), workDir, overwrite = TRUE)
 
 qa_r1 <- assessQRawReads(
     fastqDir = NULL, fastq = "test_R1.fastq",
-    adapters = NULL, contaminants = NULL, workDir = workDir
+    adapters = NULL, contaminants = NULL, workDir = fastqDir
 )
 cleanRawReads(
     fastqDir = NULL, fastq1 = "test_R1.fastq",
     adapters = NULL, tr_start = 0, tr_end = 0,
-    postfix = "pipeline", overwrite = TRUE, workDir = workDir
+    postfix = "pipeline", overwrite = TRUE, workDir = fastqDir
 )
 callSNVs(
     fr_data = "test_pileup.csv", criteria = "fisher",
