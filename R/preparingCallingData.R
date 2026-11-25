@@ -634,13 +634,26 @@ filterBamFile <- function(
     )
     ### Optional sorting and indexing.
     if (isTRUE(x = index)) {
-        s <- sortBam(
-            file = f,
-            destination = sub(pattern = "\\.bam$", replacement = "", x = f),
-            nThreads = threads
-        )
-        indexBam(files = s)
+        .sortAndIndexFilteredBam(f, threads)
     }
+}
+
+#' Sort and index a filtered BAM
+#' @description Internal helper for filterBamFile. Sorts the filtered BAM
+#'     and writes its index
+#' @param f character path of the filtered BAM
+#' @param threads integer number of threads for sorting
+#' @return result of indexBam
+#' @author Vasily V. Grinev
+#' @keywords internal
+#' @noRd
+.sortAndIndexFilteredBam <- function(f, threads) {
+    s <- sortBam(
+        file = f,
+        destination = sub(pattern = "\\.bam$", replacement = "", x = f),
+        nThreads = threads
+    )
+    indexBam(files = s)
 }
 
 #' Build ScanBamParam for BAM filtering

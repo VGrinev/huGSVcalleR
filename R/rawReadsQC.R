@@ -756,9 +756,7 @@ cleanRawReads <- function(fastqDir = NULL,
     path <- .resolveFastqWorkPath(fastqDir, workDir)
     ### Validation of the FASTQ file(-s) extension.
     .validateFastqExtension(fastq1, 1)
-    if (!is.null(x = fastq2)) {
-        .validateFastqExtension(fastq2, 2)
-    }
+    if (!is.null(x = fastq2)) .validateFastqExtension(fastq2, 2)
     ### Building the processing context (Phred scores loaded once).
     ctx <- .buildFastqProcessingContext(
         path = path,
@@ -2580,9 +2578,12 @@ reportQAResults <- function(
     mu <- mean(x = frequency)
     sigma <- stats::sd(x = frequency)
     ks_p <- tryCatch(
-        suppressWarnings(ks.test(
-            x = frequency, y = "pnorm", mean = mu, sd = sigma
-        )$p.value),
+        withCallingHandlers(
+            ks.test(
+                x = frequency, y = "pnorm", mean = mu, sd = sigma
+            )$p.value,
+            warning = function(w) invokeRestart("muffleWarning")
+        ),
         error = function(e) NA_real_
     )
     legend(

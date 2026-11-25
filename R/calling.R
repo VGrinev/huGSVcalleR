@@ -1197,7 +1197,9 @@ generateVCF <- function(input,
 #' @noRd
 .vcfChromRank <- function(chrom) {
     bare <- sub(pattern = "^chr", replacement = "", x = as.character(chrom))
-    rank <- suppressWarnings(as.integer(bare))
+    rank <- rep(NA_integer_, length(bare))
+    numeric <- grepl(pattern = "^[0-9]+$", x = bare)
+    rank[numeric] <- as.integer(bare[numeric])
     rank[bare == "X"] <- 23L
     rank[bare == "Y"] <- 24L
     rank[bare %in% c("M", "MT")] <- 25L
@@ -1253,8 +1255,7 @@ generateVCF <- function(input,
         VCF$ALT,
         sep = "/"
     )
-    VCF$QUAL <- "."
-    VCF$FILTER <- "."
+    VCF$QUAL <- VCF$FILTER <- "."
     VCF$INFO <- paste(
         paste0("DP=", VCF$DP),
         paste0("MMsum=", VCF$MMsum),

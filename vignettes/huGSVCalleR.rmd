@@ -30,8 +30,8 @@ knitr::opts_chunk$set(
     collapse = TRUE,
     comment  = "#>"
 )
-# BiocStyle registers a crop hook that asks for magick on every plot
-knitr::knit_hooks$set(crop = function(before, ...) NULL)
+# Drop the crop hook so knitting does not ask for magick
+knitr::knit_hooks$delete("crop")
 # Working directory for all vignette outputs
 workDir <- tempdir()
 # Same page size and outer margins as the PDF reports
@@ -96,14 +96,14 @@ The usage of the package functions for identification and annotation of single n
 
 Load the package with the following command:
 
-```{r, eval = FALSE}
+```{r install, eval = FALSE}
 if (!requireNamespace("BiocManager", quietly = TRUE)) {
     install.packages("BiocManager")
 }
 BiocManager::install("huGSVcalleR")
 ```
 
-```{r, echo=TRUE, results='hide'}
+```{r load, echo=TRUE, results='hide'}
 library("huGSVcalleR")
 ```
 

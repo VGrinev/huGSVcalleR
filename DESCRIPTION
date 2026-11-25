@@ -31,7 +31,7 @@ SystemRequirements:
     GATK (>= 4.0) for callSNVs(criteria = "gatk"),
     Perl (>= 5.0) for scoreSSs()
 Roxygen: list(markdown = TRUE)
-Depends: R (>= 4.5.0)
+Depends: R (>= 4.6.0)
 Imports: 
     Biostrings (>= 2.72.1),
     tools,
