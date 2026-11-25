@@ -52,8 +52,10 @@ test_that("parallel pileup workers use the master summary", {
             paste(colnames(filtered), collapse = ","),
             as.character(nrow(filtered))
         )
-    }, summarize = huGSVcalleR:::.summarizePileupCounts, pile = pile,
-        BPPARAM = bp)
+    },
+    summarize = huGSVcalleR:::.summarizePileupCounts, pile = pile,
+    BPPARAM = bp
+    )
     expect_true(all(vapply(res, function(x) {
         grepl("T", x[1], fixed = TRUE) && !grepl("T_count", x[1], fixed = TRUE)
     }, logical(1))))

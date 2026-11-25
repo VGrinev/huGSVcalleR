@@ -68,23 +68,22 @@
 #' @importFrom S4Vectors queryHits
 #' @importFrom SummarizedExperiment rowRanges
 #' @importFrom VariantAnnotation geno info fixed "fixed<-"
-filterVariants <- function(
-        vcfDir = NULL,
-        vcfFile,
-        gr = NULL,
-        depth = 1,
-        vaf = NULL,
-        qd = NULL,
-        mq = NULL,
-        sor = NULL,
-        fs = NULL,
-        mqrs = NULL,
-        rpps = NULL,
-        score = NULL,
-        heterozyg = 0,
-        heterozyg1 = 0,
-        index = FALSE,
-        workDir = NULL) {
+filterVariants <- function(vcfDir = NULL,
+    vcfFile,
+    gr = NULL,
+    depth = 1,
+    vaf = NULL,
+    qd = NULL,
+    mq = NULL,
+    sor = NULL,
+    fs = NULL,
+    mqrs = NULL,
+    rpps = NULL,
+    score = NULL,
+    heterozyg = 0,
+    heterozyg1 = 0,
+    index = FALSE,
+    workDir = NULL) {
     ### Setting the working directory and VCF directory.
     paths <- .resolveVariantPaths(vcfDir, workDir)
     ### Loading of the single nucleotide variations.
@@ -165,9 +164,11 @@ filterVariants <- function(
 #' @author Vasily V. Grinev.
 #' @keywords internal
 #' @noRd
-.applyVariantFilters <- function(SNVs, gr, depth, vaf, qd, mq, sor, fs,
-    mqrs, rpps, score, heterozyg, heterozyg1,
-    info_fields, geno_fields, workDir) {
+.applyVariantFilters <- function(
+      SNVs, gr, depth, vaf, qd, mq, sor, fs,
+      mqrs, rpps, score, heterozyg, heterozyg1,
+      info_fields, geno_fields, workDir
+) {
     if (!is.null(x = gr)) {
         SNVs <- .filterByGenomicLocation(SNVs, gr, workDir)
     }
@@ -210,8 +211,10 @@ filterVariants <- function(
 #' @author Vasily V. Grinev.
 #' @keywords internal
 #' @noRd
-.applyGatkInfoFilters <- function(SNVs, qd, mq, sor, fs, mqrs, rpps,
-    info_fields) {
+.applyGatkInfoFilters <- function(
+      SNVs, qd, mq, sor, fs, mqrs, rpps,
+      info_fields
+) {
     if (!is.null(x = qd) && "QD" %in% info_fields) {
         SNVs <- .filterByInfoGreater(SNVs, "QD", qd)
     }
@@ -478,11 +481,13 @@ filterVariants <- function(
 #' )
 #' @export
 #' @importFrom data.table fread as.data.table data.table fifelse
-benchmarkVariants <- function(vcfDir,
-    ref_vcf,
-    query_vcf,
-    featureTable = FALSE,
-    workDir = NULL) {
+benchmarkVariants <- function(
+      vcfDir,
+      ref_vcf,
+      query_vcf,
+      featureTable = FALSE,
+      workDir = NULL
+) {
     ### Setting the working directory.
     if (is.null(x = workDir)) {
         workDir <- getwd()
@@ -603,8 +608,10 @@ benchmarkVariants <- function(vcfDir,
 #' @author Liudmila S. Varaniuk.
 #' @keywords internal
 #' @noRd
-.writeBenchmarkFeatureTable <- function(truth, test, query_vcf, ref_vcf,
-    workDir) {
+.writeBenchmarkFeatureTable <- function(
+      truth, test, query_vcf, ref_vcf,
+      workDir
+) {
     merged <- merge(
         truth[, .(key, CHROM, POS, REF, ALT, type)],
         test[, .(key, CHROM, POS, REF, ALT, type)],

@@ -121,16 +121,15 @@
 #' @importFrom GenomicRanges makeGRangesFromDataFrame findOverlaps
 #'     GRanges
 #' @importFrom IRanges IRanges
-annotateDbSNP <- function(
-        annoDir = NULL,
-        annoFile,
-        output = NULL,
-        dbDir = NULL,
-        dbFile = "GCF_000001405.40.gz",
-        genome = "hg38",
-        chrToNC = FALSE,
-        chrID,
-        workDir = NULL) {
+annotateDbSNP <- function(annoDir = NULL,
+    annoFile,
+    output = NULL,
+    dbDir = NULL,
+    dbFile = "GCF_000001405.40.gz",
+    genome = "hg38",
+    chrToNC = FALSE,
+    chrID,
+    workDir = NULL) {
     ### Resolving the annotation and database directories.
     paths <- .resolveAnnotationPaths(annoDir, dbDir, workDir)
     ### Loading of basic SNVs annotation.
@@ -512,12 +511,11 @@ annotateDbSNP <- function(
 #' @importFrom SummarizedExperiment rowRanges
 #' @importFrom SummarizedExperiment "rowRanges<-"
 #' @importFrom GenomicRanges makeGRangesFromDataFrame findOverlaps
-annotateBasic <- function(
-        vcfDir = NULL,
-        vcfFile,
-        ref_genes,
-        output = NULL,
-        workDir = NULL) {
+annotateBasic <- function(vcfDir = NULL,
+    vcfFile,
+    ref_genes,
+    output = NULL,
+    workDir = NULL) {
     ### Setting the working directory.
     if (is.null(x = workDir)) {
         workDir <- getwd()
@@ -724,16 +722,16 @@ annotateBasic <- function(
 #'     row.names = FALSE
 #' )
 #' if (requireNamespace("GenomeInfoDbData", quietly = TRUE)) {
-#' developAnnotations(
-#'     gtfDir = NULL,
-#'     gtfFile = "test_annotation.gtf",
-#'     orf = "orfs.txt",
-#'     gtf = "example.anno.gtf",
-#'     src = "example",
-#'     organism = "Homo sapiens",
-#'     sqlite = "example.anno.sqlite",
-#'     workDir = workDir
-#' )
+#'     developAnnotations(
+#'         gtfDir = NULL,
+#'         gtfFile = "test_annotation.gtf",
+#'         orf = "orfs.txt",
+#'         gtf = "example.anno.gtf",
+#'         src = "example",
+#'         organism = "Homo sapiens",
+#'         sqlite = "example.anno.sqlite",
+#'         workDir = workDir
+#'     )
 #' }
 #' @export
 #' @importFrom rtracklayer import export
@@ -743,14 +741,16 @@ annotateBasic <- function(
 #' @importFrom IRanges disjoin
 #' @importFrom S4Vectors queryHits subjectHits mcols mcols<- split
 #' @importFrom methods as
-developAnnotations <- function(gtfDir = NULL,
-    gtfFile,
-    orf,
-    gtf,
-    src,
-    organism,
-    sqlite,
-    workDir = NULL) {
+developAnnotations <- function(
+      gtfDir = NULL,
+      gtfFile,
+      orf,
+      gtf,
+      src,
+      organism,
+      sqlite,
+      workDir = NULL
+) {
     ### Setting the working directory.
     if (is.null(x = workDir)) {
         workDir <- getwd()
@@ -1290,10 +1290,9 @@ developAnnotations <- function(gtfDir = NULL,
 #' @importFrom GenomicRanges makeGRangesFromDataFrame seqnames start
 #'     end strand
 #' @importFrom methods is
-extractSeqSSs <- function(
-        x,
-        genome = "BSgenome.Hsapiens.UCSC.hg38",
-        workDir = NULL) {
+extractSeqSSs <- function(x,
+    genome = "BSgenome.Hsapiens.UCSC.hg38",
+    workDir = NULL) {
     ### Setting the working directory.
     if (is.null(x = workDir)) {
         workDir <- getwd()
@@ -1412,11 +1411,10 @@ extractSeqSSs <- function(
 #' @importFrom GenomicRanges makeGRangesFromDataFrame start end strand
 #'     start<- end<-
 #' @importFrom methods is
-extractSSsCoordsEEJs <- function(
-        x,
-        eejDir = NULL,
-        thr = 5,
-        workDir = NULL) {
+extractSSsCoordsEEJs <- function(x,
+    eejDir = NULL,
+    thr = 5,
+    workDir = NULL) {
     ### Setting the working directory.
     if (is.null(x = workDir)) {
         workDir <- getwd()
@@ -1705,13 +1703,15 @@ extractSSsCoordsGTF <- function(x, gtfDir = NULL, workDir = NULL) {
 #' @importFrom GenomicRanges start seqnames
 #' @importFrom BiocGenerics "%in%" match
 #' @importFrom AnnotationDbi mapIds
-introduceSNVtoAAs <- function(vcfDir = NULL,
-    vcfFile,
-    OrgDb = "org.Hs.eg.db",
-    TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
-    genome = "BSgenome.Hsapiens.UCSC.hg38",
-    proteins,
-    workDir = NULL) {
+introduceSNVtoAAs <- function(
+      vcfDir = NULL,
+      vcfFile,
+      OrgDb = "org.Hs.eg.db",
+      TxDb = "TxDb.Hsapiens.UCSC.hg38.knownGene",
+      genome = "BSgenome.Hsapiens.UCSC.hg38",
+      proteins,
+      workDir = NULL
+) {
     ### Checking of required packages.
     models <- .loadPreTrainedModels(OrgDb, TxDb, genome)
     ### Setting the working directory and VCF directory.
@@ -1989,12 +1989,11 @@ introduceSNVtoAAs <- function(vcfDir = NULL,
 #' @importFrom S4Vectors queryHits subjectHits
 #' @importFrom GenomicRanges start end strand seqnames
 #' @importFrom Biostrings DNAStringSet reverseComplement
-introduceSNVtoSSs <- function(
-        x,
-        vcfDir = NULL,
-        vcfFile,
-        genome = "BSgenome.Hsapiens.UCSC.hg38",
-        workDir = NULL) {
+introduceSNVtoSSs <- function(x,
+    vcfDir = NULL,
+    vcfFile,
+    genome = "BSgenome.Hsapiens.UCSC.hg38",
+    workDir = NULL) {
     ### Setting the working directory and VCF directory.
     if (is.null(x = workDir)) {
         workDir <- getwd()

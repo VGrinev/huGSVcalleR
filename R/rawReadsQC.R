@@ -44,12 +44,14 @@
 #' @importFrom stats density quantile
 #' @importFrom methods as is
 #' @importFrom DelayedArray mean
-assessQRawReads <- function(fastqDir = NULL,
-    fastq,
-    n = NULL,
-    adapters = NULL,
-    contaminants = NULL,
-    workDir = NULL) {
+assessQRawReads <- function(
+      fastqDir = NULL,
+      fastq,
+      n = NULL,
+      adapters = NULL,
+      contaminants = NULL,
+      workDir = NULL
+) {
     ### Setting the working directory and resolving the FASTQ path.
     path <- .resolveFastqWorkPath(fastqDir, workDir)
     if (is.null(x = workDir)) {
@@ -182,9 +184,11 @@ assessQRawReads <- function(fastqDir = NULL,
 #' @author Vasily V. Grinev.
 #' @keywords internal
 #' @noRd
-.assembleQAObject <- function(sample_name, file_name, TNRs, TNBs,
-    RLs, PERQs, PCQRs, BCs, PCCBs,
-    GCs, DSs, FRs, ORs, ASs, FSs) {
+.assembleQAObject <- function(
+      sample_name, file_name, TNRs, TNBs,
+      RLs, PERQs, PCQRs, BCs, PCCBs,
+      GCs, DSs, FRs, ORs, ASs, FSs
+) {
     list(
         SN = sample_name,
         FN = file_name,
@@ -238,8 +242,10 @@ assessQRawReads <- function(fastqDir = NULL,
 #' @author Vasily V. Grinev.
 #' @keywords internal
 #' @noRd
-.findForeignSeqsIfRequested <- function(fastqDir, fastq, n, contaminants,
-    workDir) {
+.findForeignSeqsIfRequested <- function(
+      fastqDir, fastq, n, contaminants,
+      workDir
+) {
     if (is.null(x = contaminants)) {
         return(NA)
     }
@@ -313,7 +319,8 @@ assessQRawReads <- function(fastqDir = NULL,
 #' @keywords internal
 #' @noRd
 .expandPerCycleQuality <- function(QA) {
-    # Later cycles can be shorter after trimming, so the vectors are not rbind-ed
+    # Later cycles can be shorter after trimming, so the vectors are not
+    # rbind-ed
     lapply(
         X = split(
             x = QA[["perCycle"]]$quality,
@@ -412,7 +419,8 @@ assessQRawReads <- function(fastqDir = NULL,
 .expandPerCycleBases <- function(QA) {
     PCCBs <- QA[["perCycle"]]$baseCall[, -4]
     PCCBs$Base <- as.character(x = PCCBs$Base)
-    # Later cycles can be shorter after trimming, so the vectors are not rbind-ed
+    # Later cycles can be shorter after trimming, so the vectors are not
+    # rbind-ed
     lapply(
         X = split(x = PCCBs, f = PCCBs$Cycle),
         FUN = function(y) {
@@ -545,11 +553,10 @@ assessQRawReads <- function(fastqDir = NULL,
 #' @export
 #' @importFrom Biostrings DNAStringSet PhredQuality
 #' @importFrom tools file_ext
-readFASTQ <- function(
-        fastqDir = NULL,
-        fastq,
-        n = NULL,
-        workDir = NULL) {
+readFASTQ <- function(fastqDir = NULL,
+    fastq,
+    n = NULL,
+    workDir = NULL) {
     ### Setting the working directory.
     if (is.null(x = workDir)) {
         workDir <- getwd()
@@ -721,31 +728,30 @@ readFASTQ <- function(
 #' @importFrom methods as
 #' @importFrom utils read.table
 #' @importFrom IRanges narrow
-cleanRawReads <- function(
-        fastqDir = NULL,
-        fastq1,
-        fastq2 = NULL,
-        adapters = NULL,
-        error = 0.2,
-        min_match_flank = 3L,
-        anchored = TRUE,
-        indels = FALSE,
-        tr_score = NULL,
-        tr_start = 0,
-        tr_end = 0,
-        phred = NA,
-        k = 3,
-        halfwidth = NULL,
-        successive = TRUE,
-        readl = 0,
-        readq = 0,
-        readn = 0,
-        rmDuplicates = FALSE,
-        dustScore = NULL,
-        batchSize = NA,
-        postfix = "filtered",
-        overwrite = FALSE,
-        workDir = NULL) {
+cleanRawReads <- function(fastqDir = NULL,
+    fastq1,
+    fastq2 = NULL,
+    adapters = NULL,
+    error = 0.2,
+    min_match_flank = 3L,
+    anchored = TRUE,
+    indels = FALSE,
+    tr_score = NULL,
+    tr_start = 0,
+    tr_end = 0,
+    phred = NA,
+    k = 3,
+    halfwidth = NULL,
+    successive = TRUE,
+    readl = 0,
+    readq = 0,
+    readn = 0,
+    rmDuplicates = FALSE,
+    dustScore = NULL,
+    batchSize = NA,
+    postfix = "filtered",
+    overwrite = FALSE,
+    workDir = NULL) {
     ### Setting the working directory and resolving the path.
     path <- .resolveFastqWorkPath(fastqDir, workDir)
     ### Validation of the FASTQ file(-s) extension.
@@ -822,12 +828,14 @@ cleanRawReads <- function(
 #' @author Vasily V. Grinev.
 #' @keywords internal
 #' @noRd
-.buildFastqProcessingContext <- function(path, adapters, error,
-    min_match_flank, anchored, indels,
-    tr_score, tr_start, tr_end, phred,
-    k, halfwidth, successive,
-    readl, readq, readn, rmDuplicates,
-    dustScore, batchSize, workDir) {
+.buildFastqProcessingContext <- function(
+      path, adapters, error,
+      min_match_flank, anchored, indels,
+      tr_score, tr_start, tr_end, phred,
+      k, halfwidth, successive,
+      readl, readq, readn, rmDuplicates,
+      dustScore, batchSize, workDir
+) {
     PhSs <- NULL
     if (!is.null(x = tr_score)) {
         PhSs <- .loadPhredScores(workDir, phred)
@@ -914,8 +922,10 @@ cleanRawReads <- function(
 #' @author Vasily V. Grinev.
 #' @keywords internal
 #' @noRd
-.writeFilteredFastqPair <- function(FQs, path, fastq1, fastq2,
-    postfix, overwrite) {
+.writeFilteredFastqPair <- function(
+      FQs, path, fastq1, fastq2,
+      postfix, overwrite
+) {
     .writeFilteredFastq(FQs$FQ1, path, fastq1, postfix, overwrite)
     if (!is.null(x = fastq2)) {
         .writeFilteredFastq(FQs$FQ2, path, fastq2, postfix, overwrite)
@@ -985,12 +995,14 @@ cleanRawReads <- function(
 #' @author Vasily V. Grinev.
 #' @keywords internal
 #' @noRd
-.processSingleFastq <- function(path, fastq, adapters, error,
-    min_match_flank, anchored, indels,
-    tr_score, tr_start, tr_end, PhSs,
-    k, halfwidth, successive,
-    readl, readq, readn, rmDuplicates,
-    dustScore, batchSize, workDir) {
+.processSingleFastq <- function(
+      path, fastq, adapters, error,
+      min_match_flank, anchored, indels,
+      tr_score, tr_start, tr_end, PhSs,
+      k, halfwidth, successive,
+      readl, readq, readn, rmDuplicates,
+      dustScore, batchSize, workDir
+) {
     FQ <- readFastq(
         dirPath = path,
         pattern = .fastqNamePattern(fastq),
@@ -1025,8 +1037,10 @@ cleanRawReads <- function(
 #' @author Vasily V. Grinev.
 #' @keywords internal
 #' @noRd
-.trimAdaptersIfRequested <- function(FQ, adapters, error, min_match_flank,
-    anchored, indels, workDir) {
+.trimAdaptersIfRequested <- function(
+      FQ, adapters, error, min_match_flank,
+      anchored, indels, workDir
+) {
     if (is.null(x = adapters)) {
         return(FQ)
     }
@@ -1140,8 +1154,10 @@ cleanRawReads <- function(
 #' @author Vasily V. Grinev.
 #' @keywords internal
 #' @noRd
-.trimDynamicLowQuality <- function(FQ, PhSs, tr_score, k, halfwidth,
-    successive) {
+.trimDynamicLowQuality <- function(
+      FQ, PhSs, tr_score, k, halfwidth,
+      successive
+) {
     FQ <- .trimLeadingLowQuality(FQ = FQ, tr_score = tr_score)
     if (!is.null(x = halfwidth)) {
         FQ <- trimTailw(
@@ -1173,8 +1189,10 @@ cleanRawReads <- function(
 #' @author Vasily V. Grinev.
 #' @keywords internal
 #' @noRd
-.applyReadFilters <- function(FQ, readl, readq, readn, dustScore,
-    batchSize, rmDuplicates) {
+.applyReadFilters <- function(
+      FQ, readl, readq, readn, dustScore,
+      batchSize, rmDuplicates
+) {
     FQ <- FQ[width(x = FQ) >= readl]
     FQ <- FQ[rowMeans(
         x = as(quality(x = FQ), "matrix"),
@@ -1228,7 +1246,8 @@ cleanRawReads <- function(
     if (length(x = FQ1) > 0L && length(x = FQ2) > 0L &&
         !any(ID1 %in% ID2)) {
         warning(
-            "Paired reads could not be matched, so the output FASTQ files are empty"
+            "Paired reads could not be matched, so the output FASTQ files are
+            empty"
         )
     }
     FQ1 <- FQ1[ID1 %in% ID2]
@@ -1311,15 +1330,14 @@ cleanRawReads <- function(
 #' @importFrom Biostrings trimLRPatterns width
 #' @importFrom utils read.table
 #' @importFrom methods is
-cutLeftAdapter <- function(
-        fastqDir = NULL,
-        fastq,
-        adapters,
-        error = 0.2,
-        min_match_flank = 3L,
-        anchored = TRUE,
-        indels = FALSE,
-        workDir = NULL) {
+cutLeftAdapter <- function(fastqDir = NULL,
+    fastq,
+    adapters,
+    error = 0.2,
+    min_match_flank = 3L,
+    anchored = TRUE,
+    indels = FALSE,
+    workDir = NULL) {
     ### Setting the working directory.
     if (is.null(x = workDir)) {
         workDir <- getwd()
@@ -1385,15 +1403,14 @@ cutLeftAdapter <- function(
 #' @importFrom Biostrings width
 #' @importFrom methods is
 #' @importFrom utils read.table
-cutRigthAdapter <- function(
-        fastqDir = NULL,
-        fastq,
-        adapters,
-        error = 0.2,
-        min_match_flank = 3L,
-        anchored = TRUE,
-        indels = FALSE,
-        workDir = NULL) {
+cutRigthAdapter <- function(fastqDir = NULL,
+    fastq,
+    adapters,
+    error = 0.2,
+    min_match_flank = 3L,
+    anchored = TRUE,
+    indels = FALSE,
+    workDir = NULL) {
     ### Setting the working directory.
     if (is.null(x = workDir)) {
         workDir <- getwd()
@@ -1471,8 +1488,10 @@ cutRigthAdapter <- function(
 #' @author Vasily V. Grinev.
 #' @keywords internal
 #' @noRd
-.trimAdaptersFromFastq <- function(FQ, sequences, trim_fun, error,
-    min_match_flank, anchored, indels) {
+.trimAdaptersFromFastq <- function(
+      FQ, sequences, trim_fun, error,
+      min_match_flank, anchored, indels
+) {
     for (i in seq_along(sequences)) {
         FQ <- trim_fun(
             FQ, sequences[i], error,
@@ -1495,8 +1514,10 @@ cutRigthAdapter <- function(
 #' @author Vasily V. Grinev.
 #' @keywords internal
 #' @noRd
-.trimLeftAdapterSingle <- function(FQ, seq_l, error, min_match_flank,
-    anchored, indels) {
+.trimLeftAdapterSingle <- function(
+      FQ, seq_l, error, min_match_flank,
+      anchored, indels
+) {
     flank_seq <- .buildAdapterMismatchProfile(seq_l, error)
     if (min_match_flank >= 1L) {
         if (nchar(x = seq_l) > min_match_flank) {
@@ -1534,8 +1555,10 @@ cutRigthAdapter <- function(
 #' @author Vasily V. Grinev.
 #' @keywords internal
 #' @noRd
-.trimRightAdapterSingle <- function(FQ, seq_l, error, min_match_flank,
-    anchored, indels) {
+.trimRightAdapterSingle <- function(
+      FQ, seq_l, error, min_match_flank,
+      anchored, indels
+) {
     flank_seq <- .buildAdapterMismatchProfile(seq_l, error)
     if (min_match_flank >= 1L) {
         if (nchar(x = seq_l) > min_match_flank) {
@@ -1614,11 +1637,13 @@ cutRigthAdapter <- function(
 #' @importFrom methods is
 #' @importFrom utils read.table
 #' @importFrom tools file_ext
-findAdapters <- function(fastqDir = NULL,
-    fastq,
-    n = NULL,
-    adapters,
-    workDir = NULL) {
+findAdapters <- function(
+      fastqDir = NULL,
+      fastq,
+      n = NULL,
+      adapters,
+      workDir = NULL
+) {
     ### Setting the working directory.
     if (is.null(x = workDir)) {
         workDir <- getwd()
@@ -1758,12 +1783,11 @@ findAdapters <- function(fastqDir = NULL,
 #' @importFrom utils read.table
 #' @importFrom methods is
 #' @importFrom tools file_ext
-findForeignSeqs <- function(
-        fastqDir = NULL,
-        fastq,
-        n = NULL,
-        contaminants,
-        workDir = NULL) {
+findForeignSeqs <- function(fastqDir = NULL,
+    fastq,
+    n = NULL,
+    contaminants,
+    workDir = NULL) {
     ### Setting the working directory.
     if (is.null(x = workDir)) {
         workDir <- getwd()
@@ -1815,9 +1839,11 @@ findForeignSeqs <- function(
 #' @importFrom graphics plot axis title rect legend mtext text barplot
 #' @importFrom stats ks.test density
 #' @importFrom grDevices pdf dev.off
-reportQAResults <- function(x,
-    output = NULL,
-    workDir = NULL) {
+reportQAResults <- function(
+      x,
+      output = NULL,
+      workDir = NULL
+) {
     ### Textual report.
     .saveQATextReport(x, output, workDir)
     ### Saving of overrepresented reads.
@@ -1917,7 +1943,8 @@ reportQAResults <- function(x,
     # Decimal form for ordinary frequencies, scientific form for large values
     out[big] <- formatC(x[big], format = "e", digits = 2)
     out[ordinary] <- formatC(
-        x[ordinary], format = "f", digits = 3, drop0trailing = TRUE
+        x[ordinary],
+        format = "f", digits = 3, drop0trailing = TRUE
     )
     out[!is.finite(x)] <- NA_character_
     out

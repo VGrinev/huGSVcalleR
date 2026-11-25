@@ -13,7 +13,7 @@ read_vcf_body <- function(path) {
 }
 
 run_table_caller <- function(criteria, output, model = "rpart",
-                             pvalue = FALSE) {
+    pvalue = FALSE) {
     fr <- system.file("extdata", "test_pileup.csv", package = "huGSVcalleR")
     td <- tempfile(paste0("call-", criteria, "-"))
     dir.create(td)

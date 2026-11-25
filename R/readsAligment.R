@@ -58,15 +58,14 @@
 #' @export
 #' @importFrom Rsubread align
 #' @importFrom Rsamtools indexBam
-alignDNASubread <- function(
-        genome,
-        fastqDir, fastq1, fastq2 = NULL,
-        bamDir,
-        bamFile,
-        orientation = "fr",
-        threads = 1,
-        SV = FALSE,
-        workDir = NULL) {
+alignDNASubread <- function(genome,
+    fastqDir, fastq1, fastq2 = NULL,
+    bamDir,
+    bamFile,
+    orientation = "fr",
+    threads = 1,
+    SV = FALSE,
+    workDir = NULL) {
     ### Assignment the basename of index file.
     ref <- paste(workDir, genome, sep = "/")
     ### Assignment the path to and name of FASTQ file(-s) including first reads.
@@ -121,9 +120,11 @@ alignDNASubread <- function(
 #' @export
 #' @importFrom Rsamtools scanBam ScanBamParam bamFlagAsBitMatrix
 #' @importFrom methods is
-assessQAlignedReads <- function(bamDir = NULL,
-    bamFile,
-    workDir = NULL) {
+assessQAlignedReads <- function(
+      bamDir = NULL,
+      bamFile,
+      workDir = NULL
+) {
     ### Setting the working directory.
     if (is.null(x = workDir)) {
         workDir <- getwd()
@@ -214,12 +215,14 @@ assessQAlignedReads <- function(bamDir = NULL,
 #' )
 #' @export
 #' @importFrom Rsubread buildindex
-buildIndexSubread <- function(ref_genome,
-    ref_fasta,
-    index,
-    fa,
-    memory = 8000,
-    workDir = NULL) {
+buildIndexSubread <- function(
+      ref_genome,
+      ref_fasta,
+      index,
+      fa,
+      memory = 8000,
+      workDir = NULL
+) {
     ### Setting the working directory.
     if (is.null(x = workDir)) {
         workDir <- getwd()
@@ -272,9 +275,11 @@ buildIndexSubread <- function(ref_genome,
 #' @importFrom grDevices cairo_pdf dev.off rgb
 #' @importFrom graphics hist axis title plot rect text segments par mtext
 #' @importFrom stats quantile median
-reportQAlResults <- function(x,
-    output = NULL,
-    workDir = NULL) {
+reportQAlResults <- function(
+      x,
+      output = NULL,
+      workDir = NULL
+) {
     ### Textual report.
     .saveAlTextReport(x, output, workDir)
     ### Graphical report.
@@ -829,11 +834,13 @@ reportQAlResults <- function(x,
 #' @export
 #' @importFrom Rsamtools sortBam indexBam
 #' @importFrom parallel detectCores
-sortBamFile <- function(bamDir,
-    bamFile,
-    byQname,
-    threads = max(1L, detectCores(logical = TRUE) - 1L, na.rm = TRUE),
-    workDir = NULL) {
+sortBamFile <- function(
+      bamDir,
+      bamFile,
+      byQname,
+      threads = max(1L, detectCores(logical = TRUE) - 1L, na.rm = TRUE),
+      workDir = NULL
+) {
     ### Setting the working directory.
     if (is.null(x = workDir)) {
         workDir <- getwd()

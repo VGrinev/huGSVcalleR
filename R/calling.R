@@ -51,19 +51,21 @@
 #' @keywords internal
 #' @noRd
 #' @importFrom parallel detectCores
-gatkCalleR <- function(bamDir = NULL,
-    bamFile,
-    postfix = NA,
-    fastaDir = NULL,
-    faFile,
-    intervals = NULL,
-    pcr_model = "CONSERVATIVE",
-    soft_clip = TRUE,
-    ERC = "NONE",
-    cores = "MAX",
-    SE = TRUE,
-    gatk_path = NULL,
-    workDir = NULL) {
+gatkCalleR <- function(
+      bamDir = NULL,
+      bamFile,
+      postfix = NA,
+      fastaDir = NULL,
+      faFile,
+      intervals = NULL,
+      pcr_model = "CONSERVATIVE",
+      soft_clip = TRUE,
+      ERC = "NONE",
+      cores = "MAX",
+      SE = TRUE,
+      gatk_path = NULL,
+      workDir = NULL
+) {
     ### Platform check.
     if (.Platform$OS.type == "windows") {
         stop(
@@ -162,9 +164,11 @@ gatkCalleR <- function(bamDir = NULL,
 #' @author Ilia M. Ilyushonak, Vasily V. Grinev.
 #' @keywords internal
 #' @noRd
-.buildHaplotypeCallerArgs <- function(path1, bamFile, path2, faFile,
-    postfix, intervals, pcr_model,
-    soft_clip, ERC, cores, SE, workDir) {
+.buildHaplotypeCallerArgs <- function(
+      path1, bamFile, path2, faFile,
+      postfix, intervals, pcr_model,
+      soft_clip, ERC, cores, SE, workDir
+) {
     input <- paste("-I", file.path(path1, bamFile), sep = " ")
     bam_basename <- gsub(pattern = ".bam", replacement = "", x = bamFile)
     out_name <- if (!is.na(x = postfix)) {
@@ -290,17 +294,19 @@ gatkCalleR <- function(bamDir = NULL,
 #' @keywords internal
 #' @noRd
 #' @importFrom Rsubread exactSNP
-fisherCalleR <- function(bamDir = NULL,
-    bamFile,
-    fastaDir = NULL,
-    faFile,
-    baseq = 20,
-    mindepth = 1, maxdepth = 1e6,
-    qvalue = 12,
-    trim = 0,
-    threads = 1,
-    outputVCF = NULL,
-    workDir = NULL) {
+fisherCalleR <- function(
+      bamDir = NULL,
+      bamFile,
+      fastaDir = NULL,
+      faFile,
+      baseq = 20,
+      mindepth = 1, maxdepth = 1e6,
+      qvalue = 12,
+      trim = 0,
+      threads = 1,
+      outputVCF = NULL,
+      workDir = NULL
+) {
     ### Setting the working directory.
     if (is.null(x = workDir)) {
         workDir <- getwd()
@@ -461,32 +467,31 @@ fisherCalleR <- function(bamDir = NULL,
 #' )
 #' @export
 #' @importFrom data.table data.table
-callSNVs <- function(
-        fr_data,
-        criteria = "entropy",
-        vcfDir = NULL,
-        outputVCF,
-        bamDir = NULL,
-        bamFile = NA,
-        fastaDir = NULL,
-        faFile = NA,
-        baseq = 20,
-        mindepth = 1,
-        maxdepth = 1e6,
-        qvalue = 12,
-        trim = 0,
-        threads = 1,
-        postfix = NA,
-        intervals = NULL,
-        pcr_model = NA,
-        soft_clip = TRUE,
-        ERC = "NONE",
-        cores = "MAX",
-        SE = TRUE,
-        gatk_path = NULL,
-        workDir = NULL,
-        model = "rpart",
-        pvalue = FALSE) {
+callSNVs <- function(fr_data,
+    criteria = "entropy",
+    vcfDir = NULL,
+    outputVCF,
+    bamDir = NULL,
+    bamFile = NA,
+    fastaDir = NULL,
+    faFile = NA,
+    baseq = 20,
+    mindepth = 1,
+    maxdepth = 1e6,
+    qvalue = 12,
+    trim = 0,
+    threads = 1,
+    postfix = NA,
+    intervals = NULL,
+    pcr_model = NA,
+    soft_clip = TRUE,
+    ERC = "NONE",
+    cores = "MAX",
+    SE = TRUE,
+    gatk_path = NULL,
+    workDir = NULL,
+    model = "rpart",
+    pvalue = FALSE) {
     ### Validation of the input criteria and arguments.
     criteria <- .validateCallerInputs(
         criteria, fr_data, missing(fr_data), bamFile
@@ -521,8 +526,10 @@ callSNVs <- function(
 #' @author Dzianis D. Sarnatski, Mikalai M. Yatskou, Vasily V. Grinev.
 #' @keywords internal
 #' @noRd
-.validateCallerInputs <- function(criteria, fr_data, fr_data_missing,
-    bamFile) {
+.validateCallerInputs <- function(
+      criteria, fr_data, fr_data_missing,
+      bamFile
+) {
     criteria <- match.arg(arg = criteria, choices = SUPPORTED_CALLERS)
     if (criteria %in% SUPPORTED_TABLE_CALLERS && fr_data_missing) {
         stop(
@@ -610,11 +617,13 @@ callSNVs <- function(
 #' @author Dzianis D. Sarnatski, Mikalai M. Yatskou, Vasily V. Grinev.
 #' @keywords internal
 #' @noRd
-.dispatchCaller <- function(criteria, fr_data, fr_table, vcfDir, outputVCF,
-    bamDir, bamFile, fastaDir, faFile,
-    baseq, mindepth, maxdepth, qvalue, trim, threads,
-    postfix, intervals, pcr_model, soft_clip, ERC,
-    cores, SE, gatk_path, workDir, model, pvalue) {
+.dispatchCaller <- function(
+      criteria, fr_data, fr_table, vcfDir, outputVCF,
+      bamDir, bamFile, fastaDir, faFile,
+      baseq, mindepth, maxdepth, qvalue, trim, threads,
+      postfix, intervals, pcr_model, soft_clip, ERC,
+      cores, SE, gatk_path, workDir, model, pvalue
+) {
     switch(criteria,
         binomial = ,
         counting = ,
@@ -651,8 +660,10 @@ callSNVs <- function(
 #' @author Dzianis D. Sarnatski, Mikalai M. Yatskou, Vasily V. Grinev.
 #' @keywords internal
 #' @noRd
-.dispatchTableCaller <- function(criteria, fr_table, vcfDir, outputVCF,
-    workDir) {
+.dispatchTableCaller <- function(
+      criteria, fr_table, vcfDir, outputVCF,
+      workDir
+) {
     result <- .runStatisticalTest(criteria, fr_table)
     input <- data.table(cbind(fr_table, result))
     colnames(input)[ncol(input)] <- criteria
@@ -685,9 +696,11 @@ callSNVs <- function(
 #' @author Dzianis D. Sarnatski, Mikalai M. Yatskou, Vasily V. Grinev.
 #' @keywords internal
 #' @noRd
-.dispatchFisherRSubread <- function(bamDir, bamFile, fastaDir, faFile,
-    baseq, mindepth, maxdepth, qvalue,
-    trim, threads, outputVCF, workDir) {
+.dispatchFisherRSubread <- function(
+      bamDir, bamFile, fastaDir, faFile,
+      baseq, mindepth, maxdepth, qvalue,
+      trim, threads, outputVCF, workDir
+) {
     fisherCalleR(
         bamDir = bamDir,
         bamFile = bamFile,
@@ -725,9 +738,11 @@ callSNVs <- function(
 #' @author Dzianis D. Sarnatski, Mikalai M. Yatskou, Vasily V. Grinev.
 #' @keywords internal
 #' @noRd
-.dispatchGatk <- function(bamDir, bamFile, postfix, fastaDir, faFile,
-    intervals, pcr_model, soft_clip, ERC, cores, SE,
-    gatk_path, workDir) {
+.dispatchGatk <- function(
+      bamDir, bamFile, postfix, fastaDir, faFile,
+      intervals, pcr_model, soft_clip, ERC, cores, SE,
+      gatk_path, workDir
+) {
     gatkCalleR(
         bamDir = bamDir,
         bamFile = bamFile,
@@ -759,8 +774,10 @@ callSNVs <- function(
 #' @author Dzianis D. Sarnatski, Mikalai M. Yatskou, Vasily V. Grinev.
 #' @keywords internal
 #' @noRd
-.dispatchMl <- function(fr_table, model, pvalue, vcfDir, outputVCF,
-    workDir) {
+.dispatchMl <- function(
+      fr_table, model, pvalue, vcfDir, outputVCF,
+      workDir
+) {
     mlCalleR(
         fr_table = fr_table,
         model = model,
@@ -819,12 +836,14 @@ callSNVs <- function(
 #' @import randomForest
 #' @import LiblineaR
 #' @import rpart
-mlCalleR <- function(fr_table,
-    model = "rpart",
-    pvalue = FALSE,
-    vcfDir = NULL,
-    outputVCF,
-    workDir = NULL) {
+mlCalleR <- function(
+      fr_table,
+      model = "rpart",
+      pvalue = FALSE,
+      vcfDir = NULL,
+      outputVCF,
+      workDir = NULL
+) {
     ### Validation of the input model.
     if (!model %in% SUPPORTED_ML_MODELS) {
         stop(paste(
@@ -1135,12 +1154,11 @@ mlCalleR <- function(fr_table,
 #' @keywords internal
 #' @noRd
 #' @importFrom data.table fread
-generateVCF <- function(
-        input,
-        version = "4.0",
-        vcfDir = NULL,
-        outputVCF,
-        workDir = NULL) {
+generateVCF <- function(input,
+    version = "4.0",
+    vcfDir = NULL,
+    outputVCF,
+    workDir = NULL) {
     ### Setting the working directory.
     if (is.null(x = workDir)) {
         workDir <- getwd()

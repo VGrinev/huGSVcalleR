@@ -118,18 +118,17 @@
 #' @importFrom methods is
 #' @importFrom tibble tibble
 #' @importFrom rlang .data
-collectBasesPileup <- function(
-        bamDir = NULL,
-        bamFile,
-        gr = "SeqInfo",
-        canChr = TRUE,
-        depth = 1e6, baseq = 20, mapq = 20,
-        coverage = NULL,
-        genome = "BSgenome.Hsapiens.UCSC.hg38",
-        tmpDir = tempdir(),
-        postfix = NULL,
-        threads = 1,
-        workDir = NULL) {
+collectBasesPileup <- function(bamDir = NULL,
+    bamFile,
+    gr = "SeqInfo",
+    canChr = TRUE,
+    depth = 1e6, baseq = 20, mapq = 20,
+    coverage = NULL,
+    genome = "BSgenome.Hsapiens.UCSC.hg38",
+    tmpDir = tempdir(),
+    postfix = NULL,
+    threads = 1,
+    workDir = NULL) {
     ### Setting the working directory.
     if (is.null(x = workDir)) {
         workDir <- getwd()
@@ -202,8 +201,10 @@ collectBasesPileup <- function(
 #' @author Vasily V. Grinev, Dzianis D. Sarnatski, Mikalai M. Yatskou.
 #' @keywords internal
 #' @noRd
-.runPileupInParallel <- function(GRs, bam_link, depth, baseq, mapq,
-    coverage, genome_obj, tmpDir, threads) {
+.runPileupInParallel <- function(
+      GRs, bam_link, depth, baseq, mapq,
+      coverage, genome_obj, tmpDir, threads
+) {
     # One worker still opens a PSOCK process and serializes package:stats
     bpparam <- if (threads <= 1L) {
         SerialParam()
@@ -214,7 +215,8 @@ collectBasesPileup <- function(
             stop.on.error = TRUE
         )
     }
-    # Passed from this process so a PSOCK worker does not run an older installed copy
+    # Passed from this process so a PSOCK worker does not run an older installed
+    # copy
     bplapply(
         X = seq_along(GRs),
         FUN = .computePileupChunk,
@@ -330,11 +332,13 @@ collectBasesPileup <- function(
 #' @author Vasily V. Grinev, Dzianis D. Sarnatski, Mikalai M. Yatskou.
 #' @keywords internal
 #' @noRd
-.computePileupChunk <- function(i, GRs, bam_link, depth, baseq, mapq,
-    coverage, genome_obj, tmpDir,
-    summarize = .summarizePileupCounts,
-    assign_reference = .assignReferenceNucleotides,
-    write_chunk = .writePileupChunk) {
+.computePileupChunk <- function(
+      i, GRs, bam_link, depth, baseq, mapq,
+      coverage, genome_obj, tmpDir,
+      summarize = .summarizePileupCounts,
+      assign_reference = .assignReferenceNucleotides,
+      write_chunk = .writePileupChunk
+) {
     chunk <- GRs[i]
     pileup_data <- pileup(
         file = bam_link,
@@ -583,16 +587,18 @@ collectBasesPileup <- function(
 #' @importFrom parallel detectCores
 #' @importFrom utils read.table
 #' @importFrom S4Vectors FilterRules
-filterBamFile <- function(bamDir = NULL,
-    bamFile,
-    gr = NULL,
-    flag = scanBamFlag(),
-    tlen = NULL,
-    mapq = NULL,
-    index = FALSE,
-    threads = max(1L, detectCores(logical = TRUE) - 1L, na.rm = TRUE),
-    overwrite = FALSE,
-    workDir = NULL) {
+filterBamFile <- function(
+      bamDir = NULL,
+      bamFile,
+      gr = NULL,
+      flag = scanBamFlag(),
+      tlen = NULL,
+      mapq = NULL,
+      index = FALSE,
+      threads = max(1L, detectCores(logical = TRUE) - 1L, na.rm = TRUE),
+      overwrite = FALSE,
+      workDir = NULL
+) {
     ### Setting the working directory.
     if (is.null(x = workDir)) {
         workDir <- getwd()
@@ -764,17 +770,19 @@ filterBamFile <- function(bamDir = NULL,
 #'     )
 #' }
 #' @export
-groupReadsGATK <- function(bamDir = NULL,
-    bamFile,
-    postfix = "RG",
-    SE = TRUE,
-    RGID = "Bam.Recal.RG",
-    RGLB = "default.LIBRARY.ID",
-    RGPL = "default.ILLUMINA",
-    RGPU = "default.PLATFORM",
-    RGSM = "default.SAMPLE",
-    gatk_path = "gatk",
-    workDir = NULL) {
+groupReadsGATK <- function(
+      bamDir = NULL,
+      bamFile,
+      postfix = "RG",
+      SE = TRUE,
+      RGID = "Bam.Recal.RG",
+      RGLB = "default.LIBRARY.ID",
+      RGPL = "default.ILLUMINA",
+      RGPU = "default.PLATFORM",
+      RGSM = "default.SAMPLE",
+      gatk_path = "gatk",
+      workDir = NULL
+) {
     ### Setting the working directory.
     if (is.null(x = workDir)) {
         workDir <- getwd()
@@ -885,12 +893,14 @@ groupReadsGATK <- function(bamDir = NULL,
 #' }
 #' @export
 #' @importFrom Rsamtools indexFa
-indexGenomeGATK <- function(fastaDir = NULL,
-    faFile,
-    fai = TRUE,
-    dict = TRUE,
-    gatk_path = "gatk",
-    workDir = NULL) {
+indexGenomeGATK <- function(
+      fastaDir = NULL,
+      faFile,
+      fai = TRUE,
+      dict = TRUE,
+      gatk_path = "gatk",
+      workDir = NULL
+) {
     ### Setting the working directory.
     if (is.null(x = workDir)) {
         workDir <- getwd()
@@ -958,11 +968,13 @@ indexGenomeGATK <- function(fastaDir = NULL,
 #'     )
 #' }
 #' @export
-indexVcfGATK <- function(vcfDir = NULL,
-    vcfFile = NULL,
-    output_name = NULL,
-    gatk_path = "gatk",
-    workDir = NULL) {
+indexVcfGATK <- function(
+      vcfDir = NULL,
+      vcfFile = NULL,
+      output_name = NULL,
+      gatk_path = "gatk",
+      workDir = NULL
+) {
     ### Setting the working directory.
     if (is.null(x = workDir)) {
         workDir <- getwd()
@@ -1038,13 +1050,15 @@ indexVcfGATK <- function(vcfDir = NULL,
 #'     )
 #' }
 #' @export
-markDuplicatesGATK <- function(bamDir = NULL,
-    bamFile,
-    postfix = "markedDuplicates",
-    removeDupls = "no",
-    SE = TRUE,
-    gatk_path = "gatk",
-    workDir = NULL) {
+markDuplicatesGATK <- function(
+      bamDir = NULL,
+      bamFile,
+      postfix = "markedDuplicates",
+      removeDupls = "no",
+      SE = TRUE,
+      gatk_path = "gatk",
+      workDir = NULL
+) {
     ### Setting the working directory.
     if (is.null(x = workDir)) {
         workDir <- getwd()
@@ -1211,20 +1225,19 @@ markDuplicatesGATK <- function(bamDir = NULL,
 #'     )
 #' }
 #' @export
-recalibrateBamGATK <- function(
-        bamDir = NULL,
-        bamFile,
-        vcfDir = NULL,
-        vcfFile,
-        fastaDir = NULL,
-        faFile,
-        createBQSR = TRUE,
-        recalibrate = TRUE,
-        nameBQSR,
-        postfix = "Recalibrated",
-        SE = TRUE,
-        gatk_path = "gatk",
-        workDir = NULL) {
+recalibrateBamGATK <- function(bamDir = NULL,
+    bamFile,
+    vcfDir = NULL,
+    vcfFile,
+    fastaDir = NULL,
+    faFile,
+    createBQSR = TRUE,
+    recalibrate = TRUE,
+    nameBQSR,
+    postfix = "Recalibrated",
+    SE = TRUE,
+    gatk_path = "gatk",
+    workDir = NULL) {
     ### Setting the working directory.
     if (is.null(x = workDir)) {
         workDir <- getwd()
@@ -1300,8 +1313,10 @@ recalibrateBamGATK <- function(
 #' @author Vasily V. Grinev.
 #' @keywords internal
 #' @noRd
-.runBaseRecalibrator <- function(path, bamFile, path2, vcfFile, path3,
-    faFile, gatk_path) {
+.runBaseRecalibrator <- function(
+      path, bamFile, path2, vcfFile, path3,
+      faFile, gatk_path
+) {
     bqsr_name <- paste(
         gsub(pattern = ".bam", replacement = "", x = bamFile),
         "bqsr.table",

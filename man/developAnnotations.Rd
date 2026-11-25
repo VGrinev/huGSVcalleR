@@ -77,16 +77,16 @@ write.table(
     row.names = FALSE
 )
 if (requireNamespace("GenomeInfoDbData", quietly = TRUE)) {
-developAnnotations(
-    gtfDir = NULL,
-    gtfFile = "test_annotation.gtf",
-    orf = "orfs.txt",
-    gtf = "example.anno.gtf",
-    src = "example",
-    organism = "Homo sapiens",
-    sqlite = "example.anno.sqlite",
-    workDir = workDir
-)
+    developAnnotations(
+        gtfDir = NULL,
+        gtfFile = "test_annotation.gtf",
+        orf = "orfs.txt",
+        gtf = "example.anno.gtf",
+        src = "example",
+        organism = "Homo sapiens",
+        sqlite = "example.anno.sqlite",
+        workDir = workDir
+    )
 }
 }
 \author{

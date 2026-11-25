@@ -51,7 +51,8 @@ draw_report_page <- function(draw) {
         mustWork = FALSE
     )
     grDevices::png(
-        fig, width = 8.27, height = 11.69, units = "in", res = 140
+        fig,
+        width = 8.27, height = 11.69, units = "in", res = 140
     )
     on.exit(grDevices::dev.off(), add = TRUE)
     par(mfrow = c(3, 2), omi = c(0.79, 0.79, 1, 0.79))
@@ -261,7 +262,8 @@ The function `alignDNASubread()` aligns short DNA-Seq reads by the seed-and-vote
 
 ```{r module2-align}
 reads <- readLines(system.file("extdata", "test_R1.fastq",
-    package = "huGSVcalleR"))
+    package = "huGSVcalleR"
+))
 gz <- gzfile(file.path(workDir, "test_R1.fastq.gz"), "w")
 writeLines(reads, gz)
 close(gz)
@@ -636,7 +638,8 @@ ready <- all(vapply(
         "org.Hs.eg.db",
         "TxDb.Hsapiens.UCSC.hg38.knownGene"
     ),
-    requireNamespace, logical(1), quietly = TRUE
+    requireNamespace, logical(1),
+    quietly = TRUE
 ))
 if (ready) {
     txdb <- getExportedValue(
@@ -817,16 +820,16 @@ write.table(
     sep = "\t", quote = FALSE, row.names = FALSE
 )
 if (requireNamespace("GenomeInfoDbData", quietly = TRUE)) {
-anno <- developAnnotations(
-    gtfDir   = NULL,
-    gtfFile  = "test_annotation.gtf",
-    orf      = "orfs.txt",
-    gtf      = "example.anno.gtf",
-    src      = "example",
-    organism = "Homo sapiens",
-    sqlite   = "example.anno.sqlite",
-    workDir  = workDir
-)
+    anno <- developAnnotations(
+        gtfDir   = NULL,
+        gtfFile  = "test_annotation.gtf",
+        orf      = "orfs.txt",
+        gtf      = "example.anno.gtf",
+        src      = "example",
+        organism = "Homo sapiens",
+        sqlite   = "example.anno.sqlite",
+        workDir  = workDir
+    )
 }
 ```
 
